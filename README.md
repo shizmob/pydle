@@ -17,7 +17,7 @@ Features
   - [SASL](http://ircv3.atheme.org/extensions/sasl-3.1)
   - [IRCv3.1](http://ircv3.atheme.org/)
   - (partial, in progress) [IRCv3.2](http://ircv3.atheme.org)
-* Asynchronous: IRC is an asynchronous protocol and so should a library that implements it be. Callbacks are used to process events from the server.
+* Callback-based: IRC is an asynchronous protocol and so should a library that implements it be. Callbacks are used to process events from the server.
 * Modularized and extensible: Features on top of RFC1459 are implemented as seperate modules for a user to pick and choose, and write their own. Broad features are written to be as extensible as possible.
 * Liberally licensed: The 3-clause BSD license ensures you can use it everywhere.
 
@@ -26,6 +26,7 @@ Structure
 * `pydle.Client` - full-featured client that supports `pydle.BasicClient` plus all the features in `pydle.features`.
 * `pydle.MinimalClient` - tinier client that supports `pydle.BasicClient` plus some features in `pydle.features`. (currently `ctcp`, `isupport` and `tls`)
 * `pydle.BasicClient` - basic [RFC1459](https://tools.ietf.org/html/rfc1459.html) implementation with a few commonly-implemented [RFC281x](https://tools.ietf.org/html/rfc2810.html) extensions.
+* `pydle.ClientPool` - a 'pool' of several clients in order to handle multiple clients in one swift main loop.
 * `pydle.features` - extra (official/unofficial) IRC extensions
    - `pydle.features.ctcp` - [Client-to-Client Protocol](http://www.irchelp.org/irchelp/rfc/ctcpspec.html) support.
    - `pydle.features.tls` - [Transport Layer Security](https://tools.ietf.org/html/rfc5246.html) and [STARTTLS](https://ircv3.atheme.org/extensions/tls-3.1) support.
@@ -33,7 +34,6 @@ Structure
    - `pydle.features.cap` - [CAP](http://ircv3.atheme.org/specification/capability-negotiation-3.1) capability negotiation support.
    - `pydle.features.sasl` - [Simple Authentication and Security Layer](http://ircv3.atheme.org/extensions/sasl-3.1) support - currently limited to the `PLAIN` mechanism.
    - `pydle.features.ircv3_1` - [Miscellaneous](http://ircv3.atheme.org/extensions/multi-prefix-3.1) [features](http://ircv3.atheme.org/extensions/account-notify-3.1) [ensuring](http://ircv3.atheme.org/extensions/away-notify-3.1) [support](http://ircv3.atheme.org/extensions/extended-join-3.1) for [IRCv3.1](http://ircv3.atheme.org/).
-* `pydle.ClientPool` - a 'pool' of several clients in order to handle multiple clients in one swift main loop.
 
 Basic Usage
 -----------
@@ -89,8 +89,25 @@ class ACMESupport(pydle.BasicClient):
         self.nickname = nickname
 ```
 
+FAQ
+---
+
+**Q: When constructing my own client class from several base classes, I get the following error: _TypeError: Cannot create a consistent method resolution order (MRO) for bases X, Y, Z_. What causes this and how can I solve it?**
+
+Pydle's use of class inheritance as a feature model may cause method resolution order conflicts if a feature inherits from a different feature, while a class inherits from both the original feature and the inheriting feature. To solve such problem, pydle offers a `featurize` function that will automatically put all classes in the right order and create an appropriate base class:
+```python
+# Purposely mis-ordered base classes, as SASLSupport inherits from CapabilityNegotiationSupport, but everything works fine.
+MyBase = pydle.featurize(pydle.features.CapabilityNegotiationSupport, pydle.features.SASLSupport)
+class Client(MyBase):
+    pass
+```
+
 API
 ---
+
+**pydle**
+
+`featurize(*bases)`: create a client base class out of the given feature classes with a proper method resolution order. See the FAQ for details.
 
 **pydle.Client**
 
