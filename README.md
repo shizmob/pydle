@@ -7,7 +7,7 @@ pydle is a compact, flexible and standards-abiding IRC library for Python 3.
 
 Features
 --------
-* Compact: At ~1500SLoC at time of writing, it's not hard to find what you're looking for in the well-organized source code.
+* Compact: At ~1700SLoC at time of writing, it's not hard to find what you're looking for in the well-organized source code.
 * Standards-abiding: Based on [RFC1459](https://tools.ietf.org/html/rfc1459.html) with some small extension tweaks, with full support of optional extension standards:
   - [TLS](http://tools.ietf.org/html/rfc5246)
   - [CTCP](http://www.irchelp.org/irchelp/rfc/ctcpspec.html)
@@ -19,7 +19,7 @@ Features
   - (partial, in progress) [IRCv3.2](http://ircv3.atheme.org)
 * Asynchronous: IRC is an asynchronous protocol and so should a library that implements it be. Callbacks are used to process events from the server.
 * Modularized and extensible: Features on top of RFC1459 are implemented as seperate modules for a user to pick and choose, and write their own. Broad features are written to be as extensible as possible.
-* Liberally licensed: The 2-clause BSD license ensures you can use it everywhere.
+* Liberally licensed: The 3-clause BSD license ensures you can use it everywhere.
 
 Structure
 ---------
