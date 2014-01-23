@@ -1,0 +1,8 @@
+__pycache__
+*.pyc
+*.pyo
+*.swp
+*.swo
+
+/docs/_build
+/docs/api
