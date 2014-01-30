@@ -374,8 +374,9 @@ class BasicClient:
         # Leeway.
         chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=target)) - 25
 
-        for msg in _chunkify(message, chunklen):
-            self.rawmsg('PRIVMSG', target, msg)
+        for line in message.replace('\r', '').split('\n'):
+            for chunk in _chunkify(line, chunklen):
+                self.rawmsg('PRIVMSG', target, chunk)
 
     def notice(self, target, message):
         """ Notice channel or user. """
@@ -386,8 +387,9 @@ class BasicClient:
         # Leeway.
         chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} NOTICE {target} :'.format(hostmask=hostmask, target=target)) - 25
 
-        for msg in _chunkify(message, chunklen):
-            self.rawmsg('NOTICE', target, msg)
+        for line in message.replace('\r', '').split('\n'):
+            for chunk in _chunkify(line, chunklen):
+                self.rawmsg('NOTICE', target, chunk)
 
     def mode(self, target, *modes):
         """ Set mode on target. """
