@@ -436,6 +436,9 @@ class ConnectionPool:
         sockets = { conn.socket: conn for conn in self.connections if conn.connected }
         found = False
 
+        if self.has_message():
+            return
+
         while not found:
             # Wait forever until a socket becomes readable.
             readable, writable, error = select.select(sockets.keys(), [], [])
