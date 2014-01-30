@@ -194,6 +194,9 @@ class Connection:
 
     def has_message(self, types=None):
         """ Determine if this connection has a message ready for processing. """
+        if not self.connected:
+            return False
+
         # Low-hanging fruit: is there a message ready in the queue?
         if len(self.message_queue) > 0:
             # Is the message of the type we want?
@@ -221,6 +224,9 @@ class Connection:
 
     def get_message(self, types=None, retry=False):
         """ Get an IRC message for processing. """
+        if not self.connected:
+            raise NotConnected('Not connected.')
+
         with self.message_lock:
             try:
                 # Looking for specific type?
