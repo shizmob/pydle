@@ -5,8 +5,8 @@ from .client import NotInChannel, AlreadyInChannel, BasicClient, ClientPool
 from .features.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as CAPABILITY_FAILED, NEGOTIATED as CAPABILITY_NEGOTIATED
 
 __name__ = 'pydle'
-__version__ = '0.7.1'
-__version_info__ = (0, 7, 1)
+__version__ = '0.7.0'
+__version_info__ = (0, 7, 0)
 __license__ = 'BSD'
 
 

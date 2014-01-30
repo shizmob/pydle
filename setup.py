@@ -22,7 +22,7 @@ setup(
 
     author='Shiz',
     author_email='hi@shiz.me',
-    url='https://github.com/moeIO/pydle',
+    url='https://github.com/Shizmob/pydle',
     keywords='irc library python3 compact flexible',
     description='A compact, flexible and standards-abiding IRC library for Python 3.',
     license=pydle.__license__,
