@@ -261,6 +261,13 @@ class BasicClient:
         if not channel or not any(nickname in ch['users'] for ch in self.channels.values()):
             del self.users[nickname]
 
+    def _format_hostmask(self, nickname):
+        if nickname not in self.users:
+            raise KeyError('Unknown user "{usr}".'.format(usr=nickname))
+
+        user = self.users[nickname]
+        return '{n}!{u}@{h}'.format(n=nickname, u=user['username'] or '*', h=user['hostname'] or '*')
+
 
     ## IRC attributes.
 
@@ -363,14 +370,24 @@ class BasicClient:
         if self.is_channel(target) and not self.in_channel(target):
             raise NotInChannel('Not in channel {}'.format(target))
 
-        self.rawmsg('PRIVMSG', target, message)
+        hostmask = self._format_hostmask(self.nickname)
+        # Leeway.
+        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=target)) - 25
+
+        for msg in _chunkify(message, chunklen):
+            self.rawmsg('PRIVMSG', target, msg)
 
     def notice(self, target, message):
         """ Notice channel or user. """
         if self.is_channel(target) and not self.in_channel(target):
             raise NotInChannel('Not in channel {}'.format(target))
 
-        self.rawmsg('NOTICE', target, message)
+        hostmask = self._format_hostmask(self.nickname)
+        # Leeway.
+        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} NOTICE {target} :'.format(hostmask=hostmask, target=target)) - 25
+
+        for msg in _chunkify(message, chunklen):
+            self.rawmsg('NOTICE', target, msg)
 
     def mode(self, target, *modes):
         """ Set mode on target. """
@@ -957,3 +974,12 @@ class ClientPool:
     def wait_for_message(self):
         return self.connpool.wait_for_message()
 
+
+## Helpers.
+
+
+def _chunkify(message, chunksize):
+    while message:
+        chunk = message[:chunksize]
+        message = message[chunksize:]
+        yield chunk
