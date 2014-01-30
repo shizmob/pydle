@@ -910,7 +910,10 @@ class BasicClient:
 class ClientPool:
     """ A pool of clients. """
 
-    def __init__(self, clients):
+    def __init__(self, clients=None):
+        if not clients:
+            clients = []
+
         self.clients = set(clients)
         self.client_cycle = itertools.cycle(self.clients)
         self.connpool = connection.ConnectionPool(client.connection for client in self.clients)
