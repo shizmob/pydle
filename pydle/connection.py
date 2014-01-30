@@ -1,6 +1,7 @@
 import sys
 import os.path as path
 import itertools
+import time
 
 import socket
 import ssl
@@ -24,6 +25,9 @@ DEFAULT_CA_PATHS = {
 BUFFER_SIZE = 4096
 TIMEOUT = 0.5
 
+MESSAGE_THROTTLE_TIME = 2
+MESSAGE_THROTTLE_TRESHOLD = 3
+
 
 class NotConnected(Exception):
     pass
@@ -41,6 +45,8 @@ class Connection:
         self.port = port
         self.ping_timeout = ping_timeout
         self.encoding = encoding
+        self.unthrottled_messages = 0
+        self.last_message_sent = None
 
         self.tls = tls
         self.tls_context = None
@@ -80,6 +86,8 @@ class Connection:
             self.buffer = b''
         with self.message_lock:
             self.message_queue = collections.deque()
+            self.unthrottled_messages = 0
+            self.last_message_sent = None
 
     def setup_tls(self):
         """ Transform our regular socket into a TLS socket. """
@@ -257,7 +265,24 @@ class Connection:
     def send_message(self, command, *params, source=None):
          """ Send a message to the other endpoint. """
          message = protocol.construct(command, *params, source=source)
-         return self.send_string(message)
+         with self.message_lock:
+            # Should we throttle?
+            if self.last_message_sent and time.time() - self.last_message_sent < MESSAGE_THROTTLE_TIME:
+                if self.unthrottled_messages >= MESSAGE_THROTTLE_TRESHOLD:
+                    # Enough messages unthrottled; we should throttle.
+                    self.last_message_sent += MESSAGE_THROTTLE_TIME
+                    timer = threading.Timer(self.last_message_sent - time.time(), self.send_string, [ message ])
+                    timer.start()
+                else:
+                    # We can still afford to not throttle.
+                    self.unthrottled_messages += 1
+                    self.last_message_sent = time.time()
+                    return self.send_string(message)
+            else:
+                # We don't need to throttle.
+                self.unthrottled_messages = 0
+                self.last_message_sent = time.time()
+                return self.send_string(message)
 
     def wait_for_message(self, types=None):
         """ Wait until a message has arrived. """
