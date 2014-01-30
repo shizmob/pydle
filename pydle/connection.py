@@ -391,7 +391,10 @@ class Connection:
 
 class ConnectionPool:
     """ A pool of connections. """
-    def __init__(self, conns):
+    def __init__(self, conns=None):
+        if not conns:
+            conns = []
+
         self.connections = set(conns)
         self.connection_cycle = itertools.cycle(self.connections)
         self.index = 0
