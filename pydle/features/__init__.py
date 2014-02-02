@@ -5,6 +5,7 @@ from .tls import TLSSupport
 from .isupport import ISUPPORTSupport
 from .cap import CapabilityNegotiationSupport
 from .sasl import SASLSupport
+from .tags import TaggedMessageSupport
 from .ircv3_1 import IRCv3_1Support
 from .ircv3_2 import IRCv3_2Support
 
