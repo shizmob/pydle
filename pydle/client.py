@@ -512,6 +512,8 @@ class BasicClient:
         """ Handle a single message. """
         message = self._get_message(types=types)
         self.logger.debug('<< [{source}] {command} {args}', source=message.source or '', command=message.command, args=message.params)
+        if not message._valid:
+            self.logger.warn('Encountered strictly invalid IRC message from server.')
 
         if isinstance(message.command, int):
             cmd = str(message.command).zfill(3)
@@ -520,11 +522,12 @@ class BasicClient:
 
         # Invoke dispatcher, if we have one.
         method = 'on_raw_' + cmd.lower()
-        if hasattr(self, method):
+        try:
+            if not hasattr(self, method):
+                method = 'on_unknown'
             getattr(self, method)(message)
-        # Invoke default method.
-        else:
-            self.on_unknown(message)
+        except:
+            self.logger.exception('Failed to execute {handler} handler.', handler=method)
 
         return message
 

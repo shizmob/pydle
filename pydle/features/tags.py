@@ -22,6 +22,7 @@ class TaggedMessage(protocol.Message):
         Parse given line into IRC message structure.
         Returns a TaggedMessage.
         """
+        valid = True
         # Decode message.
         try:
             message = line.decode(encoding)
@@ -31,7 +32,7 @@ class TaggedMessage(protocol.Message):
 
         # Sanity check for message length.
         if len(message) > TAGGED_MESSAGE_LENGTH_LIMIT:
-            raise protocol.ProtocolViolation('The received message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=TAGGED_MESSAGE_LENGTH_LIMIT), message=message)
+            valid = False
 
         # Strip message separator.
         if message.endswith(protocol.LINE_SEPARATOR):
@@ -55,7 +56,7 @@ class TaggedMessage(protocol.Message):
 
         # Parse rest of message.
         message = super().parse(message.lstrip().encode(encoding), encoding=encoding)
-        return TaggedMessage(message.command, message.params, source=message.source, tags=tags, **message.kw)
+        return TaggedMessage(message.command, message.params, _valid=message._valid and valid, source=message.source, tags=tags, **message.kw)
 
     def construct(self):
         """

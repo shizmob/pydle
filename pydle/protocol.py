@@ -69,11 +69,12 @@ class ProtocolViolation(Exception):
 ## Message parsing and construction.
 
 class Message:
-    def __init__(self, command, params, source=None, **kw):
+    def __init__(self, command, params, source=None, _valid=True, **kw):
         self.command = command
         self.params = params
         self.source = source
         self.kw = kw
+        self._valid = _valid
 
     @classmethod
     def parse(cls, line, encoding='utf-8'):
@@ -81,6 +82,8 @@ class Message:
         Parse given line into IRC message structure.
         Returns a Message.
         """
+        valid = True
+
         # Decode message.
         try:
             message = line.decode(encoding)
@@ -90,7 +93,7 @@ class Message:
 
         # Sanity check for message length.
         if len(message) > MESSAGE_LENGTH_LIMIT:
-            raise ProtocolViolation('The received message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=MESSAGE_LENGTH_LIMIT), message=message)
+            valid = False
 
         # Strip message separator.
         if message.endswith(LINE_SEPARATOR):
@@ -100,7 +103,7 @@ class Message:
 
         # Sanity check for forbidden characters.
         if any(ch in message for ch in FORBIDDEN_CHARACTERS):
-            raise ProtocolViolation('The received message contains forbidden characters ({chs}).'.format(chs=', '.join(repr(x) for x in FORBIDDEN_CHARACTERS)), message=message)
+            valid = False
 
         # Extract message sections.
         # Format: (:source)? command parameter*
@@ -116,7 +119,7 @@ class Message:
 
         # Sanity check for command.
         if not COMMAND_PATTERN.match(command):
-            raise ProtocolViolation('The received command ({message}) is not a valid IRC command.'.format(message=command))
+            valid = False
 
         # Extract parameters properly.
         # Format: (word|:sentence)*
@@ -140,7 +143,7 @@ class Message:
             params = []
 
         # Commands can be either [a-zA-Z]+ or [0-9]+.
-        # In the former case, force it to yppwecase.
+        # In the former case, force it to uppercase.
         # In the latter case (a numeric command), try to represent it as such.
         try:
             command = int(command)
@@ -148,7 +151,7 @@ class Message:
             command = command.upper()
 
         # Return parsed message.
-        return Message(command, params, source=source)
+        return Message(command, params, source=source, _valid=valid)
 
     def __str__(self):
         return self.construct()
