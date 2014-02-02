@@ -68,46 +68,127 @@ class ProtocolViolation(Exception):
 
 ## Message parsing and construction.
 
-# Construction.
+class Message:
+    def __init__(self, command, params, source=None, **kw):
+        self.command = command
+        self.params = params
+        self.source = source
+        self.kw = kw
 
-def construct(command, *params, source=None):
-    """ Construct a raw IRC message. """
-    # Sanity check for command.
-    command = str(command)
-    if not COMMAND_PATTERN.match(command):
-        raise ProtocolViolation('The constructed command does not follow the command pattern ({pat})'.format(pat=COMMAND_PATTERN.pattern), message=command)
-    message = command.upper()
+    @classmethod
+    def parse(cls, line, encoding='utf-8'):
+        """
+        Parse given line into IRC message structure.
+        Returns a Message.
+        """
+        # Decode message.
+        try:
+            message = line.decode(encoding)
+        except UnicodeDecodeError:
+            # Try our fallback encoding.
+            message = line.decode(FALLBACK_ENCODING)
 
-    # Add parameters.
-    if not params:
-        message += ' '
-    for idx, param in enumerate(params):
-        # Trailing parameter?
-        if ' ' in param:
-            if idx + 1 < len(params):
-                raise ProtocolViolation('Only the final parameter of an IRC message can be trailing and thus contain spaces.', message=param)
-            message += ' ' + TRAILING_PREFIX + param
-        # Regular paramter.
+        # Sanity check for message length.
+        if len(message) > MESSAGE_LENGTH_LIMIT:
+            raise ProtocolViolation('The received message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=MESSAGE_LENGTH_LIMIT), message=message)
+
+        # Strip message separator.
+        if message.endswith(LINE_SEPARATOR):
+            message = message[:-len(LINE_SEPARATOR)]
+        elif message.endswith(MINIMAL_LINE_SEPARATOR):
+            message = message[:-len(MINIMAL_LINE_SEPARATOR)]
+
+        # Sanity check for forbidden characters.
+        if any(ch in message for ch in FORBIDDEN_CHARACTERS):
+            raise ProtocolViolation('The received message contains forbidden characters ({chs}).'.format(chs=', '.join(repr(x) for x in FORBIDDEN_CHARACTERS)), message=message)
+
+        # Extract message sections.
+        # Format: (:source)? command parameter*
+        try:
+            if message.startswith(':'):
+                source, command, raw_params = ARGUMENT_SEPARATOR.split(message, 2)
+                source = source[1:]
+            else:
+                command, raw_params = ARGUMENT_SEPARATOR.split(message, 1)
+                source = None
+        except ValueError:
+            raise ProtocolViolation('Improper IRC message format: not enough elements.')
+
+        # Sanity check for command.
+        if not COMMAND_PATTERN.match(command):
+            raise ProtocolViolation('The received command ({message}) is not a valid IRC command.'.format(message=command))
+
+        # Extract parameters properly.
+        # Format: (word|:sentence)*
+
+        # Only parameter is a 'trailing' sentence.
+        if raw_params.startswith(TRAILING_PREFIX):
+            params = [ raw_params[len(TRAILING_PREFIX):] ]
+        # We have a sentence in our parameters.
+        elif ' ' + TRAILING_PREFIX in raw_params:
+            index = raw_params.find(' ' + TRAILING_PREFIX)
+
+             # Get all single-word parameters.
+            params = ARGUMENT_SEPARATOR.split(raw_params[:index].rstrip(' '))
+            # Extract last parameter as sentence
+            params.append(raw_params[index + len(TRAILING_PREFIX) + 1:])
+        # We have some parameters, but no sentences.
+        elif raw_params:
+            params = ARGUMENT_SEPARATOR.split(raw_params)
+        # No parameters.
         else:
-            message += ' ' + param
+            params = []
 
-    # Prepend source.
-    if source:
-        message = ':' + source + ' ' + message
+        # Commands can be either [a-zA-Z]+ or [0-9]+.
+        # In the former case, force it to yppwecase.
+        # In the latter case (a numeric command), try to represent it as such.
+        try:
+            command = int(command)
+        except ValueError:
+            command = command.upper()
 
-    # Sanity check for characters.
-    if any(ch in message for ch in FORBIDDEN_CHARACTERS):
-        raise ProtocolViolation('The constructed message contains forbidden characters ({chs}).'.format(chs=', '.join(FORBIDDEN_CHARACTERS)), message=message)
+        # Return parsed message.
+        return Message(command, params, source=source)
 
-    # Sanity check for length.
-    message += LINE_SEPARATOR
-    if len(message) > MESSAGE_LENGTH_LIMIT:
-        raise ProtocolViolation('The constructed message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=MESSAGE_LENGTH_LIMIT), message=message)
+    def __str__(self):
+        return self.construct()
 
-    return message
+    def construct(self):
+        """ Construct a raw IRC message. """
+        # Sanity check for command.
+        command = str(self.command)
+        if not COMMAND_PATTERN.match(command):
+            raise ProtocolViolation('The constructed command does not follow the command pattern ({pat})'.format(pat=COMMAND_PATTERN.pattern), message=command)
+        message = command.upper()
 
+        # Add parameters.
+        if not self.params:
+            message += ' '
+        for idx, param in enumerate(self.params):
+            # Trailing parameter?
+            if ' ' in param:
+                if idx + 1 < len(self.params):
+                    raise ProtocolViolation('Only the final parameter of an IRC message can be trailing and thus contain spaces.', message=param)
+                message += ' ' + TRAILING_PREFIX + param
+            # Regular paramter.
+            else:
+                message += ' ' + param
 
-# Validation.
+        # Prepend source.
+        if self.source:
+            message = ':' + self.source + ' ' + message
+
+        # Sanity check for characters.
+        if any(ch in message for ch in FORBIDDEN_CHARACTERS):
+            raise ProtocolViolation('The constructed message contains forbidden characters ({chs}).'.format(chs=', '.join(FORBIDDEN_CHARACTERS)), message=message)
+
+        # Sanity check for length.
+        message += LINE_SEPARATOR
+        if len(message) > MESSAGE_LENGTH_LIMIT:
+            raise ProtocolViolation('The constructed message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=MESSAGE_LENGTH_LIMIT), message=message)
+
+        return message
+
 
 def normalize(input, case_mapping='rfc1459'):
     """ Normalize input according to case mapping. """
@@ -133,79 +214,7 @@ def equals(left, right, case_mapping='rfc1459'):
 
 # Parsing.
 
-def parse(line, encoding='utf-8'):
-    """
-    Parse given line into IRC message structure.
-    Returns a tuple of (source, command, parameters), where parameters is a list.
-    """
-    # Decode message.
-    try:
-        message = line.decode(encoding)
-    except UnicodeDecodeError:
-        # Try our fallback encoding.
-        message = line.decode(FALLBACK_ENCODING)
 
-    # Sanity check for message length.
-    if len(message) > MESSAGE_LENGTH_LIMIT:
-        raise ProtocolViolation('The received message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=MESSAGE_LENGTH_LIMIT), message=message)
-
-    # Strip message separator.
-    if message.endswith(LINE_SEPARATOR):
-        message = message[:-len(LINE_SEPARATOR)]
-    elif message.endswith(MINIMAL_LINE_SEPARATOR):
-        message = message[:-len(MINIMAL_LINE_SEPARATOR)]
-
-    # Sanity check for forbidden characters.
-    if any(ch in message for ch in FORBIDDEN_CHARACTERS):
-        raise ProtocolViolation('The received message contains forbidden characters ({chs}).'.format(chs=', '.join(repr(x) for x in FORBIDDEN_CHARACTERS)), message=message)
-
-    # Extract message sections.
-    # Format: (:source)? command parameter*
-    try:
-        if message.startswith(':'):
-            source, command, raw_params = ARGUMENT_SEPARATOR.split(message, 2)
-            source = source[1:]
-        else:
-            command, raw_params = ARGUMENT_SEPARATOR.split(message, 1)
-            source = None
-    except ValueError:
-        raise ProtocolViolation('Improper IRC message format: not enough elements.')
-
-    # Sanity check for command.
-    if not COMMAND_PATTERN.match(command):
-        raise ProtocolViolation('The received command ({message}) is not a valid IRC command.'.format(message=command))
-
-    # Extract parameters properly.
-    # Format: (word|:sentence)*
-
-    # Only parameter is a 'trailing' sentence.
-    if raw_params.startswith(TRAILING_PREFIX):
-        params = [ raw_params[len(TRAILING_PREFIX):] ]
-    # We have a sentence in our parameters.
-    elif ' ' + TRAILING_PREFIX in raw_params:
-        index = raw_params.find(' ' + TRAILING_PREFIX)
-
-         # Get all single-word parameters.
-        params = ARGUMENT_SEPARATOR.split(raw_params[:index].rstrip(' '))
-        # Extract last parameter as sentence
-        params.append(raw_params[index + len(TRAILING_PREFIX) + 1:])
-    # We have some parameters, but no sentences.
-    elif raw_params:
-        params = ARGUMENT_SEPARATOR.split(raw_params)
-    # No parameters.
-    else:
-        params = []
-
-    # Commands can be either [a-zA-Z]+ or [0-9]+.
-    # In the former case, force it to yppwecase.
-    # In the latter case (a numeric command), try to represent it as such.
-    try:
-        command = int(command)
-    except ValueError:
-        command = command.upper()
-
-    # Return parsed message.
-    return (source, command, params)
 
 def parse_user(raw):
     """ Parse nick(!user(@host)?)? structure. """

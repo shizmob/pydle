@@ -63,6 +63,8 @@ class Connection:
         self.message_queue = None
         self.message_lock = threading.RLock()
 
+        self.message = protocol.Message
+
     def connect(self):
         """ Connect to target. """
         with self.socket_lock:
@@ -262,9 +264,13 @@ class Connection:
 
         return message
 
-    def send_message(self, command, *params, source=None):
+    def create_message(self, command, *params, **kwargs):
+         return self.message(command, params, **kwargs)
+
+    def send_message(self, message):
          """ Send a message to the other endpoint. """
-         message = protocol.construct(command, *params, source=source)
+         message = message.construct()
+
          with self.message_lock:
             # Should we throttle?
             if self.last_message_sent and time.time() - self.last_message_sent < MESSAGE_THROTTLE_TIME:
@@ -389,7 +395,7 @@ class Connection:
             for line in lines:
                 # Parse message.
                 try:
-                    parsed = protocol.parse(line, encoding=self.encoding)
+                    parsed = self.message.parse(line, encoding=self.encoding)
                 except protocol.ProtocolViolation:
                     # TODO: Notification.
                     continue

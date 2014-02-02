@@ -10,6 +10,7 @@ from . import protocol
 from . import log
 
 __all__ = [ 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
+UNREGISTERED_NICKNAME = '<unregistered>'
 
 
 class IRCError(Exception):
@@ -87,7 +88,7 @@ class BasicClient:
         self.logger.name = self.__class__.__name__
 
         ## Public connection attributes.
-        self.nickname = '<unregistered>'
+        self.nickname = UNREGISTERED_NICKNAME
         self.registered = False
         self.motd = None
         self.network = None
@@ -103,21 +104,14 @@ class BasicClient:
 
     ## Connection.
 
-    def connect(self, hostname, port=None, password=None, channels=[], encoding='utf-8'):
+    def connect(self, hostname, port=None, **kwargs):
         """ Connect to IRC server. """
         # Disconnect from current connection.
         if self.connected:
             self.disconnect()
             self._reset_connection_attributes()
 
-        self.password = password
-        self._autojoin_channels = channels
-
-        # Create connection.
-        self.connection = connection.Connection(hostname, port or protocol.DEFAULT_PORT, encoding=encoding)
-        # Connect.
-        self.connection.connect()
-
+        self._connect(hostname, port, **kwargs)
         # And initiate the IRC connection.
         self._register()
 
@@ -144,6 +138,16 @@ class BasicClient:
         # Initiate registration.
         self._register()
 
+    def _connect(self, hostname, port=None, password=None, channels=[], encoding='utf-8'):
+        """ Connect to IRC host. """
+        self.password = password
+        self._autojoin_channels = channels
+
+        # Create connection.
+        self.connection = connection.Connection(hostname, port or protocol.DEFAULT_PORT, encoding=encoding)
+        # Connect.
+        self.connection.connect()
+
     def _register(self):
         """ Perform IRC connection registration. """
         if self.registered:
@@ -161,12 +165,13 @@ class BasicClient:
         # And now for the rest of the user information.
         self.rawmsg('USER', self.username, '0', '*', self.realname)
 
-    def _registration_completed(self, source, params):
+    def _registration_completed(self, message):
         """ We're connected and registered. Receive proper nickname and emit fake NICK message. """
-        self.registered = True
-
-        target = params[0]
-        self.on_raw_nick(self.nickname, [ target ])
+        if not self.registered:
+            self.registered = True
+            target = message.params[0]
+            fakemsg = self._create_message('NICK', target, source=self.nickname)
+            self.on_raw_nick(fakemsg)
 
     def _reconnect_delay(self):
         """ Calculate reconnection delay. """
@@ -216,10 +221,15 @@ class BasicClient:
         if not nick in self.users:
             self._create_user(nick)
 
+        is_self = protocol.equals(self.nickname, nick)
         # Update user/host combination.
         if user:
+            if is_self:
+                self.username = user
             self.users[nick]['username'] = user
         if host:
+            if is_self:
+                self.hostname = host
             self.users[nick]['hostname'] = host
 
     def _rename_user(self, user, new):
@@ -500,33 +510,38 @@ class BasicClient:
 
     def _handle_message(self, types=None):
         """ Handle a single message. """
-        source, command, params = self._get_message(types=types)
-        self.logger.debug('<< [{source}] {command} {args}', source=source or '', command=command, args=params)
+        message = self._get_message(types=types)
+        self.logger.debug('<< [{source}] {command} {args}', source=message.source or '', command=message.command, args=message.params)
 
-        if isinstance(command, int):
-            cmd = str(command).zfill(3)
+        if isinstance(message.command, int):
+            cmd = str(message.command).zfill(3)
         else:
-            cmd = command
+            cmd = message.command
 
         # Invoke dispatcher, if we have one.
         method = 'on_raw_' + cmd.lower()
         if hasattr(self, method):
-            getattr(self, method)(source, params)
+            getattr(self, method)(message)
         # Invoke default method.
         else:
-            self.on_unknown(command, source, params)
+            self.on_unknown(message)
 
-        return source, command, params
+        return message
 
     def _send_raw(self, message):
         """ Send a raw message. """
         self.logger.debug('>>> {msg}', msg=message)
         self.connection.send_string(message)
 
-    def _send_message(self, command, *params, source=None):
+    def _send_message(self, command, *params, source=None, **kwargs):
         """ Send a message. """
         self.logger.debug('>> [{source}] {command} {args}', source=source or '', command=command, args=params)
-        self.connection.send_message(command, *params, source=source)
+
+        message = self._create_message(command, *params, source=source, **kwargs)
+        self.connection.send_message(message)
+
+    def _create_message(self, command, *params, **kwargs):
+        return self.connection.create_message(command, *params, **kwargs)
 
     def handle_forever(self):
         """ Handle messages forever. Main loop. """
@@ -562,33 +577,33 @@ class BasicClient:
 
     ## Raw message handlers.
 
-    def on_unknown(self, command, source, params):
+    def on_unknown(self, message):
         """ Unknown command. """
-        self.logger.warn('Unknown command: [{source}] {command} {params}', source=source, command=command, params=params)
+        self.logger.warn('Unknown command: [{source}] {command} {params}', source=message.source, command=message.command, params=message.params)
 
-    def _ignored(self, source, params):
+    def _ignored(self, message):
         """ Ignore message. """
         pass
 
 
-    def on_raw_invite(self, source, params):
+    def on_raw_invite(self, message):
         """ INVITE command. """
-        nick, user, host = protocol.parse_user(source)
+        nick, user, host = protocol.parse_user(message.source)
         if nick in self.users:
             self._sync_user(nick, user, host)
 
-        target, channel = params
+        target, channel = message.params
         target = protocol.parse_user(target)
 
         if self.is_same_nick(self.nickname, nick):
             self.on_invite(channel, user)
 
-    def on_raw_join(self, source, params):
+    def on_raw_join(self, message):
         """ JOIN command. """
-        nick, user, host = protocol.parse_user(source)
+        nick, user, host = protocol.parse_user(message.source)
         self._sync_user(nick, user, host)
 
-        channels = params[0].split(',')
+        channels = message.params[0].split(',')
         if self.is_same_nick(self.nickname, nick):
             # Add to our channel list, we joined here.
             for channel in channels:
@@ -606,15 +621,15 @@ class BasicClient:
         for channel in channels:
             self.on_join(channel, nick)
 
-    def on_raw_kick(self, source, params):
+    def on_raw_kick(self, message):
         """ KICK command. """
-        kicker, kickeruser, kickerhost = protocol.parse_user(source)
+        kicker, kickeruser, kickerhost = protocol.parse_user(message.source)
         self._sync_user(kicker, kickeruser, kickerhost)
 
-        if len(params) > 2:
-            channels, targets, reason = params
+        if len(message.params) > 2:
+            channels, targets, reason = message.params
         else:
-            channels, targets = params
+            channels, targets = message.params
             reason = None
 
         channels = channels.split(',')
@@ -630,11 +645,11 @@ class BasicClient:
 
             self.on_kick(channel, target, kicker, reason)
 
-    def on_raw_kill(self, source, params):
+    def on_raw_kill(self, message):
         """ KILL command. """
-        by, byuser, byhost = protocol.parse_user(source)
-        target = protocol.parse_user(params[0])[0]
-        message = params[1]
+        by, byuser, byhost = protocol.parse_user(message.source)
+        target, targetuser, targethost = protocol.parse_user(message.params[0])
+        reason = message.params[1]
 
         if by in self.users:
             self._sync_user(by, byuser, byhost)
@@ -646,13 +661,12 @@ class BasicClient:
 
         self.on_kill(target, by, reason)
 
-    def on_raw_mode(self, source, params):
+    def on_raw_mode(self, message):
         """ MODE command. """
-        nick, user, host = protocol.parse_user(source)
-        target, modes = params[0], params[1:]
+        nick, user, host = protocol.parse_user(message.source)
+        target, modes = message.params[0], message.params[1:]
 
         self._sync_user(nick, user, host)
-
         if self.is_channel(target):
             if self.in_channel(target):
                 # Parse modes.
@@ -669,10 +683,10 @@ class BasicClient:
 
             self.on_user_mode_change(modes)
 
-    def on_raw_nick(self, source, params):
+    def on_raw_nick(self, message):
         """ NICK command. """
-        nick, user, host = protocol.parse_user(source)
-        new = params[0]
+        nick, user, host = protocol.parse_user(message.source)
+        new = message.params[0]
 
         self._sync_user(nick, user, host)
         # Acknowledgement of nickname change: set it internally, too.
@@ -685,12 +699,13 @@ class BasicClient:
         # Go through all user lists and replace.
         self._rename_user(nick, new)
 
+        # Call handler.
         self.on_nick_change(nick, new)
 
-    def on_raw_notice(self, source, params):
+    def on_raw_notice(self, message):
         """ NOTICE command. """
-        nick, user, host = protocol.parse_user(source)
-        target, message = params
+        nick, user, host = protocol.parse_user(message.source)
+        target, message = message.params
 
         if nick in self.users:
             self._sync_user(nick, user, host)
@@ -701,17 +716,16 @@ class BasicClient:
         else:
             self.on_private_notice(nick, message)
 
-    def on_raw_part(self, source, params):
+    def on_raw_part(self, message):
         """ PART command. """
-        nick, user, host = protocol.parse_user(source)
-        channels = params[0].split(',')
-        if len(params) > 1:
-            message = params[1]
+        nick, user, host = protocol.parse_user(message.source)
+        channels = message.params[0].split(',')
+        if len(message.params) > 1:
+            reason = message.params[1]
         else:
-            message = None
+            reason = None
 
         self._sync_user(nick, user, host)
-
         if self.is_same_nick(self.nickname, nick):
             # We left the channel. Remove from channel list. :(
             for channel in channels:
@@ -723,17 +737,17 @@ class BasicClient:
                 self._destroy_user(nick, ch)
 
         for channel in channels:
-            self.on_part(channel, nick, message)
+            self.on_part(channel, nick, reason)
 
-    def on_raw_ping(self, source, params):
+    def on_raw_ping(self, message):
         """ PING command. """
         # Respond with a pong.
-        self.rawmsg('PONG', *params)
+        self.rawmsg('PONG', *message.params)
 
-    def on_raw_privmsg(self, source, params):
+    def on_raw_privmsg(self, message):
         """ PRIVMSG command. """
-        nick, user, host = protocol.parse_user(source)
-        target, message = params
+        nick, user, host = protocol.parse_user(message.source)
+        target, message = message.params
 
         if nick in self.users:
             self._sync_user(nick, user, host)
@@ -744,14 +758,14 @@ class BasicClient:
         else:
             self.on_private_message(nick, message)
 
-    def on_raw_quit(self, source, params):
+    def on_raw_quit(self, message):
         """ QUIT command. """
         # No need to sync if the user is quitting anyway.
-        user = protocol.parse_user(source)[0]
-        if params:
-            message = params[0]
+        user = protocol.parse_user(message.source)[0]
+        if message.params:
+            reason = message.params[0]
         else:
-            message = None
+            reason = None
 
         # Remove user from database.
         if not self.is_same_nick(self.nickname, user):
@@ -760,22 +774,22 @@ class BasicClient:
         elif self.connected:
             self.disconnect()
 
-        self.on_quit(user, message)
+        self.on_quit(user, reason)
 
-    def on_raw_topic(self, source, params):
+    def on_raw_topic(self, message):
         """ TOPIC command. """
-        setter, setteruser, setterhost = protocol.parse_user(source)
-        target, message = params
+        setter, setteruser, setterhost = protocol.parse_user(message.source)
+        target, topic = message.params
 
         self._sync_user(setter, setteruser, setterhost)
 
         # Update topic in our own channel list.
         if self.in_channel(target):
-            self.channels[target]['topic'] = message
+            self.channels[target]['topic'] = topic
             self.channels[target]['topic_by'] = setter
             self.channels[target]['topic_set'] = datetime.datetime.now()
 
-        self.on_topic_change(target, message, setter)
+        self.on_topic_change(target, topic, setter)
 
 
     ## Numeric responses.
@@ -787,9 +801,9 @@ class BasicClient:
     on_raw_002 = _registration_completed # Server host.
     on_raw_003 = _registration_completed # Server creation time.
 
-    def on_raw_004(self, source, params):
+    def on_raw_004(self, message):
         """ Basic server information. """
-        hostname, ircd, user_modes, channel_modes = params[:4]
+        hostname, ircd, user_modes, channel_modes = message.params[:4]
 
         # Set valid channel and user modes.
         self._channel_modes = set(channel_modes)
@@ -806,33 +820,34 @@ class BasicClient:
     on_raw_265 = _registration_completed # Amount of local users.
     on_raw_266 = _registration_completed # Amount of global users.
 
-    def on_raw_324(self, source, params):
+    def on_raw_324(self, message):
         """ Channel mode. """
-        target, channel, modes = params[0], params[1], params[2:]
+        target, channel = message.params[0], message.params[1]
+        modes = message.params[2:]
         if not self.in_channel(channel):
             return
 
         self.channels[channel]['modes'] = protocol.parse_channel_modes(modes, self.channels[channel]['modes'], behaviour=self._channel_modes_behaviour)
 
-    def on_raw_329(self, source, params):
+    def on_raw_329(self, message):
         """ Channel creation time. """
-        target, channel, timestamp = params
+        target, channel, timestamp = message.params
         if not self.in_channel(channel):
             return
 
         self.channels[channel]['created'] = datetime.datetime.fromtimestamp(int(timestamp))
 
-    def on_raw_332(self, source, params):
+    def on_raw_332(self, message):
         """ Current topic on channel join. """
-        target, channel, topic = params
+        target, channel, topic = message.params
         if not self.in_channel(channel):
             return
 
         self.channels[channel]['topic'] = topic
 
-    def on_raw_333(self, source, params):
+    def on_raw_333(self, message):
         """ Topic setter and time on channel join. """
-        target, channel, setter, timestamp = params
+        target, channel, setter, timestamp = message.params
         if not self.in_channel(channel):
             return
 
@@ -840,9 +855,9 @@ class BasicClient:
         self.channels[channel]['topic_by'] = protocol.parse_user(setter)[0]
         self.channels[channel]['topic_set'] = datetime.datetime.fromtimestamp(int(timestamp))
 
-    def on_raw_353(self, source, params):
+    def on_raw_353(self, message):
         """ Response to /NAMES. """
-        target, visibility, channel, names = params
+        target, visibility, channel, names = message.params
         if not self.in_channel(channel):
             return
 
@@ -880,27 +895,33 @@ class BasicClient:
 
     on_raw_366 = _ignored # End of /NAMES list.
 
-    def on_raw_375(self, source, params):
+    def on_raw_375(self, message):
         """ Start message of the day. """
-        self._registration_completed(source, params)
-        self.motd = params[1] + '\n'
+        self._registration_completed(message)
+        self.motd = message.params[1] + '\n'
 
-    def on_raw_372(self, source, params):
+    def on_raw_372(self, message):
         """ Append message of the day. """
-        self.motd += params[1] + '\n'
+        self.motd += message.params[1] + '\n'
 
-    def on_raw_376(self, source, params):
+    def on_raw_376(self, message):
         """ End of message of the day. """
-        self.motd += params[1] + '\n'
+        self.motd += message.params[1] + '\n'
 
         # MOTD is done, let's tell our bot the connection is ready.
         self.on_connect()
 
-    def on_raw_421(self, source, params):
+    def on_raw_421(self, message):
         """ Server responded with 'unknown command'. """
-        self.logger.warn('Server responded with "Unknown command: {}"'.format(params[0]))
+        self.logger.warn('Server responded with "Unknown command: {}"'.format(message.params[0]))
 
-    def on_raw_433(self, source, params):
+    def on_raw_432(self, message):
+        """ Erroneous nickname. """
+        if not self.registered:
+            # Nothing else we can do than try our next nickname.
+            self.on_raw_433(message)
+
+    def on_raw_433(self, message):
         """ Nickname in use. """
         if not self.registered:
             self._registration_attempts += 1
@@ -910,14 +931,9 @@ class BasicClient:
             else:
                 self.nicknames = self._attempt_nicknames.pop(0)
 
-    def on_raw_432(self, source, params):
-        """ Erroneous nickname. """
-        if not self.registered:
-            self.on_raw_432(source, params)
-
     on_raw_436 = _ignored # Nickname collision, issued right before the server kills us.
 
-    def on_raw_451(self, source, params):
+    def on_raw_451(self, message):
         """ We have to register first before doing X. """
         # TODO: Implement. Warning?
         pass

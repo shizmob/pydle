@@ -19,12 +19,8 @@ class TLSSupport(client.BasicClient):
         self.tls_client_cert = tls_client_cert
         self.tls_client_cert_key = tls_client_cert_key
 
-    def connect(self, hostname=None, port=None, password=None, encoding='utf-8', channels=[], tls=False, tls_verify=False):
+    def _connect(self, hostname, port=None, password=None, encoding='utf-8', channels=[], tls=False, tls_verify=False):
         """ Connect to IRC server, optionally over TLS. """
-        # Disconnect from current connection.
-        if self.connected:
-            self.disconnect()
-
         self.password = password
         self._autojoin_channels = channels
 
@@ -51,29 +47,26 @@ class TLSSupport(client.BasicClient):
         if not tls:
             self.rawmsg('STARTTLS')
 
-        # And initiate the IRC connection.
-        self._register()
-
 
     ## Message callbacks.
 
-    def on_raw_421(self, source, params):
+    def on_raw_421(self, message):
         """ Hijack to ignore absence of STARTTLS support. """
-        if params[0] == 'STARTTLS':
+        if message.params[0] == 'STARTTLS':
             return
-        super().on_raw_421(source, params)
+        super().on_raw_421(message)
 
-    def on_raw_451(self, source, params):
+    def on_raw_451(self, mesage):
         """ Hijack to ignore absence of STARTTLS support. """
-        if params[0] == 'STARTTLS':
+        if message.params[0] == 'STARTTLS':
             return
-        super().on_raw_451(source, params)
+        super().on_raw_451(message)
 
-    def on_raw_670(self, source, params):
+    def on_raw_670(self, message):
         """ Got the OK from the server to start a TLS connection. Let's roll. """
         self.connection.tls = True
         self.connection.setup_tls()
 
-    def on_raw_691(self, source, params):
+    def on_raw_691(self, message):
         """ Error setting up TLS server-side. """
-        self.logger.err('Server experienced error in setting up TLS, not proceeding with TLS setup: {}', params[0])
+        self.logger.err('Server experienced error in setting up TLS, not proceeding with TLS setup: {}', message.params[0])

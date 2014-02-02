@@ -1,6 +1,5 @@
 ## ircv3_2.py
 # IRCv3.2 support (in progress).
-from .. import client
 from .. import protocol
 
 from . import isupport
@@ -33,20 +32,15 @@ class IRCv3_2Support(cap.CapabilityNegotiationSupport, isupport.ISUPPORTSupport)
 
     ## Message handlers.
 
-    def on_raw_chghost(self, source, params):
+    def on_raw_chghost(self, message):
         """ Change user and/or host of user. """
         if 'chghost' not in self._capabilities or not self._capabilities['chghost']:
             return
 
-        nick = protocol.parse_user(source)[0]
+        nick = protocol.parse_user(message.source)[0]
         if nick not in self.users:
             return
 
         # Update user and host.
-        user, host = params
-        if self.is_same_nick(self.nickname, nick):
-            self.username = user
-            self.hostname = host
-        else:
-            self.users[nick]['username'] = user
-            self.users[nick]['hostname'] = host
+        user, host = message.params
+        self._sync_user(nick, user, host)

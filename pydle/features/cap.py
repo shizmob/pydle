@@ -54,9 +54,10 @@ class CapabilityNegotiationSupport(client.BasicClient):
 
     ## Message handlers.
 
-    def on_raw_cap(self, source, params):
+    def on_raw_cap(self, message):
         """ Handle CAP message. """
-        target, subcommand, params = params[0], params[1], params[2:]
+        target, subcommand = message.params[0], message.params[1]
+        params = message.params[2:]
 
         # Call handler.
         attr = 'on_raw_cap_' + subcommand.lower()
@@ -155,23 +156,23 @@ class CapabilityNegotiationSupport(client.BasicClient):
             self.rawmsg('CAP', 'END')
 
 
-    def on_raw_410(self, source, params):
+    def on_raw_410(self, message):
         """ Unknown CAP subcommand or CAP error. Force-end negotiations. """
-        self.logger.err('Server sent "Unknown CAP subcommand: {}". Aborting capability negotiation.', params[0])
+        self.logger.err('Server sent "Unknown CAP subcommand: {}". Aborting capability negotiation.', message.params[0])
 
         self._capabilities_requested = set()
         self._capabilities_negotiating = set()
         self.rawmsg('CAP', 'END')
 
-    def on_raw_421(self, source, params):
+    def on_raw_421(self, message):
         """ Hijack to ignore the absence of a CAP command. """
-        if params[0] == 'CAP':
+        if message.params[0] == 'CAP':
             return
-        super().on_raw_421(source, params)
+        super().on_raw_421(message)
 
-    def on_raw_451(self, source, params):
+    def on_raw_451(self, message):
         """ Hijack to ignore the absence of a CAP command. """
-        if params[0] == 'CAP':
+        if message.params[0] == 'CAP':
             return
         super().on_raw_451(source, params)
 

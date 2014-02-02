@@ -33,13 +33,13 @@ class ISUPPORTSupport(client.BasicClient):
 
     ## Command handlers.
 
-    def on_raw_005(self, source, params):
+    def on_raw_005(self, message):
         """ ISUPPORT indication. """
         isupport = {}
 
         # Parse response.
         # Strip target (first argument) and 'are supported by this server' (last argument).
-        for feature in params[1:-1]:
+        for feature in message.params[1:-1]:
             if feature.startswith(FEATURE_DISABLED_PREFIX):
                 value = False
             elif '=' in feature:

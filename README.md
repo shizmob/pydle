@@ -274,7 +274,7 @@ with `pydle.features.cap`, three generic callbacks are added:
   * `pydle.CAPABILITY_FAILED` - the callback failed to negotiate the capability. Attempt to disable it again.
 - `Client.on_capability_<cap>_disabled()` - callback called when capability `cap` that was requested before has been disabled.
 
-You can also overload `Client.on_raw_<cmd>(source, params)`, where `cmd` is the raw IRC command (either a text command or a zero-filled numeric code) if you really want to, but this is not advisable if you're not building features as it may disable certain built-in functionalities if you're not careful.
+You can also overload `Client.on_raw_<cmd>(message)`, where `cmd` is the raw IRC command (either a text command or a zero-filled numeric code) and `message` an instance of (a subclass of) `protocol.Message` if you really want to, but this is not advisable if you're not building features as it may disable certain built-in functionalities if you're not careful.
 
 **pydle.ClientPool**
 

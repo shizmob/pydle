@@ -45,13 +45,13 @@ class IRCv3_1Support(sasl.SASLSupport, tls.TLSSupport):
 
     ## Message handlers.
 
-    def on_raw_account(self, source, params):
+    def on_raw_account(self, message):
         """ Changes in the associated account for a nickname. """
         if 'account-notify' not in self._capabilities or not self._capabilities['account-notify']:
             return
 
-        nick, user, host = protocol.parse_user(source)
-        account = params[0]
+        nick, user, host = protocol.parse_user(message.source)
+        account = message.params[0]
 
         if nick not in self.users:
             return
@@ -61,29 +61,34 @@ class IRCv3_1Support(sasl.SASLSupport, tls.TLSSupport):
             account = None
         self.users[nick]['account'] = account
 
-    def on_raw_away(self, source, params):
+    def on_raw_away(self, message):
         """ Process AWAY messages. """
         if 'away-notify' not in self._capabilities or not self._capabilities['away-notify']:
             return
 
-        nick, user, host = protocol.parse_user(source)[0]
+        nick, user, host = protocol.parse_user(message.source)
         if nick not in self.users:
             return
 
         self._sync_user(nick, user, host)
-        self.users[nick]['away'] = len(params) > 0
-        self.users[nick]['away_message'] = params[0] if len(params) > 0 else None
+        self.users[nick]['away'] = len(message.params) > 0
+        self.users[nick]['away_message'] = message.params[0] if len(message.params) > 0 else None
 
-    def on_raw_join(self, source, params):
+    def on_raw_join(self, message):
         """ Process extended JOIN messages. """
         if 'extended-join' in self._capabilities and self._capabilities['extended-join']:
-            nick = protocol.parse_user(source)[0]
-            channels, account, realname = params
-            super().on_raw_join(source, [ channels ])
+            nick, user, host = protocol.parse_user(message.source)
+            channels, account, realname = message.params
+
+            self._sync_user(nick, user, host)
+
+            # Emit a fake join message.
+            fakemsg = self._construct_message('JOIN', channels, source=message.source)
+            super().on_raw_join(fakemsg)
 
             if account == NO_ACCOUNT:
                 account = None
             self.users[nick]['account'] = account
             self.users[nick]['realname'] = realname
         else:
-            super().on_raw_join(source, params)
+            super().on_raw_join(message)

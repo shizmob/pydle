@@ -107,13 +107,13 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
     ## Message handlers.
 
-    def on_raw_authenticate(self, source, params):
+    def on_raw_authenticate(self, message):
         """ Received part of the authentication challenge. """
         # Cancel timeout timer.
         self._sasl_timer.cancel()
 
         # Add response data.
-        response = ' '.join(params)
+        response = ' '.join(message.params)
         if response != EMPTY_MESSAGE:
             self._sasl_challenge += base64.b64decode(response)
 
@@ -128,15 +128,15 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
     on_raw_900 = cap.CapabilityNegotiationSupport._ignored # You are now logged in as...
 
-    def on_raw_903(self, source, params):
+    def on_raw_903(self, message):
         """ SASL authentication successful. """
         self._sasl_end()
 
-    def on_raw_904(self, source, params):
+    def on_raw_904(self, message):
         """ Invalid mechanism or authentication failed. Abort SASL. """
         self._sasl_abort()
 
-    def on_raw_905(self, source_params):
+    def on_raw_905(self, message):
         """ Authentication failed. Abort SASL. """
         self._sasl_abort()
 

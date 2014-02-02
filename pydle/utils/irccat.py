@@ -16,13 +16,13 @@ class IRCCat(featurize(*features.ALL)):
     """ irccat. Takes raw messages on stdin, dumps raw messages to stdout. Life has never been easier. """
     def _get_message(self, types=None):
         """ Get message and print it to stdout. """
-        source, command, params = self.connection.get_message(types=types)
-        sys.stdout.write(protocol.construct(command, *params, source=source))
-        return source, command, params
+        message = self.connection.get_message(types=types)
+        sys.stdout.write(str(message))
+        return message
 
-    def _send_message(self, command, *params, source=None):
-        sys.stdout.write(protocol.construct(command, *params, source=source))
-        super()._send_message(command, *params, source=source)
+    def _send_message(self, command, *params, **kw):
+        sys.stdout.write(str(self.connection.message(command, params, **kw)))
+        super()._send_message(command, *params, **kw)
 
     def _send_raw(self, raw):
         sys.stdout.write(raw)

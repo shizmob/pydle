@@ -48,15 +48,15 @@ class CTCPSupport(client.BasicClient):
 
     ## Handler overrides.
 
-    def on_raw_privmsg(self, source, params):
+    def on_raw_privmsg(self, message):
         """ Modify PRIVMSG to redirect CTCP messages. """
-        nick, user, host = protocol.parse_user(source)
-        target, message = params
+        nick, user, host = protocol.parse_user(message.source)
+        target, msg = message.params
 
-        if is_ctcp(message):
+        if is_ctcp(msg):
             if nick in self.users:
                 self._sync_user(nick, user, host)
-            type = parse_ctcp_query(message)
+            type = parse_ctcp_query(msg)
 
             # Find dedicated handler if it exists.
             attr = 'on_ctcp_' + type.lower()
@@ -66,17 +66,17 @@ class CTCPSupport(client.BasicClient):
                 # Invoke global handler.
                 self.on_ctcp(nick, target, type)
         else:
-            super().on_raw_privmsg(source, params)
+            super().on_raw_privmsg(message)
 
-    def on_raw_notice(self, source, params):
+    def on_raw_notice(self, message):
         """ Modify NOTICE to redirect CTCP messages. """
-        nick, user, host = protocol.parse_user(source)
-        target, message = params
+        nick, user, host = protocol.parse_user(message.source)
+        target, msg = message.params
 
-        if is_ctcp(message):
+        if is_ctcp(msg):
             if nick in self.users:
                 self._sync_user(nick, user, host)
-            type, response = parse_ctcp_response(message)
+            type, response = parse_ctcp_response(msg)
 
             # Find dedicated handler if it exists.
             attr = 'on_ctcp_' + type.lower() + '_reply'
@@ -86,7 +86,7 @@ class CTCPSupport(client.BasicClient):
                 # Invoke global handler.
                 self.on_ctcp_reply(user, target, type, response)
         else:
-            super().on_raw_notice(source, params)
+            super().on_raw_notice(message)
 
 
 ## Helpers.
