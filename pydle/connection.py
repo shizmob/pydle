@@ -170,7 +170,7 @@ class Connection:
             # This might give an error if the connection was already closed by the other end.
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
-            except OSError:
+            except (OSError, IOError):
                 pass
             self.socket.close()
             self.socket = None
@@ -186,7 +186,7 @@ class Connection:
         # This might give an error if the connection was already closed by the other end.
         try:
             self.socket = self.socket.unwrap()
-        except (OSError, socket.error):
+        except (OSError, IOError):
             pass
 
 
@@ -359,7 +359,7 @@ class Connection:
                 # No data while select() indicates we have data available means the other party has closed the socket.
                 if not data:
                     self.disconnect()
-            except OSError as e:
+            except (OSError, IOError) as e:
                  if hasattr(errno, 'EAGAIN') and e.errno == errno.EAGAIN:
                      return self.receive_data()
                  raise
@@ -420,7 +420,7 @@ class Connection:
             while sent < len(data):
                 try:
                     sent += self.socket.send(data[sent:])
-                except OSError as e:
+                except (OSError, IOError) as e:
                     if hasattr(errno, 'EAGAIN') and e.errno == errno.EAGAIN:
                         continue
                     raise
