@@ -272,10 +272,7 @@ class BasicClient:
             del self.users[nickname]
 
     def _format_hostmask(self, nickname):
-        if nickname not in self.users:
-            raise KeyError('Unknown user "{usr}".'.format(usr=nickname))
-
-        user = self.users[nickname]
+        user = self.users.get(nickname, {"username": "*", "hostname": "*"})
         return '{n}!{u}@{h}'.format(n=nickname, u=user['username'] or '*', h=user['hostname'] or '*')
 
 
@@ -912,6 +909,11 @@ class BasicClient:
         self.motd += message.params[1] + '\n'
 
         # MOTD is done, let's tell our bot the connection is ready.
+        self.on_connect()
+
+    def on_raw_422(self, message):
+        """ MOTD is missing. """
+        self.motd = None
         self.on_connect()
 
     def on_raw_421(self, message):
