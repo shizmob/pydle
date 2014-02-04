@@ -109,10 +109,22 @@ class Message:
         # Format: (:source)? command parameter*
         try:
             if message.startswith(':'):
-                source, command, raw_params = ARGUMENT_SEPARATOR.split(message, 2)
+                parts = ARGUMENT_SEPARATOR.split(message, 2)
+                if len(parts) == 3:
+                    source, command, raw_params = parts
+                elif len(parts) == 2:
+                    source, command, raw_params = parts, ""
+                else:
+                    raise ValueError
                 source = source[1:]
             else:
-                command, raw_params = ARGUMENT_SEPARATOR.split(message, 1)
+                parts = ARGUMENT_SEPARATOR.split(message, 1)
+                if len(parts) == 2:
+                    command, raw_params = parts
+                elif len(parts) == 1:
+                    command, raw_params = parts, ""
+                else:
+                    raise ValueError
                 source = None
         except ValueError:
             raise ProtocolViolation('Improper IRC message format: not enough elements.')
