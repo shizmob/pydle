@@ -911,6 +911,11 @@ class BasicClient:
         # MOTD is done, let's tell our bot the connection is ready.
         self.on_connect()
 
+    def on_raw_422(self, message):
+        """ MOTD is missing. """
+        self.motd = None
+        self.on_connect()
+
     def on_raw_421(self, message):
         """ Server responded with 'unknown command'. """
         self.logger.warn('Server responded with "Unknown command: {}"'.format(message.params[0]))
