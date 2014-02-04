@@ -374,9 +374,6 @@ class BasicClient:
 
     def message(self, target, message):
         """ Message channel or user. """
-        if self.is_channel(target) and not self.in_channel(target):
-            raise NotInChannel('Not in channel {}'.format(target))
-
         hostmask = self._format_hostmask(self.nickname)
         # Leeway.
         chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=target)) - 25
