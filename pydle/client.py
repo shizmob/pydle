@@ -272,10 +272,7 @@ class BasicClient:
             del self.users[nickname]
 
     def _format_hostmask(self, nickname):
-        if nickname not in self.users:
-            raise KeyError('Unknown user "{usr}".'.format(usr=nickname))
-
-        user = self.users[nickname]
+        user = self.users.get(nickname, {"username": "*", "hostname": "*"})
         return '{n}!{u}@{h}'.format(n=nickname, u=user['username'] or '*', h=user['hostname'] or '*')
 
 
