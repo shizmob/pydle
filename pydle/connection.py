@@ -186,7 +186,7 @@ class Connection:
         # This might give an error if the connection was already closed by the other end.
         try:
             self.socket = self.socket.unwrap()
-        except OSError:
+        except (OSError, socket.error):
             pass
 
 
