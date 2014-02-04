@@ -83,7 +83,7 @@ class IRCv3_1Support(sasl.SASLSupport, tls.TLSSupport):
             self._sync_user(nick, user, host)
 
             # Emit a fake join message.
-            fakemsg = self._construct_message('JOIN', channels, source=message.source)
+            fakemsg = self._create_message('JOIN', channels, source=message.source)
             super().on_raw_join(fakemsg)
 
             if account == NO_ACCOUNT:
