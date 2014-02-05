@@ -200,6 +200,8 @@ class BasicClient:
         }
 
     def _destroy_channel(self, channel):
+        for user in self.channels[channel]['users']:
+            self._destroy_user(user, channel)
         del self.channels[channel]
 
 
@@ -272,10 +274,7 @@ class BasicClient:
             del self.users[nickname]
 
     def _format_hostmask(self, nickname):
-        if nickname not in self.users:
-            raise KeyError('Unknown user "{usr}".'.format(usr=nickname))
-
-        user = self.users[nickname]
+        user = self.users.get(nickname, {"username": "*", "hostname": "*"})
         return '{n}!{u}@{h}'.format(n=nickname, u=user['username'] or '*', h=user['hostname'] or '*')
 
 
@@ -377,9 +376,6 @@ class BasicClient:
 
     def message(self, target, message):
         """ Message channel or user. """
-        if self.is_channel(target) and not self.in_channel(target):
-            raise NotInChannel('Not in channel {}'.format(target))
-
         hostmask = self._format_hostmask(self.nickname)
         # Leeway.
         chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=target)) - 25
@@ -645,10 +641,13 @@ class BasicClient:
         for channel, target in zip(channels, targets):
             target, targetuser, targethost = protocol.parse_user(target)
             self._sync_user(target, targetuser, targethost)
-
-            # Update nick list on channel.
-            if self.in_channel(channel):
-                self._destroy_user(target, channel)
+            
+            if self.is_same_nick(target, self.nickname):
+                self._destroy_channel(channel)
+            else:
+                # Update nick list on channel.
+                if self.in_channel(channel):
+                    self._destroy_user(target, channel)
 
             self.on_kick(channel, target, kicker, reason)
 
@@ -737,7 +736,7 @@ class BasicClient:
             # We left the channel. Remove from channel list. :(
             for channel in channels:
                 if self.in_channel(channel):
-                    del self.channels[channel]
+                    self._destroy_channel(channel)
         else:
             # Someone else left. Remove them.
             for ch in channels:
@@ -916,6 +915,11 @@ class BasicClient:
         self.motd += message.params[1] + '\n'
 
         # MOTD is done, let's tell our bot the connection is ready.
+        self.on_connect()
+
+    def on_raw_422(self, message):
+        """ MOTD is missing. """
+        self.motd = None
         self.on_connect()
 
     def on_raw_421(self, message):

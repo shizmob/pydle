@@ -14,10 +14,11 @@ class TLSSupport(client.BasicClient):
 
     ## Internal overrides.
 
-    def __init__(self, *args, tls_client_cert=None, tls_client_cert_key=None, **kwargs):
+    def __init__(self, *args, tls_client_cert=None, tls_client_cert_key=None, tls_client_cert_password=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.tls_client_cert = tls_client_cert
         self.tls_client_cert_key = tls_client_cert_key
+        self.tls_client_cert_password = tls_client_cert_password
 
     def _connect(self, hostname, port=None, password=None, encoding='utf-8', channels=[], tls=False, tls_verify=False):
         """ Connect to IRC server, optionally over TLS. """
@@ -35,6 +36,7 @@ class TLSSupport(client.BasicClient):
             tls=tls, tls_verify=tls_verify,
             tls_certificate_file=self.tls_client_cert,
             tls_certificate_keyfile=self.tls_client_cert_key,
+            tls_certificate_password=self.tls_client_cert_password,
             encoding=encoding)
 
         # Connect.

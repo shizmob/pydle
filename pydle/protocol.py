@@ -107,15 +107,18 @@ class Message:
 
         # Extract message sections.
         # Format: (:source)? command parameter*
-        try:
-            if message.startswith(':'):
-                source, command, raw_params = ARGUMENT_SEPARATOR.split(message, 2)
-                source = source[1:]
-            else:
-                command, raw_params = ARGUMENT_SEPARATOR.split(message, 1)
-                source = None
-        except ValueError:
-            raise ProtocolViolation('Improper IRC message format: not enough elements.')
+        if message.startswith(':'):
+            parts = ARGUMENT_SEPARATOR.split(message[1:], 2)
+        else:
+            parts = [ None ] + ARGUMENT_SEPARATOR.split(message, 1)
+    
+        if len(parts) == 3:
+            source, command, raw_params = parts
+        elif len(parts) == 2:
+            source, command = parts
+            raw_params = ''
+        else:
+            raise ProtocolViolation('Improper IRC message format: not enough elements.', message=message)
 
         # Sanity check for command.
         if not COMMAND_PATTERN.match(command):

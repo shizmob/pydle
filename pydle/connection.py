@@ -40,7 +40,7 @@ class Connection:
     """ A TCP connection over the IRC protocol. """
     CONNECT_TIMEOUT = 10
 
-    def __init__(self, hostname, port, tls=False, tls_verify=True, encoding='utf-8', tls_certificate_file=None, tls_certificate_keyfile=None, ping_timeout=240):
+    def __init__(self, hostname, port, tls=False, tls_verify=True, encoding='utf-8', tls_certificate_file=None, tls_certificate_keyfile=None, tls_certificate_password=None, ping_timeout=240):
         self.hostname = hostname
         self.port = port
         self.ping_timeout = ping_timeout
@@ -53,6 +53,7 @@ class Connection:
         self.tls_verify = tls_verify
         self.tls_certificate_file = tls_certificate_file
         self.tls_certificate_keyfile = tls_certificate_keyfile
+        self.tls_certificate_password = tls_certificate_password
 
         self.timer = None
         self.timer_lock = threading.RLock()
@@ -98,7 +99,7 @@ class Connection:
 
         # Load client/server certificate.
         if self.tls_certificate_file:
-            self.tls_context.load_cert_chain(self.tls_certificate_file, self.tls_certificate_keyfile)
+            self.tls_context.load_cert_chain(self.tls_certificate_file, self.tls_certificate_keyfile, password=self.tls_certificate_password)
 
         # Set some relevant options.
         # No server should use SSLv2 any more, it's outdated and full of security holes.
@@ -118,7 +119,7 @@ class Connection:
 
             # Try OS-specific paths too in case the above failed.
             if sys.platform in DEFAULT_CA_PATHS and path.isdir(DEFAULT_CA_PATHS[sys.platform]):
-                self.tls_context.load_verify_locations(ca_path=DEFAULT_CA_PATHS[sys.platform])
+                self.tls_context.load_verify_locations(capath=DEFAULT_CA_PATHS[sys.platform])
 
             # Enable verification.
             self.tls_context.verify_mode = ssl.CERT_REQUIRED
@@ -170,7 +171,7 @@ class Connection:
             # This might give an error if the connection was already closed by the other end.
             try:
                 self.socket.shutdown(socket.SHUT_RDWR)
-            except OSError:
+            except (OSError, IOError):
                 pass
             self.socket.close()
             self.socket = None
@@ -186,7 +187,7 @@ class Connection:
         # This might give an error if the connection was already closed by the other end.
         try:
             self.socket = self.socket.unwrap()
-        except OSError:
+        except (OSError, IOError):
             pass
 
 
@@ -347,7 +348,7 @@ class Connection:
         if not self.has_data():
             return False
 
-        if hasattr(socket, 'MSG_NOSIGNAL'):
+        if hasattr(socket, 'MSG_NOSIGNAL') and not isinstance(self.socket, ssl.SSLSocket):
             flags = socket.MSG_NOSIGNAL
         else:
             flags = 0
@@ -359,7 +360,7 @@ class Connection:
                 # No data while select() indicates we have data available means the other party has closed the socket.
                 if not data:
                     self.disconnect()
-            except OSError as e:
+            except (OSError, IOError) as e:
                  if hasattr(errno, 'EAGAIN') and e.errno == errno.EAGAIN:
                      return self.receive_data()
                  raise
@@ -420,7 +421,7 @@ class Connection:
             while sent < len(data):
                 try:
                     sent += self.socket.send(data[sent:])
-                except OSError as e:
+                except (OSError, IOError) as e:
                     if hasattr(errno, 'EAGAIN') and e.errno == errno.EAGAIN:
                         continue
                     raise
