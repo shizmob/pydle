@@ -200,6 +200,8 @@ class BasicClient:
         }
 
     def _destroy_channel(self, channel):
+        for user in self.channels[channel]['users']:
+            self._destroy_user(user, channel)
         del self.channels[channel]
 
 
@@ -635,10 +637,13 @@ class BasicClient:
         for channel, target in zip(channels, targets):
             target, targetuser, targethost = protocol.parse_user(target)
             self._sync_user(target, targetuser, targethost)
-
-            # Update nick list on channel.
-            if self.in_channel(channel):
-                self._destroy_user(target, channel)
+            
+            if self.is_same_nick(target, self.nickname):
+                self._destroy_channel(channel)
+            else:
+                # Update nick list on channel.
+                if self.in_channel(channel):
+                    self._destroy_user(target, channel)
 
             self.on_kick(channel, target, kicker, reason)
 
@@ -727,7 +732,7 @@ class BasicClient:
             # We left the channel. Remove from channel list. :(
             for channel in channels:
                 if self.in_channel(channel):
-                    del self.channels[channel]
+                    self._destroy_channel(channel)
         else:
             # Someone else left. Remove them.
             for ch in channels:
