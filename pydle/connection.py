@@ -118,7 +118,7 @@ class Connection:
 
             # Try OS-specific paths too in case the above failed.
             if sys.platform in DEFAULT_CA_PATHS and path.isdir(DEFAULT_CA_PATHS[sys.platform]):
-                self.tls_context.load_verify_locations(ca_path=DEFAULT_CA_PATHS[sys.platform])
+                self.tls_context.load_verify_locations(capath=DEFAULT_CA_PATHS[sys.platform])
 
             # Enable verification.
             self.tls_context.verify_mode = ssl.CERT_REQUIRED
