@@ -5,11 +5,12 @@ from .. import protocol
 from . import isupport
 from . import cap
 from . import tags
+from . import monitor
 
 __all__ = [ 'IRCv3_2Support' ]
 
 
-class IRCv3_2Support(tags.TaggedMessageSupport, cap.CapabilityNegotiationSupport, isupport.ISUPPORTSupport):
+class IRCv3_2Support(monitor.MonitoringSupport, tags.TaggedMessageSupport, cap.CapabilityNegotiationSupport, isupport.ISUPPORTSupport):
     """ Support for some of IRCv3.2's extensions. Currently supported: chghost, userhost-in-names. """
 
     ## IRC callbacks.
