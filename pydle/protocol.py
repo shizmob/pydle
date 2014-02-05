@@ -108,7 +108,7 @@ class Message:
         # Extract message sections.
         # Format: (:source)? command parameter*
         if message.startswith(':'):
-            parts = ARGUMENT_SEPARATOR.split(message, 2)
+            parts = ARGUMENT_SEPARATOR.split(message[1:], 2)
         else:
             parts = [ None ] + ARGUMENT_SEPARATOR.split(message, 1)
     
