@@ -508,9 +508,8 @@ class BasicClient:
         """ Get a single message. """
         return self.connection.get_message(types=types)
 
-    def _handle_message(self, types=None):
+    def _handle_message(self, message):
         """ Handle a single message. """
-        message = self._get_message(types=types)
         self.logger.debug('<< [{source}] {command} {args}', source=message.source or '', command=message.command, args=message.params)
         if not message._valid:
             self.logger.warn('Encountered strictly invalid IRC message from server.')
@@ -546,13 +545,18 @@ class BasicClient:
     def _create_message(self, command, *params, **kwargs):
         return self.connection.create_message(command, *params, **kwargs)
 
+    def handle_single(self):
+        if self.connected:
+            self._wait_for_message()
+            message = self._get_message()
+            self._handle_message(message)
+
     def handle_forever(self):
         """ Handle messages forever. Main loop. """
         while True:
             while self.connected:
                 try:
-                    self._wait_for_message()
-                    self._handle_message()
+                    self.handle_single()
                 except connection.NotConnected:
                     break
 
@@ -984,7 +988,7 @@ class ClientPool:
 
         for client in self.client_cycle:
             if client._has_message():
-                return client._handle_message()
+                return client.handle_single()
 
     def handle_forever(self):
         """ Enter infinite handle loop. """

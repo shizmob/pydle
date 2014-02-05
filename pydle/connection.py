@@ -397,7 +397,7 @@ class Connection:
                 try:
                     parsed = self.message.parse(line, encoding=self.encoding)
                 except protocol.ProtocolViolation:
-                    # TODO: Notification.
+                    # TODO: Notify (logging?)
                     continue
 
                 self.message_queue.append(parsed)
