@@ -40,7 +40,7 @@ class Connection:
     """ A TCP connection over the IRC protocol. """
     CONNECT_TIMEOUT = 10
 
-    def __init__(self, hostname, port, tls=False, tls_verify=True, encoding='utf-8', tls_certificate_file=None, tls_certificate_keyfile=None, pem_password=None, ping_timeout=240):
+    def __init__(self, hostname, port, tls=False, tls_verify=True, encoding='utf-8', tls_certificate_file=None, tls_certificate_keyfile=None, tls_certificate_password=None, ping_timeout=240):
         self.hostname = hostname
         self.port = port
         self.ping_timeout = ping_timeout
@@ -53,7 +53,7 @@ class Connection:
         self.tls_verify = tls_verify
         self.tls_certificate_file = tls_certificate_file
         self.tls_certificate_keyfile = tls_certificate_keyfile
-        self.pem_password = pem_password
+        self.tls_certificate_password = tls_certificate_password
 
         self.timer = None
         self.timer_lock = threading.RLock()
@@ -99,7 +99,7 @@ class Connection:
 
         # Load client/server certificate.
         if self.tls_certificate_file:
-            self.tls_context.load_cert_chain(self.tls_certificate_file, self.tls_certificate_keyfile, password=self.pem_password)
+            self.tls_context.load_cert_chain(self.tls_certificate_file, self.tls_certificate_keyfile, password=self.tls_certificate_password)
 
         # Set some relevant options.
         # No server should use SSLv2 any more, it's outdated and full of security holes.
