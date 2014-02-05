@@ -348,7 +348,7 @@ class Connection:
         if not self.has_data():
             return False
 
-        if hasattr(socket, 'MSG_NOSIGNAL'):
+        if hasattr(socket, 'MSG_NOSIGNAL') and not isinstance(self.socket, ssl.SSLSocket):
             flags = socket.MSG_NOSIGNAL
         else:
             flags = 0
