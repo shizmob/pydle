@@ -47,6 +47,10 @@ class RFC1459Support(BasicClient):
         self.motd = None
         self._case_mapping = protocol.DEFAULT_CASE_MAPPING
 
+    def _reset_connection_attributes(self):
+        super()._reset_connection_attributes()
+        self.password = None
+
     def _create_channel(self, channel):
         super()._create_channel(channel)
         self.channels[channel].update({
@@ -116,9 +120,11 @@ class RFC1459Support(BasicClient):
 
     ## Connection.
 
-    def connect(self, *args, **kwargs):
+    def connect(self, *args, password=None, **kwargs):
         # Connect...
         super().connect(*args, **kwargs)
+        # Set password.
+        self.password = password
         # Set message class...
         self.connection.message = parsing.RFC1459Message
         # And initiate the IRC connection.

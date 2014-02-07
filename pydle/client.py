@@ -57,7 +57,6 @@ class BasicClient:
     def _reset_connection_attributes(self):
         """ Reset connection attributes. """
         self.connection = None
-        self.password = None
         self._has_quit = False
         self._autojoin_channels = []
         self._reconnect_attempts = 0
@@ -91,9 +90,8 @@ class BasicClient:
             # Reset any attributes.
             self._reset_attributes()
 
-    def _connect(self, hostname, port=None, reconnect=False, password=None, channels=[], encoding=protocol.DEFAULT_ENCODING):
+    def _connect(self, hostname, port=None, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING):
         """ Connect to IRC host. """
-        self.password = password
         if not reconnect:
             self._autojoin_channels = channels
 
