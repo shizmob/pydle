@@ -1,8 +1,8 @@
 ## ircv3_1.py
 # IRCv3.1 full spec support.
+from pydle.features import tls
 from . import sasl
-from . import tls
-from .. import protocol
+
 
 __all__ = [ 'IRCv3_1Support' ]
 
@@ -50,13 +50,13 @@ class IRCv3_1Support(sasl.SASLSupport, tls.TLSSupport):
         if 'account-notify' not in self._capabilities or not self._capabilities['account-notify']:
             return
 
-        nick, user, host = protocol.parse_user(message.source)
+        nick, metadata = self._parse_user(message.source)
         account = message.params[0]
 
         if nick not in self.users:
             return
 
-        self._sync_user(nick, user, host)
+        self._sync_user(nick, metadata)
         if account == NO_ACCOUNT:
             account = None
         self.users[nick]['account'] = account
@@ -66,21 +66,21 @@ class IRCv3_1Support(sasl.SASLSupport, tls.TLSSupport):
         if 'away-notify' not in self._capabilities or not self._capabilities['away-notify']:
             return
 
-        nick, user, host = protocol.parse_user(message.source)
+        nick, metadata = self._parse_user(message.source)
         if nick not in self.users:
             return
 
-        self._sync_user(nick, user, host)
+        self._sync_user(nick, metadata)
         self.users[nick]['away'] = len(message.params) > 0
         self.users[nick]['away_message'] = message.params[0] if len(message.params) > 0 else None
 
     def on_raw_join(self, message):
         """ Process extended JOIN messages. """
         if 'extended-join' in self._capabilities and self._capabilities['extended-join']:
-            nick, user, host = protocol.parse_user(message.source)
+            nick, metadata = self._parse_user(message.source)
             channels, account, realname = message.params
 
-            self._sync_user(nick, user, host)
+            self._sync_user(nick, metadata)
 
             # Emit a fake join message.
             fakemsg = self._create_message('JOIN', channels, source=message.source)

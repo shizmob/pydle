@@ -1,15 +1,16 @@
 ## tls.py
 # TLS support.
 import ssl
-
-from .. import client
+import pydle.protocol
+from pydle.features import rfc1459
 from .. import connection
-from .. import protocol
 
 __all__ = [ 'TLSSupport' ]
 
+DEFAULT_TLS_PORT = 6697
 
-class TLSSupport(client.BasicClient):
+
+class TLSSupport(rfc1459.RFC1459Support):
     """ TLS and STARTTLS support. """
 
     ## Internal overrides.
@@ -20,34 +21,37 @@ class TLSSupport(client.BasicClient):
         self.tls_client_cert_key = tls_client_cert_key
         self.tls_client_cert_password = tls_client_cert_password
 
-    def _connect(self, hostname, port=None, password=None, encoding='utf-8', channels=[], tls=False, tls_verify=False):
+    def _connect(self, hostname, port=None, reconnect=False, password=None, encoding=pydle.protocol.DEFAULT_ENCODING, channels=[], tls=False, tls_verify=False):
         """ Connect to IRC server, optionally over TLS. """
         self.password = password
-        self._autojoin_channels = channels
+        if not reconnect:
+            self._autojoin_channels = channels
 
         if not port:
             if tls:
-                port = protocol.DEFAULT_TLS_PORT
+                port = DEFAULT_TLS_PORT
             else:
-                port = protocol.DEFAULT_PORT
+                port = pydle.protocol.DEFAULT_PORT
 
-        # Create connection.
-        self.connection = connection.Connection(hostname, port,
-            tls=tls, tls_verify=tls_verify,
-            tls_certificate_file=self.tls_client_cert,
-            tls_certificate_keyfile=self.tls_client_cert_key,
-            tls_certificate_password=self.tls_client_cert_password,
-            encoding=encoding)
+        # Create connection if we can't reuse it.
+        if not reconnect:
+            self.connection = connection.Connection(hostname, port,
+                tls=tls, tls_verify=tls_verify,
+                tls_certificate_file=self.tls_client_cert,
+                tls_certificate_keyfile=self.tls_client_cert_key,
+                tls_certificate_password=self.tls_client_cert_password,
+                encoding=encoding)
 
         # Connect.
         self.connection.connect()
 
-        # Set logger name.
-        self.logger.name = self.__class__.__name__ + ':' + self.server_tag
-
+    def _register(self):   
         # Send STARTTLS if we're not on TLS already.
-        if not tls:
+        if self.registered:
+            return
+        if not self.connection.tls:
             self.rawmsg('STARTTLS')
+        super()._register()
 
 
     ## Message callbacks.

@@ -96,9 +96,9 @@ class Logger:
         """ Log ERROR message. """
         self.logger.error(message.format(*args, **kwargs))
 
-    def exception(self, exception):
+    def exception(self, message, *args, **kwargs):
         """ Log exception. """
-        self.logger.exception(exception)
+        self.logger.exception(message.format(*args, **kwargs))
 
     def fatal(self, message, *args, **kwargs):
         """ Log FATAL message. """

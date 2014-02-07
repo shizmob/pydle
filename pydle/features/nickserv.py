@@ -1,11 +1,11 @@
 ## nickserv.py
 # Support automatic NickServ authentication.
-from .. import client
+from pydle.features import rfc1459
 
 __all__ = [ 'NickServSupport' ]
 
 
-class NickServSupport(client.BasicClient):
+class NickServSupport(rfc1459.RFC1459Support):
     """ Support for NickServ authentication. """
 
     ## Internal overrides.

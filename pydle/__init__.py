@@ -2,7 +2,7 @@ from . import connection, protocol, log, client, features
 
 from .connection import NotConnected, NoMessageAvailable
 from .client import NotInChannel, AlreadyInChannel, BasicClient, ClientPool
-from .features.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as CAPABILITY_FAILED, NEGOTIATED as CAPABILITY_NEGOTIATED
+from .features.ircv3_1.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as CAPABILITY_FAILED, NEGOTIATED as CAPABILITY_NEGOTIATED
 
 __name__ = 'pydle'
 __version__ = '0.7.1'

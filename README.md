@@ -13,8 +13,6 @@ Features
   - [CTCP](http://www.irchelp.org/irchelp/rfc/ctcpspec.html)
   - (coming soon) [DCC](http://www.irchelp.org/irchelp/rfc/dccspec.html) and extensions
   - [ISUPPORT/PROTOCTL](http://tools.ietf.org/html/draft-hardy-irc-isupport-00)
-  - [CAP](http://ircv3.atheme.org/specification/capability-negotiation-3.1)
-  - [SASL](http://ircv3.atheme.org/extensions/sasl-3.1)
   - [IRCv3.1](http://ircv3.atheme.org/)
   - (partial, in progress) [IRCv3.2](http://ircv3.atheme.org)
 * Callback-based: IRC is an asynchronous protocol and so should a library that implements it be. Callbacks are used to process events from the server.
@@ -24,16 +22,22 @@ Features
 Structure
 ---------
 * `pydle.Client` - full-featured client that supports `pydle.BasicClient` plus all the features in `pydle.features`.
-* `pydle.MinimalClient` - tinier client that supports `pydle.BasicClient` plus some features in `pydle.features`. (currently `ctcp`, `isupport` and `tls`)
-* `pydle.BasicClient` - basic [RFC1459](https://tools.ietf.org/html/rfc1459.html) implementation with a few commonly-implemented [RFC281x](https://tools.ietf.org/html/rfc2810.html) extensions.
+* `pydle.MinimalClient` - tinier client that supports `pydle.BasicClient` plus some features in `pydle.features`. (currently `ctcp`, `isupport` and `rfc1459`)
+* `pydle.BasicClient` - base IRC message handler. Has no functionality.
 * `pydle.ClientPool` - a 'pool' of several clients in order to handle multiple clients in one swift main loop.
-* `pydle.features` - extra (official/unofficial) IRC extensions
+* `pydle.features` - IRC protocol implementations and extensions.
+   - `pydle.features.rfc1459` - basic [RFC1459](https://tools.ietf.org/html/rfc1459.html) implementation with a few commonly-implemented [RFC281x](https://tools.ietf.org/html/rfc2810.html) extensions.
    - `pydle.features.ctcp` - [Client-to-Client Protocol](http://www.irchelp.org/irchelp/rfc/ctcpspec.html) support.
    - `pydle.features.tls` - [Transport Layer Security](https://tools.ietf.org/html/rfc5246.html) and [STARTTLS](https://ircv3.atheme.org/extensions/tls-3.1) support.
    - `pydle.features.isupport` - [ISUPPORT/PROTOCTL](http://tools.ietf.org/html/draft-hardy-irc-isupport-00) support.
-   - `pydle.features.cap` - [CAP](http://ircv3.atheme.org/specification/capability-negotiation-3.1) capability negotiation support.
-   - `pydle.features.sasl` - [Simple Authentication and Security Layer](http://ircv3.atheme.org/extensions/sasl-3.1) support - currently limited to the `PLAIN` mechanism.
-   - `pydle.features.ircv3_1` - [Miscellaneous](http://ircv3.atheme.org/extensions/multi-prefix-3.1) [features](http://ircv3.atheme.org/extensions/account-notify-3.1) [ensuring](http://ircv3.atheme.org/extensions/away-notify-3.1) [support](http://ircv3.atheme.org/extensions/extended-join-3.1) for [IRCv3.1](http://ircv3.atheme.org/).
+   - `pydle.features.ircv3_1` - [IRCv3.1](http://ircv3.atheme.org) support.
+      + `pydle.features.ircv3_1.cap` - [CAP](http://ircv3.atheme.org/specification/capability-negotiation-3.1) capability negotiation support.
+      + `pydle.features.ircv3_1.sasl` - [Simple Authentication and Security Layer](http://ircv3.atheme.org/extensions/sasl-3.1) support - currently limited to the `PLAIN` mechanism.
+      + `pydle.features.ircv3_1.ircv3_1` - [Miscellaneous](http://ircv3.atheme.org/extensions/multi-prefix-3.1) [features](http://ircv3.atheme.org/extensions/account-notify-3.1) [ensuring](http://ircv3.atheme.org/extensions/away-notify-3.1) [support](http://ircv3.atheme.org/extensions/extended-join-3.1) for [IRCv3.1](http://ircv3.atheme.org/).
+   - `pydle.features.ircv3_2` - [IRCv3.2](http://ircv3.atheme.org) support (partial).
+      + `pydle.features.ircv3_2.tags` - [Message Tagging](http://ircv3.atheme.org/specification/message-tags-3.2) support.
+      + `pydle.features.ircv3_2.monitor` - [Online status monitoring](http://ircv3.atheme.org/specification/monitor-3.2) support.
+      + `pydle.features.ircv3_2.ircv3_2` - [Miscellaneous](http://ircv3.atheme.org/extensions/userhost-in-names-3.2) features ensuring IRCv3.2 support.
 
 Basic Usage
 -----------
@@ -55,7 +59,7 @@ class MyOwnBot(pydle.Client):
 
 client = MyOwnBot('MyBot', realname='My Bot')
 client.connect('irc.rizon.net', 6697, tls=True, tls_verify=False)
-client.handle_forever()
+client.poll_forever()
 ```
 
 *But wait, I want to handle multiple clients!*
@@ -69,13 +73,13 @@ for i in range(10):
     pool.add(client)
 
 # This will make sure all clients are treated in a fair way priority-wise.
-pool.handle_forever()
+pool.poll_forever()
 ```
 
 If you want to customize bot features, you can subclass `pydle.BasicClient` and one or more features from `pydle.features` or your own feature classes, like such:
 ```python
 # Only support RFC1459 (+small features), CTCP and our own ACME extension to IRC.
-class MyFeaturedBot(pydle.features.ctcp.CTCPSupport, acme.ACMESupport, pydle.BasicClient):
+class MyFeaturedBot(pydle.features.ctcp.CTCPSupport, acme.ACMESupport, rfc1459.RFC1459Support):
     pass
 ```
 
@@ -133,15 +137,11 @@ with `pydle.features.tls`, two extra keyword arguments are added:
 
 `Client.disconnect()` - disconnect from server.
 
-`Client.handle_forever()` - a 'main loop'-esque method. Will not return until the client disconnected.
+`Client.poll_forever()` - a 'main loop'-esque method. Will not return until the client disconnected.
 
 *Attributes*
 
-`Client.DEFAULT_QUIT_MESSAGE` - default quit message when `Client.quit()` is called without arguments.
-
 `Client.connected` - whether or not this client is connected.
-
-`Client.registered` - whether or not this client has passed the IRC registration stage.
 
 `Client.connection` - the `pydle.connection.Connection` instance associated with this client.
 
@@ -153,10 +153,6 @@ with `pydle.features.tls`, two extra keyword arguments are added:
 
 `Client.realname` - the current realname. Changes will only take effect on reconnect.
 
-`Client.password` - the server password used for this connection. Changes will only take effect on reconnect.
-
-`Client.motd` - set after connecting. The IRC server Message of the Day, if any.
-
 `Client.network` - set after connecting if sent by server. The IRC network this server belongs to.
 
 `Client.server_tag` - a 'tag' to use for the currently connected to server.
@@ -164,6 +160,16 @@ with `pydle.features.tls`, two extra keyword arguments are added:
 `Client.users` - an informational dictionary about users the client knows about.
 
 `Client.channels` - an informational dictionary about the channels the client is in.
+
+with `pydle.features.rfc1459`, four extra attributes are added:
+
+`Client.DEFAULT_QUIT_MESSAGE` - default quit message when `Client.quit()` is called without arguments.
+
+`Client.registered` - whether or not this client has passed the IRC registration stage.
+
+`Client.password` - the server password used for this connection. Changes will only take effect on reconnect.
+
+`Client.motd` - set after connecting. The IRC server Message of the Day, if any.
 
 with `pydle.features.tls`, two extra attributes are added:
 
@@ -178,6 +184,10 @@ with `pydle.features.sasl`, four extra attributes are added:
 - `Client.sasl_password`: SASL password.
 
 *IRC*
+
+`Client.raw(message)` - send raw IRC command.
+
+with `pydle.features.rfc1459`:
 
 `Client.join(channel, password=None)` - join channel.
 
@@ -197,8 +207,6 @@ with `pydle.features.sasl`, four extra attributes are added:
 
 `Client.back()` - set self as not away anymore.
 
-`Client.raw(message)` - send raw IRC command.
-
 with `pydle.features.ctcp`, two extra methods are added:
 
 - `Client.ctcp(target, query)` - send CTCP request;
@@ -214,13 +222,17 @@ with `pydle.features.cap`, one extra method is added:
 
 `Client.in_channel(channel)` - return whether or not client is in channel.
 
-`Client.same_nick(left, right)` - compare nicknames according to proper IRC case mapping.
+`Client.is_same_nick(left, right)` - compare nicknames according to proper IRC case mapping.
+
+`Client.is_same_channel(left, right)` - compare channels according to proper IRC case mapping.
 
 *Callbacks*
 
 `Client.on_connect()` - callback called after the client has successfully connected and registered to the server.
 
 `Client.on_disconnect()` - callback called after the client has disconnected from the server.
+
+with `pydle.features.rfc1459`:
 
 `Client.on_quit(user, reason=None)` - callback called when someone (maybe the client) quit the network.
 
@@ -288,9 +300,9 @@ You can also overload `Client.on_raw_<cmd>(message)`, where `cmd` is the raw IRC
 
 `ClientPool.handle_message()` - handle a single unprocessed message.
 
-`ClientPool.wait_for_message()` - wait for a new message to arrive.
+`ClientPool.poll_single()` - wait for a new message to arrive.
 
-`ClientPool.handle_forever()` - enter main loop for pool. Will not return until all clients disconnected.
+`ClientPool.poll_forever()` - enter main loop for pool. Will not return until all clients disconnected.
 
 Utilities
 ---------

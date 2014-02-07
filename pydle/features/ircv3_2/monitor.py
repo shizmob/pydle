@@ -1,6 +1,6 @@
 ## monitor.py
 # Online status monitoring support.
-from . import cap
+from pydle.features.ircv3_1 import cap
 
 
 class MonitoringSupport(cap.CapabilityNegotiationSupport):
