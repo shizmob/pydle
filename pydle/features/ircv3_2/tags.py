@@ -59,11 +59,11 @@ class TaggedMessage(rfc1459.RFC1459Message):
         message = super().parse(message.lstrip().encode(encoding), encoding=encoding)
         return TaggedMessage(message.command, message.params, _valid=message._valid and valid, source=message.source, tags=tags, **message.kw)
 
-    def construct(self):
+    def construct(self, force=False):
         """
         Construct raw IRC message and return it.
         """
-        message = super().construct()
+        message = super().construct(force=force)
 
         # Add tags.
         if self.tags:
@@ -76,7 +76,7 @@ class TaggedMessage(rfc1459.RFC1459Message):
 
             message = TAG_INDICATOR + TAG_SEPARATOR.join(raw_tags) + ' ' + message
 
-        if len(message) > TAGGED_MESSAGE_LENGTH_LIMIT:
+        if len(message) > TAGGED_MESSAGE_LENGTH_LIMIT and not force:
             raise protocol.ProtocolViolation('The constructed message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=TAGGED_MESSAGE_LENGTH_LIMIT), message=message)
         return message
 

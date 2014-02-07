@@ -91,11 +91,11 @@ class RFC1459Message(pydle.protocol.Message):
         # Return parsed message.
         return RFC1459Message(command, params, source=source, _valid=valid)
 
-    def construct(self):
+    def construct(self, force=False):
         """ Construct a raw IRC message. """
         # Sanity check for command.
         command = str(self.command)
-        if not protocol.COMMAND_PATTERN.match(command):
+        if not protocol.COMMAND_PATTERN.match(command) and not force:
             raise pydle.protocol.ProtocolViolation('The constructed command does not follow the command pattern ({pat})'.format(pat=protocol.COMMAND_PATTERN.pattern), message=command)
         message = command.upper()
 
@@ -105,10 +105,10 @@ class RFC1459Message(pydle.protocol.Message):
         for idx, param in enumerate(self.params):
             # Trailing parameter?
             if ' ' in param:
-                if idx + 1 < len(self.params):
+                if idx + 1 < len(self.params) and not force:
                     raise pydle.protocol.ProtocolViolation('Only the final parameter of an IRC message can be trailing and thus contain spaces.', message=param)
                 message += ' ' + protocol.TRAILING_PREFIX + param
-            # Regular paramter.
+            # Regular parameter.
             else:
                 message += ' ' + param
 
@@ -117,12 +117,12 @@ class RFC1459Message(pydle.protocol.Message):
             message = ':' + self.source + ' ' + message
 
         # Sanity check for characters.
-        if any(ch in message for ch in protocol.FORBIDDEN_CHARACTERS):
+        if any(ch in message for ch in protocol.FORBIDDEN_CHARACTERS) and not force:
             raise pydle.protocol.ProtocolViolation('The constructed message contains forbidden characters ({chs}).'.format(chs=', '.join(protocol.FORBIDDEN_CHARACTERS)), message=message)
 
         # Sanity check for length.
         message += pydle.protocol.LINE_SEPARATOR
-        if len(message) > protocol.MESSAGE_LENGTH_LIMIT:
+        if len(message) > protocol.MESSAGE_LENGTH_LIMIT and not force:
             raise pydle.protocol.ProtocolViolation('The constructed message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=protocol.MESSAGE_LENGTH_LIMIT), message=message)
 
         return message
