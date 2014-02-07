@@ -203,55 +203,30 @@ class Connection:
         """ Create an iterator out of this connection which will blockingly generate messages as they come. """
         return iter(self)
 
-    def has_message(self, types=None):
+    def has_message(self):
         """ Determine if this connection has a message ready for processing. """
         if not self.connected:
             return False
 
         # Low-hanging fruit: is there a message ready in the queue?
         if len(self.message_queue) > 0:
-            # Is the message of the type we want?
-            if types:
-                with self.message_lock:
-                    for source, command, params in reversed(self.message_queue):
-                        if command in types:
-                            return True
-                    else:
-                        return False
-            # Any message is fine.
             return True
 
         # See if we have data that isn't parsed yet.
         if self.has_data() and self.receive_data():
             added = self.parse_data()
-
-            # Run again if we're looking for specific types, else it's all good.
-            if added and types:
-                return self.has_message(types=types)
-            # Any added message is fine.
             return added
 
         return False
 
-    def get_message(self, types=None, retry=False):
+    def get_message(self, retry=False):
         """ Get an IRC message for processing. """
         if not self.connected:
             raise NotConnected('Not connected.')
 
         with self.message_lock:
             try:
-                # Looking for specific type?
-                if types:
-                    # Iterate through messages and find relevant type.
-                    for source, command, params in reversed(self.message_queue[:]):
-                        if command in types:
-                            self.message_queue.remove((source, command, params))
-                            return source, command, params
-                    else:
-                        raise IndexError('Not in queue.')
-                # Any type is fine.
-                else:
-                    message = self.message_queue.popleft()
+                message = self.message_queue.popleft()
             except IndexError:
                 if retry or not self.has_data():
                     raise NoMessageAvailable('No message available.')
@@ -261,7 +236,7 @@ class Connection:
                     raise NoMessageAvailable('No message available.')
 
                 # New messages were added, let's fetch them.
-                return self.get_message(types=types, retry=True)
+                return self.get_message(retry=True)
 
         return message
 
@@ -291,7 +266,7 @@ class Connection:
                 self.last_message_sent = time.time()
                 return self.send_string(message)
 
-    def wait_for_message(self, types=None):
+    def wait_for_message(self):
         """ Wait until a message has arrived. """
         # No use waiting if we already have a message.
         if self.has_message(types=types):
@@ -307,7 +282,7 @@ class Connection:
                 self.disconnect()
                 raise NotConnected('Error while select()ing on socket: ' + str(e))
 
-            if self.has_message(types=types):
+            if self.has_message():
                 break
 
 
