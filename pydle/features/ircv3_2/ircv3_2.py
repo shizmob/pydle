@@ -1,9 +1,7 @@
 ## ircv3_2.py
 # IRCv3.2 support (in progress).
-from .. import protocol
-
-from . import isupport
-from . import cap
+from pydle.features import isupport
+from pydle.features.ircv3_1 import cap
 from . import tags
 from . import monitor
 

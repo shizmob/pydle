@@ -2,9 +2,7 @@
 # ISUPPORT (server-side IRC extension indication) support.
 # See: http://tools.ietf.org/html/draft-hardy-irc-isupport-00
 import collections
-
-from .. import client
-from .. import protocol
+from pydle.features import rfc1459
 
 __all__ = [ 'ISUPPORTSupport' ]
 
@@ -14,7 +12,7 @@ BAN_EXCEPT_MODE = 'e'
 INVITE_EXCEPT_MODE = 'I'
 
 
-class ISUPPORTSupport(client.BasicClient):
+class ISUPPORTSupport(rfc1459.RFC1459Support):
     """ ISUPPORT support. """
 
     ## Internal overrides.
@@ -22,6 +20,8 @@ class ISUPPORTSupport(client.BasicClient):
     def _reset_attributes(self):
         super()._reset_attributes()
         self._isupport = {}
+        self._extban_types = []
+        self._extban_prefix = None
 
     def _create_channel(self, channel):
         """ Create channel with optional ban and invite exception lists. """
@@ -30,6 +30,7 @@ class ISUPPORTSupport(client.BasicClient):
             self.channels[channel]['exceptlist'] = None
         if 'INVEX' in self._isupport:
             self.channels[channel]['inviteexceptlist'] = None
+
 
     ## Command handlers.
 
@@ -71,7 +72,7 @@ class ISUPPORTSupport(client.BasicClient):
 
     def on_isupport_casemapping(self, value):
         """ IRC case mapping for nickname comparisons. """
-        if value in protocol.CASE_MAPPINGS:
+        if value in rfc1459.protocol.CASE_MAPPINGS:
             self._case_mapping = value
 
     def on_isupport_channellen(self, value):
@@ -96,21 +97,21 @@ class ISUPPORTSupport(client.BasicClient):
         self._channel_modes.union(set(value.replace(',', '')))
 
         # The reason we have to do it like this is because other ISUPPORTs (e.g. PREFIX) may update these values as well.
-        if not protocol.BEHAVIOUR_LIST in self._channel_modes_behaviour:
-            self._channel_modes_behaviour[protocol.BEHAVIOUR_LIST] = set()
-        self._channel_modes_behaviour[protocol.BEHAVIOUR_LIST].union(list)
+        if not rfc1459.protocol.BEHAVIOUR_LIST in self._channel_modes_behaviour:
+            self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST] = set()
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST].union(list)
 
-        if not protocol.BEHAVIOUR_PARAMETER in self._channel_modes_behaviour:
-            self._channel_modes_behaviour[protocol.BEHAVIOUR_PARAMETER] = set()
-        self._channel_modes_behaviour[protocol.BEHAVIOUR_PARAMETER].union(param)
+        if not rfc1459.protocol.BEHAVIOUR_PARAMETER in self._channel_modes_behaviour:
+            self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER] = set()
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER].union(param)
 
-        if not protocol.BEHAVIOUR_PARAMETER_ON_SET in self._channel_modes_behaviour:
-            self._channel_modes_behaviour[protocol.BEHAVIOUR_PARAMETER_ON_SET] = set()
-        self._channel_modes_behaviour[protocol.BEHAVIOUR_PARAMETER_ON_SET].union(param_set)
+        if not rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET in self._channel_modes_behaviour:
+            self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET] = set()
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET].union(param_set)
 
-        if not protocol.BEHAVIOUR_NO_PARAMETER in self._channel_modes_behaviour:
-            self._channel_modes_behaviour[protocol.BEHAVIOUR_NO_PARAMETER] = set()
-        self._channel_modes_behaviour[protocol.BEHAVIOUR_NO_PARAMETER].union(noparams)
+        if not rfc1459.protocol.BEHAVIOUR_NO_PARAMETER in self._channel_modes_behaviour:
+            self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_NO_PARAMETER] = set()
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_NO_PARAMETER].union(noparams)
 
     def on_isupport_chantypes(self, value):
         """ Channel name prefix symbols. """
@@ -198,9 +199,9 @@ class ISUPPORTSupport(client.BasicClient):
 
         # Update valid channel modes and their behaviour as CHANMODES doesn't include PREFIX modes.
         self._channel_modes.union(set(prefixes))
-        if not protocol.BEHAVIOUR_PARAMETER in self._channel_modes_behaviour:
-            self._channel_modes_behaviour[protocol.BEHAVIOUR_PARAMETER] = set()
-        self._channel_modes_behaviour[protocol.BEHAVIOUR_PARAMETER].union(set(prefixes))
+        if not rfc1459.protocol.BEHAVIOUR_PARAMETER in self._channel_modes_behaviour:
+            self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER] = set()
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER].union(set(prefixes))
 
         self._nickname_prefixes = collections.OrderedDict()
         for mode, prefix in zip(modes, prefixes):

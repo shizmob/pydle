@@ -1,7 +1,8 @@
 ## tags.py
 # Tagged message support.
-from .. import client
-from .. import protocol
+import pydle.client
+import pydle.protocol
+from pydle.features import rfc1459
 
 TAG_INDICATOR = '@'
 TAG_SEPARATOR = ';'
@@ -9,7 +10,7 @@ TAG_VALUE_SEPARATOR = '='
 TAGGED_MESSAGE_LENGTH_LIMIT = 1024
 
 
-class TaggedMessage(protocol.Message):
+class TaggedMessage(rfc1459.RFC1459Message):
     def __init__(self, command, params, tags=None, **kw):
         if tags is None:
             tags = {}
@@ -17,7 +18,7 @@ class TaggedMessage(protocol.Message):
         self.tags = tags
 
     @classmethod
-    def parse(cls, line, encoding='utf-8'):
+    def parse(cls, line, encoding=pydle.protocol.DEFAULT_ENCODING):
         """
         Parse given line into IRC message structure.
         Returns a TaggedMessage.
@@ -28,17 +29,17 @@ class TaggedMessage(protocol.Message):
             message = line.decode(encoding)
         except UnicodeDecodeError:
             # Try our fallback encoding.
-            message = line.decode(protocol.FALLBACK_ENCODING)
+            message = line.decode(pydle.protocol.FALLBACK_ENCODING)
 
         # Sanity check for message length.
         if len(message) > TAGGED_MESSAGE_LENGTH_LIMIT:
             valid = False
 
         # Strip message separator.
-        if message.endswith(protocol.LINE_SEPARATOR):
-            message = message[:-len(protocol.LINE_SEPARATOR)]
-        elif message.endswith(protocol.MINIMAL_LINE_SEPARATOR):
-            message = message[:-len(protocol.MINIMAL_LINE_SEPARATOR)]
+        if message.endswith(pydle.protocol.LINE_SEPARATOR):
+            message = message[:-len(pydle.protocol.LINE_SEPARATOR)]
+        elif message.endswith(pydle.protocol.MINIMAL_LINE_SEPARATOR):
+            message = message[:-len(pydle.protocol.MINIMAL_LINE_SEPARATOR)]
 
         # Parse tags.
         tags = {}
@@ -80,15 +81,15 @@ class TaggedMessage(protocol.Message):
         return message
 
 
-class TaggedMessageSupport(client.BasicClient):
+class TaggedMessageSupport(rfc1459.RFC1459Support):
     def _reset_attributes(self):
         super()._reset_attributes()
         self._message_tags_enabled = False
 
     def _enable_message_tags(self):
-        if not self.connected or self._message_tags_enabled:
-            return
-        self.connection.message = TaggedMessage
         self._message_tags_enabled = True
 
-
+    def _parse_message(self, line):
+        if self._message_tags_enabled:
+            return TaggedMessage.parse(line, self.connection.encoding)
+        return super()._parse_message(line)

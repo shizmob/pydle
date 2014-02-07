@@ -2,7 +2,7 @@
 # Server <-> client optional extension indication support.
 # See also: http://ircv3.atheme.org/specification/capability-negotiation-3.1
 import re
-from .. import client
+from pydle.features import rfc1459
 
 __all__ = [ 'CapabilityNegotiationSupport', 'NEGOTIATED', 'NEGOTIATING', 'FAILED' ]
 
@@ -16,7 +16,7 @@ NEGOTIATED = None
 FAILED = False
 
 
-class CapabilityNegotiationSupport(client.BasicClient):
+class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
     """ CAP command support. """
 
     ## Internal overrides.

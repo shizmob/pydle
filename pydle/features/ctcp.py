@@ -1,7 +1,6 @@
 ## ctcp.py
 # Client-to-Client-Protocol (CTCP) support.
-from .. import client
-from .. import protocol
+from pydle.features import rfc1459
 
 __all__ = [ 'CTCPSupport' ]
 
@@ -10,7 +9,7 @@ CTCP_DELIMITER = '\x01'
 CTCP_ESCAPE_CHAR = '\x16'
 
 
-class CTCPSupport(client.BasicClient):
+class CTCPSupport(rfc1459.RFC1459Support):
     """ Support for CTCP messages. """
 
     ## Callbacks.
@@ -50,12 +49,12 @@ class CTCPSupport(client.BasicClient):
 
     def on_raw_privmsg(self, message):
         """ Modify PRIVMSG to redirect CTCP messages. """
-        nick, user, host = protocol.parse_user(message.source)
+        nick, metadata = self._parse_user(message.source)
         target, msg = message.params
 
         if is_ctcp(msg):
             if nick in self.users:
-                self._sync_user(nick, user, host)
+                self._sync_user(nick, metadata)
             type = parse_ctcp_query(msg)
 
             # Find dedicated handler if it exists.
@@ -70,12 +69,12 @@ class CTCPSupport(client.BasicClient):
 
     def on_raw_notice(self, message):
         """ Modify NOTICE to redirect CTCP messages. """
-        nick, user, host = protocol.parse_user(message.source)
+        nick, metadata = self._parse_user(message.source)
         target, msg = message.params
 
         if is_ctcp(msg):
             if nick in self.users:
-                self._sync_user(nick, user, host)
+                self._sync_user(nick, metadata)
             type, response = parse_ctcp_response(msg)
 
             # Find dedicated handler if it exists.

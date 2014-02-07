@@ -20,9 +20,9 @@ class IRCCat(featurize(*features.ALL)):
         sys.stdout.write(str(message))
         return message
 
-    def _send_message(self, command, *params, **kw):
-        sys.stdout.write(str(self.connection.message(command, params, **kw)))
-        super()._send_message(command, *params, **kw)
+    def _send_message(self, message):
+        sys.stdout.write(str(message))
+        super()._send_message(message)
 
     def _send_raw(self, raw):
         sys.stdout.write(raw)
@@ -49,7 +49,7 @@ def main():
     thread = None
     if irccat.connected:
         # Let's rock.
-        thread = threading.Thread(target=irccat.handle_forever)
+        thread = threading.Thread(target=irccat.poll_forever)
         thread.start()
 
         # Process input in main thread.
