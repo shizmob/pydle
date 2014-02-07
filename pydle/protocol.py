@@ -31,8 +31,8 @@ class Message:
 
 
     @abstractmethod
-    def construct(self):
-        """ Convert message into raw IRC command. """
+    def construct(self, force=False):
+        """ Convert message into raw IRC command. If `force` is True, don't attempt to check message validity. """
         raise NotImplementedError()
 
     def __str__(self):

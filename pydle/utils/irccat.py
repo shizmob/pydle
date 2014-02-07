@@ -17,11 +17,11 @@ class IRCCat(featurize(*features.ALL)):
     def _get_message(self, types=None):
         """ Get message and print it to stdout. """
         message = self.connection.get_message(types=types)
-        sys.stdout.write(str(message))
+        sys.stdout.write(message.construct(force=True))
         return message
 
     def _send_message(self, message):
-        sys.stdout.write(str(message))
+        sys.stdout.write(message.construct(force=True))
         super()._send_message(message)
 
     def _send_raw(self, raw):
