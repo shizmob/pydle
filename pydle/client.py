@@ -154,6 +154,7 @@ class BasicClient:
     def _rename_user(self, user, new):
         if user in self.users:
             self.users[new] = self.users[user]
+            self.users[new]['nickname'] = new
             del self.users[user]
         else:
             self._create_user(new)
@@ -287,17 +288,17 @@ class BasicClient:
 
     ## Message dispatch.
 
-    def _has_message(self, types=None):
+    def _has_message(self):
         """ Whether or not we have messages available for processing. """
-        return self.connection.has_message(types=types)
+        return self.connection.has_message()
 
-    def _wait_for_message(self, types=None):
+    def _wait_for_message(self):
         """ Poll for a received message. """
-        self.connection.wait_for_message(types=types)
+        self.connection.wait_for_message()
 
-    def _get_message(self, types=None):
+    def _get_message(self):
         """ Get a single message. """
-        return self.connection.get_message(types=types)
+        return self.connection.get_message()
 
 
     def _send_raw(self, message):
