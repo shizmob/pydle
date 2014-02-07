@@ -128,7 +128,11 @@ with `pydle.features.sasl`, three extra keyword arguments are added:
 - `sasl_username`: SASL username (`AUTHCID`);
 - `sasl_password`: SASL password.
 
-`Client.connect(host, port=None, password=None, encoding='utf-8')`- connect to server.
+`Client.connect(host, port=None, encoding=pydle.protocol.DEFAULT_ENCODING)`- connect to server.
+
+with `pydle.features.rfc1459`, an extra keyword argument is added:
+
+- `password`: IRC password to use for server connection. Default is `None`.
 
 with `pydle.features.tls`, two extra keyword arguments are added:
 
