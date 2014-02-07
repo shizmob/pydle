@@ -7,7 +7,7 @@ pydle is a compact, flexible and standards-abiding IRC library for Python 3.
 
 Features
 --------
-* Compact: At ~1700SLoC at time of writing, it's not hard to find what you're looking for in the well-organized source code.
+* Compact: At ~2100SLoC at time of writing, it's not hard to find what you're looking for in the well-organized source code.
 * Standards-abiding: Based on [RFC1459](https://tools.ietf.org/html/rfc1459.html) with some small extension tweaks, with full support of optional extension standards:
   - [TLS](http://tools.ietf.org/html/rfc5246)
   - [CTCP](http://www.irchelp.org/irchelp/rfc/ctcpspec.html)
@@ -26,7 +26,7 @@ Structure
 * `pydle.BasicClient` - base IRC message handler. Has no functionality.
 * `pydle.ClientPool` - a 'pool' of several clients in order to handle multiple clients in one swift main loop.
 * `pydle.features` - IRC protocol implementations and extensions.
-   - `pydle.features.rfc1459` - basic [RFC1459](https://tools.ietf.org/html/rfc1459.html) implementation with a few commonly-implemented [RFC281x](https://tools.ietf.org/html/rfc2810.html) extensions.
+   - `pydle.features.rfc1459` - basic [RFC1459](https://tools.ietf.org/html/rfc1459.html) implementation with a few commonly-implemented [RF](https://tools.ietf.org/html/rfc2810.html)[C2](https://tools.ietf.org/html/rfc2811.html)[81](https://tools.ietf.org/html/rfc2812.html)[x](https://tools.ietf.org/html/rfc2813.html) extensions.
    - `pydle.features.ctcp` - [Client-to-Client Protocol](http://www.irchelp.org/irchelp/rfc/ctcpspec.html) support.
    - `pydle.features.tls` - [Transport Layer Security](https://tools.ietf.org/html/rfc5246.html) and [STARTTLS](https://ircv3.atheme.org/extensions/tls-3.1) support.
    - `pydle.features.isupport` - [ISUPPORT/PROTOCTL](http://tools.ietf.org/html/draft-hardy-irc-isupport-00) support.
