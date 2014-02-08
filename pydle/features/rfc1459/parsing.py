@@ -163,10 +163,11 @@ def parse_user(raw):
 def parse_modes(modes, current, behaviour):
     """ Parse mode change string(s) and return updated dictionary. """
     current = current.copy()
+    modes = modes[:]
 
     # Iterate in a somewhat odd way over the list because we want to modify it during iteration.
-    i = 0
-    while i < len(modes):
+    modelen = len(modes)
+    for i in range(modelen):
         piece = modes[i]
         add = True
         sigiled = False
@@ -222,9 +223,6 @@ def parse_modes(modes, current, behaviour):
                 else:
                     if mode in current:
                         del current[mode]
-
-        # Onto the next mode.
-        i += 1
 
     return current
 
