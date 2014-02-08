@@ -367,7 +367,7 @@ class RFC1459Support(BasicClient):
         for channel, target in zip(channels, targets):
             target, targetmeta = self._parse_user(target)
             self._sync_user(target, targetmeta)
-            
+
             if self.is_same_nick(target, self.nickname):
                 self._destroy_channel(channel)
             else:
@@ -425,8 +425,6 @@ class RFC1459Support(BasicClient):
         # Alternatively, we were force nick-changed. Nothing much we can do about it.
         if self.is_same_nick(self.nickname, nick):
             self._nickname = new
-            # Reflect logger change.
-            self.logger.name = self.__class__.__name__ + ':' + self.server_tag + ':' + self._nickname
 
         # Go through all user lists and replace.
         self._rename_user(nick, new)
@@ -649,7 +647,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_421(self, message):
         """ Server responded with 'unknown command'. """
-        self.logger.warn('Server responded with "Unknown command: {}"'.format(message.params[0]))
+        self.logger.warning('Server responded with "Unknown command: %s"'.format(message.params[0]))
 
     def on_raw_432(self, message):
         """ Erroneous nickname. """

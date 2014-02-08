@@ -49,9 +49,9 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         # You Only Abort Once
         if not self._sasl_aborted:
             if timeout:
-                self.logger.err('SASL authentication timed out: aborting.')
+                self.logger.error('SASL authentication timed out: aborting.')
             else:
-                self.logger.err('SASL authentication aborted.')
+                self.logger.error('SASL authentication aborted.')
             self._sasl_aborted = True
 
             # We're done here.
@@ -89,7 +89,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         if self.sasl_username and self.sasl_password:
             if puresasl:
                 return True
-            self.logger.warn('SASL credentials set but puresasl module not found: not initiating SASL authentication.')
+            self.logger.warning('SASL credentials set but puresasl module not found: not initiating SASL authentication.')
         return False
 
     def on_capability_sasl_enabled(self):

@@ -3,9 +3,9 @@
 # Simple threaded irccat implementation, using pydle.
 import sys
 import threading
+import logging
 
 from .. import features
-from .. import log
 from .. import protocol
 
 from .. import featurize, __version__
@@ -41,7 +41,7 @@ class IRCCat(featurize(*features.ALL)):
 
 
 def main():
-    log.Logger.FORMAT = '!! {levelname}: {message}'
+    logging.basicConfig(format='!! %(levelname)s: %(message)s')
 
     # Create client.
     irccat = _args.client_from_args('irccat', default_nick='irccat', description='Process raw IRC messages from stdin, dump received IRC messages to stdout.', cls=IRCCat)
