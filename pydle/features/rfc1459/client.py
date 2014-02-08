@@ -318,8 +318,7 @@ class RFC1459Support(BasicClient):
     def on_raw_invite(self, message):
         """ INVITE command. """
         nick, metadata = self._parse_user(message.source)
-        if nick in self.users:
-            self._sync_user(nick, metadata)
+        self._sync_user(nick, metadata)
 
         target, channel = message.params
         target, metadata = self._parse_user(target)
@@ -437,8 +436,7 @@ class RFC1459Support(BasicClient):
         nick, metadata = self._parse_user(message.source)
         target, message = message.params
 
-        if nick in self.users:
-            self._sync_user(nick, metadata)
+        self._sync_user(nick, metadata)
 
         self.on_notice(target, nick, message)
         if self.is_channel(target):
@@ -479,8 +477,7 @@ class RFC1459Support(BasicClient):
         nick, metadata = self._parse_user(message.source)
         target, message = message.params
 
-        if nick in self.users:
-            self._sync_user(nick, metadata)
+        self._sync_user(nick, metadata)
 
         self.on_message(target, nick, message)
         if self.is_channel(target):
