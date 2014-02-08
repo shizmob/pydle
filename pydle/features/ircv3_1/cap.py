@@ -64,7 +64,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
         if hasattr(self, attr):
             getattr(self, attr)(params)
         else:
-            self.logger.warning('Unknown CAP subcommand sent from server: {}', subcommand)
+            self.logger.warning('Unknown CAP subcommand sent from server: %s', subcommand)
 
     def on_raw_cap_ls(self, params):
         """ Update capability mapping. Request capabilities. """
@@ -114,7 +114,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
                 attr = 'on_capability_' + capability_to_identifier(cp) + '_disabled'
             elif capab.startswith(STICKY_PREFIX):
                 # Can't disable it. Do nothing.
-                self.logger.err('Could not disable capability {}.', cp)
+                self.logger.error('Could not disable capability %s.', cp)
                 continue
             else:
                 self._capabilities[cp] = True
@@ -135,7 +135,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
                 self._capabilities_negotiating.add(cp)
             elif status == FAILED:
                 # Ruh-roh, negotiation failed. Disable the capability.
-                self.logger.warn('Capability negotiation for {} failed. Attempting to disable capability again.', cp)
+                self.logger.warning('Capability negotiation for %s failed. Attempting to disable capability again.', cp)
 
                 self.rawmsg('CAP', 'REQ', '-' + cp)
                 self._capabilities_requested.add(cp)
@@ -158,7 +158,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
 
     def on_raw_410(self, message):
         """ Unknown CAP subcommand or CAP error. Force-end negotiations. """
-        self.logger.err('Server sent "Unknown CAP subcommand: {}". Aborting capability negotiation.', message.params[0])
+        self.logger.error('Server sent "Unknown CAP subcommand: %s". Aborting capability negotiation.', message.params[0])
 
         self._capabilities_requested = set()
         self._capabilities_negotiating = set()
