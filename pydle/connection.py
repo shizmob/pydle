@@ -269,7 +269,7 @@ class Connection:
     def wait_for_message(self):
         """ Wait until a message has arrived. """
         # No use waiting if we already have a message.
-        if self.has_message(types=types):
+        if self.has_message():
             return
 
         if not self.connected:
