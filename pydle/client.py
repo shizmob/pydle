@@ -90,14 +90,14 @@ class BasicClient:
             # Reset any attributes.
             self._reset_attributes()
 
-    def _connect(self, hostname, port=None, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING):
+    def _connect(self, hostname, port=None, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING, source_address=None):
         """ Connect to IRC host. """
         if not reconnect:
             self._autojoin_channels = channels
 
         # Create connection if we can't reuse it.
         if not reconnect or not self.connection:
-            self.connection = connection.Connection(hostname, port or protocol.DEFAULT_PORT, encoding=encoding)
+            self.connection = connection.Connection(hostname, port or protocol.DEFAULT_PORT, encoding=encoding, source_adress=source_address)
         # Connect.
         self.connection.connect()
 
