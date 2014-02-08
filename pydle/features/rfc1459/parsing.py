@@ -166,8 +166,8 @@ def parse_modes(modes, current, behaviour):
     modes = modes[:]
 
     # Iterate in a somewhat odd way over the list because we want to modify it during iteration.
-    modelen = len(modes)
-    for i in range(modelen):
+    i = 0
+    while i < len(modes):
         piece = modes[i]
         add = True
         sigiled = False
@@ -223,6 +223,7 @@ def parse_modes(modes, current, behaviour):
                 else:
                     if mode in current:
                         del current[mode]
+        i += 1
 
     return current
 
