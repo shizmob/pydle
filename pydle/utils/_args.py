@@ -1,6 +1,7 @@
 ## _args.py
 # Common argument parsing code.
 import argparse
+import logging
 import pydle
 
 def client_from_args(name, description, default_nick='Bot', cls=pydle.Client):
@@ -48,9 +49,11 @@ def client_from_args(name, description, default_nick='Bot', cls=pydle.Client):
 
     # Set log level.
     if args.debug:
-        pydle.log.Logger.LEVEL = pydle.log.DEBUG
+        log_level = logging.DEBUG
     elif not args.verbose:
-        pydle.log.Logger.LEVEL = pydle.log.ERROR
+        log_level = logging.ERROR
+
+    logging.basicConfig(level=log_level)
 
     # Setup client and connect.
     client = cls(nickname=nick, fallback_nicknames=fallback, username=args.username, realname=args.realname,
