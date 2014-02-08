@@ -53,8 +53,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         target, msg = message.params
 
         if is_ctcp(msg):
-            if nick in self.users:
-                self._sync_user(nick, metadata)
+            self._sync_user(nick, metadata)
             type = parse_ctcp_query(msg)
 
             # Find dedicated handler if it exists.
@@ -73,8 +72,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         target, msg = message.params
 
         if is_ctcp(msg):
-            if nick in self.users:
-                self._sync_user(nick, metadata)
+            self._sync_user(nick, metadata)
             type, response = parse_ctcp_response(msg)
 
             # Find dedicated handler if it exists.

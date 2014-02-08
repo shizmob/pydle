@@ -2,10 +2,10 @@
 # Basic IRC client implementation.
 import time
 import itertools
+import logging
 
 from . import connection
 from . import protocol
-from . import log
 
 __all__ = [ 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
 UNREGISTERED_NICKNAME = '<unregistered>'
@@ -34,12 +34,11 @@ class BasicClient:
         self._nicknames = [nickname] + fallback_nicknames
         self.username = username or nickname.lower()
         self.realname = realname or nickname
-        self.logger = log.Logger()
         self._reset_connection_attributes()
         self._reset_attributes()
 
         if kwargs:
-            self.logger.warn('Unused arguments: {kw}', kw=kwargs)
+            self.logger.warning('Unused arguments: %s', kwargs)
 
     def _reset_attributes(self):
         """ Reset attributes. """
@@ -48,7 +47,7 @@ class BasicClient:
         self.users = {}
 
         # Misc.
-        self.logger.name = self.__class__.__name__
+        self.logger = logging.getLogger(__name__)
 
         # Public connection attributes.
         self.nickname = UNREGISTERED_NICKNAME
@@ -79,7 +78,7 @@ class BasicClient:
         self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
 
         # Set logger name.
-        self.logger.name = self.__class__.__name__ + ':' + self.server_tag
+        self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
 
     def disconnect(self):
         """ Disconnect from server. """
@@ -90,14 +89,14 @@ class BasicClient:
             # Reset any attributes.
             self._reset_attributes()
 
-    def _connect(self, hostname, port=None, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING):
+    def _connect(self, hostname, port=None, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING, source_address=None):
         """ Connect to IRC host. """
         if not reconnect:
             self._autojoin_channels = channels
 
         # Create connection if we can't reuse it.
         if not reconnect or not self.connection:
-            self.connection = connection.Connection(hostname, port or protocol.DEFAULT_PORT, encoding=encoding)
+            self.connection = connection.Connection(hostname, port or protocol.DEFAULT_PORT, encoding=encoding, source_adress=source_address)
         # Connect.
         self.connection.connect()
 
@@ -275,15 +274,15 @@ class BasicClient:
                 self._reconnect_attempts += 1
 
                 if delay > 0:
-                    self.logger.err('Unexpected disconnect. Attempting to reconnect within {n} seconds.', n=delay)
+                    self.logger.error('Unexpected disconnect. Attempting to reconnect within %s seconds.', delay)
                 else:
-                    self.logger.err('Unexpected disconnect. Attempting to reconnect.')
+                    self.logger.error('Unexpected disconnect. Attempting to reconnect.')
 
                 # Wait and reconnect.
                 time.sleep(delay)
                 self.connect(reconnect=True)
             else:
-                self.logger.err('Unexpected disconnect. Giving up.')
+                self.logger.error('Unexpected disconnect. Giving up.')
 
 
     ## Message dispatch.
@@ -303,7 +302,7 @@ class BasicClient:
 
     def _send_raw(self, message):
         """ Send a raw message. """
-        self.logger.debug('>> {msg}', msg=message)
+        self.logger.debug('>> %s', message)
         self.connection.send_string(message)
 
     def _send_message(self, message):
@@ -343,9 +342,9 @@ class BasicClient:
 
     def on_raw(self, message):
         """ Handle a single message. """
-        self.logger.debug('<< [{source}] {command} {args}', source=message.source or '', command=message.command, args=message.params)
+        self.logger.debug('<< [%s] %s %s', message.source or '', message.command, message.params)
         if not message._valid:
-            self.logger.warn('Encountered strictly invalid IRC message from server.')
+            self.logger.warning('Encountered strictly invalid IRC message from server.')
 
         if isinstance(message.command, int):
             cmd = str(message.command).zfill(3)
@@ -359,11 +358,11 @@ class BasicClient:
                 method = 'on_unknown'
             getattr(self, method)(message)
         except:
-            self.logger.exception('Failed to execute {handler} handler.', handler=method)
+            self.logger.error('Failed to execute %s handler.', method)
 
     def on_unknown(self, message):
         """ Unknown command. """
-        self.logger.warn('Unknown command: [{source}] {command} {params}', source=message.source, command=message.command, params=message.params)
+        self.logger.warning('Unknown command: [%s] %s %s', message.source, message.command, message.params)
 
     def _ignored(self, message):
         """ Ignore message. """

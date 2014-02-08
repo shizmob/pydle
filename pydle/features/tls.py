@@ -21,7 +21,7 @@ class TLSSupport(rfc1459.RFC1459Support):
         self.tls_client_cert_key = tls_client_cert_key
         self.tls_client_cert_password = tls_client_cert_password
 
-    def _connect(self, hostname, port=None, reconnect=False, password=None, encoding=pydle.protocol.DEFAULT_ENCODING, channels=[], tls=False, tls_verify=False):
+    def _connect(self, hostname, port=None, reconnect=False, password=None, encoding=pydle.protocol.DEFAULT_ENCODING, channels=[], tls=False, tls_verify=False, source_address=None):
         """ Connect to IRC server, optionally over TLS. """
         self.password = password
         if not reconnect:
@@ -40,12 +40,12 @@ class TLSSupport(rfc1459.RFC1459Support):
                 tls_certificate_file=self.tls_client_cert,
                 tls_certificate_keyfile=self.tls_client_cert_key,
                 tls_certificate_password=self.tls_client_cert_password,
-                encoding=encoding)
+                encoding=encoding, source_address=source_address)
 
         # Connect.
         self.connection.connect()
 
-    def _register(self):   
+    def _register(self):
         # Send STARTTLS if we're not on TLS already.
         if self.registered:
             return
@@ -62,7 +62,7 @@ class TLSSupport(rfc1459.RFC1459Support):
             return
         super().on_raw_421(message)
 
-    def on_raw_451(self, mesage):
+    def on_raw_451(self, message):
         """ Hijack to ignore absence of STARTTLS support. """
         if message.params[0] == 'STARTTLS':
             return
@@ -75,4 +75,4 @@ class TLSSupport(rfc1459.RFC1459Support):
 
     def on_raw_691(self, message):
         """ Error setting up TLS server-side. """
-        self.logger.err('Server experienced error in setting up TLS, not proceeding with TLS setup: {}', message.params[0])
+        self.logger.error('Server experienced error in setting up TLS, not proceeding with TLS setup: %s', message.params[0])

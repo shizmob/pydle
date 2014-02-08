@@ -1,4 +1,4 @@
-from . import connection, protocol, log, client, features
+from . import connection, protocol, client, features
 
 from .connection import NotConnected, NoMessageAvailable
 from .client import NotInChannel, AlreadyInChannel, BasicClient, ClientPool
