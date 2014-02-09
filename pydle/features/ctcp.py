@@ -1,5 +1,6 @@
 ## ctcp.py
 # Client-to-Client-Protocol (CTCP) support.
+import pydle.protocol
 from pydle.features import rfc1459
 
 __all__ = [ 'CTCPSupport' ]
@@ -20,7 +21,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
     def on_ctcp_reply(self, by, target, what, response):
         pass
 
-    def on_ctcp_version(self, by, target):
+    def on_ctcp_version(self, by, target, contents):
         """ Built-in CTCP version as some networks seem to require it. """
         import pydle
 
@@ -57,7 +58,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
             type, contents = parse_ctcp(msg)
 
             # Find dedicated handler if it exists.
-            attr = 'on_ctcp_' + type.lower()
+            attr = 'on_ctcp_' + pydle.protocol.identifierify(type)
             if hasattr(self, attr):
                 getattr(self, attr)(nick, target, contents)
             else:
@@ -76,7 +77,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
             type, response = parse_ctcp(msg)
 
             # Find dedicated handler if it exists.
-            attr = 'on_ctcp_' + type.lower() + '_reply'
+            attr = 'on_ctcp_' + pydle.protocol.identifierify(type) + '_reply'
             if hasattr(self, attr):
                 getattr(self, attr)(user, target, response)
             else:

@@ -2,6 +2,7 @@
 # ISUPPORT (server-side IRC extension indication) support.
 # See: http://tools.ietf.org/html/draft-hardy-irc-isupport-00
 import collections
+import pydle.protocol
 from pydle.features import rfc1459
 
 __all__ = [ 'ISUPPORTSupport' ]
@@ -59,7 +60,7 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
                 if value == True:
                     value = None
 
-                method = 'on_isupport_' + entry.lower()
+                method = 'on_isupport_' + pydle.protocol.identifierify(entry)
                 if hasattr(self, method):
                     getattr(self, method)(value)
 
