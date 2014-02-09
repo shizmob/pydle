@@ -67,6 +67,7 @@ class RFC1459Support(BasicClient):
     def _create_user(self, nickname):
         super()._create_user(nickname)
         self.users[nickname].update({
+            'account': None,
             'away': False,
             'away_message': None,
         })
@@ -552,6 +553,7 @@ class RFC1459Support(BasicClient):
     on_raw_255 = _registration_completed # Amount of local users and servers.
     on_raw_265 = _registration_completed # Amount of local users.
     on_raw_266 = _registration_completed # Amount of global users.
+    on_raw_315 = BasicClient._ignored    # End of /WHO list.
 
     def on_raw_324(self, message):
         """ Channel mode. """
