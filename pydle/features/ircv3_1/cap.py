@@ -174,4 +174,4 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
         """ Hijack to ignore the absence of a CAP command. """
         if message.params[0] == 'CAP':
             return
-        super().on_raw_451(source, params)
+        super().on_raw_451(message)
