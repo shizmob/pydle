@@ -11,9 +11,9 @@ from . import _args
 
 class IRCCat(Client):
     """ irccat. Takes raw messages on stdin, dumps raw messages to stdout. Life has never been easier. """
-    def _get_message(self, types=None):
+    def _get_message(self):
         """ Get message and print it to stdout. """
-        message = self.connection.get_message(types=types)
+        message = self.connection.get_message()
         sys.stdout.write(message.construct(force=True))
         return message
 
