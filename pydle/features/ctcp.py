@@ -21,7 +21,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
     def on_ctcp_reply(self, by, target, what, response):
         pass
 
-    def on_ctcp_version(self, by, target):
+    def on_ctcp_version(self, by, target, contents):
         """ Built-in CTCP version as some networks seem to require it. """
         import pydle
 
