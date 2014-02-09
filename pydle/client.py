@@ -358,7 +358,7 @@ class BasicClient:
                 method = 'on_unknown'
             getattr(self, method)(message)
         except:
-            self.logger.error('Failed to execute %s handler.', method)
+            self.logger.exception('Failed to execute %s handler.', method)
 
     def on_unknown(self, message):
         """ Unknown command. """
