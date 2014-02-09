@@ -14,7 +14,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
     ## Callbacks.
 
-    def on_ctcp(self, by, target, what):
+    def on_ctcp(self, by, target, what, contents):
         pass
 
     def on_ctcp_reply(self, by, target, what, response):
@@ -54,15 +54,15 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
         if is_ctcp(msg):
             self._sync_user(nick, metadata)
-            type = parse_ctcp_query(msg)
+            type, contents = parse_ctcp(msg)
 
             # Find dedicated handler if it exists.
             attr = 'on_ctcp_' + type.lower()
             if hasattr(self, attr):
-                getattr(self, attr)(nick, target)
+                getattr(self, attr)(nick, target, contents)
             else:
                 # Invoke global handler.
-                self.on_ctcp(nick, target, type)
+                self.on_ctcp(nick, target, type, contents)
         else:
             super().on_raw_privmsg(message)
 
@@ -73,7 +73,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
         if is_ctcp(msg):
             self._sync_user(nick, metadata)
-            type, response = parse_ctcp_response(msg)
+            type, response = parse_ctcp(msg)
 
             # Find dedicated handler if it exists.
             attr = 'on_ctcp_' + type.lower() + '_reply'
@@ -101,16 +101,13 @@ def construct_ctcp(*parts):
     message = message.replace(CTCP_ESCAPE_CHAR, CTCP_ESCAPE_CHAR + CTCP_ESCAPE_CHAR)
     return CTCP_DELIMITER + message + CTCP_DELIMITER
 
-def parse_ctcp_query(query):
+def parse_ctcp(query):
     """ Strip and de-quote CTCP messages. """
     query = query.strip(CTCP_DELIMITER)
     query = query.replace(CTCP_ESCAPE_CHAR + '0', '\0')
     query = query.replace(CTCP_ESCAPE_CHAR + 'n', '\n')
     query = query.replace(CTCP_ESCAPE_CHAR + 'r', '\r')
     query = query.replace(CTCP_ESCAPE_CHAR + CTCP_ESCAPE_CHAR, CTCP_ESCAPE_CHAR)
-    return query
-
-def parse_ctcp_response(response):
-    """ Strip and de-quote CTCP response. """
-    response = parse_ctcp_query(response)
-    return response.split(' ', 1)
+    if ' ' in query:
+        return query.split(' ', 1)
+    return query, None
