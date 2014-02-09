@@ -486,4 +486,3 @@ class ConnectionPool:
         """ Wait for next message to arrive and return it. """
         self.wait_for_message()
         return self.get_message()
-
