@@ -226,4 +226,3 @@ def parse_modes(modes, current, behaviour):
         i += 1
 
     return current
-

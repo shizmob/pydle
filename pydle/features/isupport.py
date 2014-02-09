@@ -244,4 +244,3 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         else:
             prefix = '+'
         self._status_message_prefixes.add(prefix)
-
