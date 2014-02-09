@@ -37,3 +37,11 @@ class Message:
 
     def __str__(self):
         return self.construct()
+
+## Misc.
+
+def identifierify(name):
+    """ Clean up name so it works for a Python identifier. """
+    name = name.lower()
+    name = re.sub('[^a-z0-9]', '_', name)
+    return name

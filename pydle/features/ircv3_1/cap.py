@@ -2,6 +2,7 @@
 # Server <-> client optional extension indication support.
 # See also: http://ircv3.atheme.org/specification/capability-negotiation-3.1
 import re
+import pydle.protocol
 from pydle.features import rfc1459
 
 __all__ = [ 'CapabilityNegotiationSupport', 'NEGOTIATED', 'NEGOTIATING', 'FAILED' ]
@@ -60,7 +61,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
         params = message.params[2:]
 
         # Call handler.
-        attr = 'on_raw_cap_' + subcommand.lower()
+        attr = 'on_raw_cap_' + pydle.protocol.identifierify(subcommand)
         if hasattr(self, attr):
             getattr(self, attr)(params)
         else:
@@ -78,7 +79,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
                 continue
 
             # Check if we support the capability.
-            attr = 'on_capability_' + capability_to_identifier(cp) + '_available'
+            attr = 'on_capability_' + pydle.protocol.identifierify(cp) + '_available'
             supported = getattr(self, attr)() if hasattr(self, attr) else False
 
             if supported:
@@ -111,14 +112,14 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
             # Determine capability type and callback.
             if capab.startswith(DISABLED_PREFIX):
                 self._capabilities[cp] = False
-                attr = 'on_capability_' + capability_to_identifier(cp) + '_disabled'
+                attr = 'on_capability_' + pydle.protocol.identifierify(cp) + '_disabled'
             elif capab.startswith(STICKY_PREFIX):
                 # Can't disable it. Do nothing.
                 self.logger.error('Could not disable capability %s.', cp)
                 continue
             else:
                 self._capabilities[cp] = True
-                attr = 'on_capability_' + capability_to_identifier(cp) + '_enabled'
+                attr = 'on_capability_' + pydle.protocol.identifierify(cp) + '_enabled'
 
             # Indicate we're gonna use this capability if needed.
             if capab.startswith(ACKNOWLEDGEMENT_REQUIRED_PREFIX):
@@ -175,12 +176,3 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
         if message.params[0] == 'CAP':
             return
         super().on_raw_451(source, params)
-
-
-## Helpers.
-
-def capability_to_identifier(name):
-    """ Clean up capability so it works for a Python identifier. """
-    name = name.lower()
-    name = re.sub('[^a-z]', '_', name)
-    return name
