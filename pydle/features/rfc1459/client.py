@@ -2,7 +2,7 @@
 # Basic RFC1459 stuff.
 import datetime
 
-from pydle.client import BasicClient
+from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
 from . import parsing
 from . import protocol
 
@@ -239,6 +239,13 @@ class RFC1459Support(BasicClient):
             raise NotInChannel('Not in channel {}'.format(target))
 
         self.rawmsg('MODE', target, *modes)
+
+    def topic(self, target, topic):
+        """ Set topic on channel. """
+        if not self.is_channel(target):
+            raise ValueError('Not a channel: {}'.format(target))
+
+        self.rawmsg('TOPIC', target, topic)
 
     def away(self, message):
         """ Mark self as away. """
