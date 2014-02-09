@@ -13,4 +13,3 @@ class NickServSupport(rfc1459.RFC1459Support):
     def __init__(self, *args, nickserv_password=None, **kwargs):
         self.__init__(*args, **kwargs)
         self.nickserv_password = nickserv_password
-
