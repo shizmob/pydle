@@ -1,5 +1,6 @@
 ## protocol.py
 # IRC implementation-agnostic constants/helpers.
+import re
 from abc import ABCMeta, abstractmethod
 
 # While this *technically* is supposed to be 143, I've yet to see a server that actually uses those.
