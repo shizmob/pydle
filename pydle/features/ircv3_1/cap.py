@@ -1,7 +1,6 @@
 ## cap.py
 # Server <-> client optional extension indication support.
 # See also: http://ircv3.atheme.org/specification/capability-negotiation-3.1
-import re
 import pydle.protocol
 from pydle.features import rfc1459
 
