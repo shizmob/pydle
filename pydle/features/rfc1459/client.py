@@ -2,7 +2,7 @@
 # Basic RFC1459 stuff.
 import datetime
 
-from pydle.client import BasicClient
+from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
 from . import parsing
 from . import protocol
 
@@ -67,6 +67,7 @@ class RFC1459Support(BasicClient):
     def _create_user(self, nickname):
         super()._create_user(nickname)
         self.users[nickname].update({
+            'account': None,
             'away': False,
             'away_message': None,
         })
@@ -240,6 +241,13 @@ class RFC1459Support(BasicClient):
 
         self.rawmsg('MODE', target, *modes)
 
+    def topic(self, target, topic):
+        """ Set topic on channel. """
+        if not self.is_channel(target):
+            raise ValueError('Not a channel: {}'.format(target))
+
+        self.rawmsg('TOPIC', target, topic)
+
     def away(self, message):
         """ Mark self as away. """
         self.rawmsg('AWAY', message)
@@ -382,15 +390,15 @@ class RFC1459Support(BasicClient):
         target, targetmeta = self._parse_user(message.params[0])
         reason = message.params[1]
 
+        self._sync_user(target, targetmeta)
         if by in self.users:
             self._sync_user(by, bymeta)
 
+        self.on_kill(target, by, reason)
         if self.is_same_nick(self.nickname, target):
             self.disconnect()
         else:
             self._destroy_user(target)
-
-        self.on_kill(target, by, reason)
 
     def on_raw_mode(self, message):
         """ MODE command. """
@@ -459,13 +467,12 @@ class RFC1459Support(BasicClient):
             for channel in channels:
                 if self.in_channel(channel):
                     self._destroy_channel(channel)
+                    self.on_part(channel, nick, reason)
         else:
             # Someone else left. Remove them.
-            for ch in channels:
-                self._destroy_user(nick, ch)
-
-        for channel in channels:
-            self.on_part(channel, nick, reason)
+            for channel in channels:
+                self._destroy_user(nick, channel)
+                self.on_part(channel, nick, reason)
 
     def on_raw_ping(self, message):
         """ PING command. """
@@ -487,8 +494,9 @@ class RFC1459Support(BasicClient):
 
     def on_raw_quit(self, message):
         """ QUIT command. """
-        # No need to sync if the user is quitting anyway.
-        nick = self._parse_user(message.source)[0]
+        nick, metadata = self._parse_user(message.source)
+
+        self._sync_user(nick, metadata)
         if message.params:
             reason = message.params[0]
         else:
@@ -545,6 +553,7 @@ class RFC1459Support(BasicClient):
     on_raw_255 = _registration_completed # Amount of local users and servers.
     on_raw_265 = _registration_completed # Amount of local users.
     on_raw_266 = _registration_completed # Amount of global users.
+    on_raw_315 = BasicClient._ignored    # End of /WHO list.
 
     def on_raw_324(self, message):
         """ Channel mode. """

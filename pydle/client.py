@@ -357,8 +357,8 @@ class BasicClient:
             if not hasattr(self, method):
                 method = 'on_unknown'
             getattr(self, method)(message)
-        except Exception as e:
-            self.logger.error('Failed to execute %s handler.', method, exc_info=e)
+        except:
+            self.logger.exception('Failed to execute %s handler.', method)
 
     def on_unknown(self, message):
         """ Unknown command. """

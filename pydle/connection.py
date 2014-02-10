@@ -366,6 +366,8 @@ class Connection:
     def parse_data(self):
         """ Attempt to parse existing data into IRC messages. Will return True if new messages were added. """
         lines = self.extract_data()
+        if not lines:
+            return False
 
         # Parse messages and put them into the message queue.
         with self.message_lock:

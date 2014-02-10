@@ -12,14 +12,6 @@ NO_ACCOUNT = '*'
 class IRCv3_1Support(sasl.SASLSupport, tls.TLSSupport):
     """ Support for IRCv3.1's base and optional extensions. """
 
-    ## Internal overrides.
-
-    def _create_user(self, nickname):
-        super()._create_user(nickname)
-        if ('account-notify' in self._capabilities and self._capabilities['account-notify']) or ('extended-join' in self._capabilities and self._capabilites['extended-join']):
-            self.users[nickname]['account'] = None
-
-
     ## IRC callbacks.
 
     def on_capability_account_notify_available(self):
