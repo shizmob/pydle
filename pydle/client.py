@@ -119,7 +119,8 @@ class BasicClient:
         }
 
     def _destroy_channel(self, channel):
-        for user in self.channels[channel]['users']:
+        # Copy list to prevent a runtime error when destroying the user.
+        for user in self.channels[channel]['users'][:]:
             self._destroy_user(user, channel)
         del self.channels[channel]
 
