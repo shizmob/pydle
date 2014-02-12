@@ -19,11 +19,11 @@ class RFC1459Support(BasicClient):
         # Limitations.
         self._away_message_length_limit = None
         self._channel_length_limit = protocol.CHANNEL_LENGTH_LIMIT
-        self._channel_limit_groups = protocol.CHANNEL_LIMITS_GROUPS.copy()
-        self._channel_limits = protocol.CHANNEL_LIMITS.copy()
+        self._channel_limit_groups = copy.deepcopy(protocol.CHANNEL_LIMITS_GROUPS)
+        self._channel_limits = copy.deepcopy(protocol.CHANNEL_LIMITS)
         self._command_parameter_limit = protocol.PARAMETER_LIMIT
-        self._list_limit_groups = {}
-        self._list_limits = {}
+        self._list_limit_groups = copy.deepcopy(protocol.LIST_LIMITS_GROUPS)
+        self._list_limits = copy.deepcopy(protocol.LIST_LIMITS)
         self._mode_limit = None
         self._nickname_length_limit = protocol.NICKNAME_LENGTH_LIMIT
         self._target_limits = {}
