@@ -125,7 +125,7 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         if not value:
             value = BAN_EXCEPT_MODE
         self._channel_modes.add(value)
-        self._channel_modes_behaviour['list'].add(value)
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST].add(value)
 
     def on_isupport_extban(self, value):
         """ Extended ban prefixes. """
@@ -137,7 +137,7 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         if not value:
             value = INVITE_EXCEPT_MODE
         self._channel_modes.add(value)
-        self._channel_modes_behaviour['list'].add(value)
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST].add(value)
 
     def on_isupport_maxbans(self, value):
         """ Maximum entries in ban list. Replaced by MAXLIST. """
