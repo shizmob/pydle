@@ -13,7 +13,7 @@ CHANNEL_LIMITS_GROUPS = {
 CHANNEL_LIMITS = {
     frozenset('#&'): 10
 }
-LIST_LIMIT_GROUPS = {
+LIST_LIMITS_GROUPS = {
     'b': frozenset('b')
 }
 LIST_LIMITS = {
