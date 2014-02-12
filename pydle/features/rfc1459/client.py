@@ -1,6 +1,7 @@
 ## rfc1459.py
 # Basic RFC1459 stuff.
 import datetime
+import copy
 
 from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
 from . import parsing
@@ -31,12 +32,12 @@ class RFC1459Support(BasicClient):
         # Modes, prefixes.
         self._mode = {}
         self._channel_modes = set(protocol.CHANNEL_MODES)
-        self._channel_modes_behaviour = protocol.CHANNEL_MODES_BEHAVIOUR.copy()
+        self._channel_modes_behaviour = copy.deepcopy(protocol.CHANNEL_MODES_BEHAVIOUR)
         self._channel_prefixes = set(protocol.CHANNEL_PREFIXES)
         self._nickname_prefixes = protocol.NICKNAME_PREFIXES.copy()
         self._status_message_prefixes = set()
         self._user_modes = set(protocol.USER_MODES)
-        self._user_modes_behaviour = protocol.USER_MODES_BEHAVIOUR.copy()
+        self._user_modes_behaviour = copy.deepcopy(protocol.USER_MODES_BEHAVIOUR)
 
         # Registration.
         self.registered = False
