@@ -199,10 +199,10 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         modes, prefixes = value.lstrip('(').split(')', 1)
 
         # Update valid channel modes and their behaviour as CHANMODES doesn't include PREFIX modes.
-        self._channel_modes.update(set(prefixes))
+        self._channel_modes.update(set(modes))
         if not rfc1459.protocol.BEHAVIOUR_PARAMETER in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER] = set()
-        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER].update(set(prefixes))
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER].update(set(modes))
 
         self._nickname_prefixes = collections.OrderedDict()
         for mode, prefix in zip(modes, prefixes):
