@@ -99,6 +99,8 @@ class BasicClient:
     def disconnect(self):
         """ Disconnect from server. """
         if self.connected:
+            self.connection.off('read', self.on_data)
+            self.connection.off('error', self.on_data_error)
             self.connection.disconnect()
             self.on_disconnect(self._has_quit)
 
@@ -326,11 +328,7 @@ class BasicClient:
 
     def handle_forever(self):
         """ Handle data forever. """
-        self.connection.on('read', self.on_data)
-        self.connection.on('error', self.on_data_error)
         self.connection.run_forever()
-        self.connection.off('read', self.on_data)
-        self.connection.off('error', self.on_data_error)
 
 
     ## Raw message handlers.

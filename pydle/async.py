@@ -23,9 +23,7 @@ class EventLoop:
     }
 
     def __init__(self, io_loop=None):
-        if io_loop is None:
-            io_loop = tornado.ioloop.IOLoop.current()
-        self.io_loop = io_loop
+        self.io_loop = io_loop or tornado.ioloop.IOLoop.current()
         self.running = False
         self.handlers = {}
         self._context_future = None
