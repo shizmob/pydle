@@ -1,6 +1,7 @@
 ## rfc1459.py
 # Basic RFC1459 stuff.
 import datetime
+import copy
 
 from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
 from . import parsing
@@ -18,11 +19,11 @@ class RFC1459Support(BasicClient):
         # Limitations.
         self._away_message_length_limit = None
         self._channel_length_limit = protocol.CHANNEL_LENGTH_LIMIT
-        self._channel_limit_groups = protocol.CHANNEL_LIMITS_GROUPS.copy()
-        self._channel_limits = protocol.CHANNEL_LIMITS.copy()
+        self._channel_limit_groups = copy.deepcopy(protocol.CHANNEL_LIMITS_GROUPS)
+        self._channel_limits = copy.deepcopy(protocol.CHANNEL_LIMITS)
         self._command_parameter_limit = protocol.PARAMETER_LIMIT
-        self._list_limit_groups = {}
-        self._list_limits = {}
+        self._list_limit_groups = copy.deepcopy(protocol.LIST_LIMITS_GROUPS)
+        self._list_limits = copy.deepcopy(protocol.LIST_LIMITS)
         self._mode_limit = None
         self._nickname_length_limit = protocol.NICKNAME_LENGTH_LIMIT
         self._target_limits = {}
@@ -31,12 +32,12 @@ class RFC1459Support(BasicClient):
         # Modes, prefixes.
         self._mode = {}
         self._channel_modes = set(protocol.CHANNEL_MODES)
-        self._channel_modes_behaviour = protocol.CHANNEL_MODES_BEHAVIOUR.copy()
+        self._channel_modes_behaviour = copy.deepcopy(protocol.CHANNEL_MODES_BEHAVIOUR)
         self._channel_prefixes = set(protocol.CHANNEL_PREFIXES)
         self._nickname_prefixes = protocol.NICKNAME_PREFIXES.copy()
         self._status_message_prefixes = set()
         self._user_modes = set(protocol.USER_MODES)
-        self._user_modes_behaviour = protocol.USER_MODES_BEHAVIOUR.copy()
+        self._user_modes_behaviour = copy.deepcopy(protocol.USER_MODES_BEHAVIOUR)
 
         # Registration.
         self.registered = False

@@ -95,24 +95,24 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
     def on_isupport_chanmodes(self, value):
         """ Valid channel modes and their behaviour. """
         list, param, param_set, noparams = [ set(modes) for modes in value.split(',')[:4] ]
-        self._channel_modes.union(set(value.replace(',', '')))
+        self._channel_modes.update(set(value.replace(',', '')))
 
         # The reason we have to do it like this is because other ISUPPORTs (e.g. PREFIX) may update these values as well.
         if not rfc1459.protocol.BEHAVIOUR_LIST in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST] = set()
-        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST].union(list)
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST].update(list)
 
         if not rfc1459.protocol.BEHAVIOUR_PARAMETER in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER] = set()
-        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER].union(param)
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER].update(param)
 
         if not rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET] = set()
-        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET].union(param_set)
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET].update(param_set)
 
         if not rfc1459.protocol.BEHAVIOUR_NO_PARAMETER in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_NO_PARAMETER] = set()
-        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_NO_PARAMETER].union(noparams)
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_NO_PARAMETER].update(noparams)
 
     def on_isupport_chantypes(self, value):
         """ Channel name prefix symbols. """
@@ -125,7 +125,7 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         if not value:
             value = BAN_EXCEPT_MODE
         self._channel_modes.add(value)
-        self._channel_modes_behaviour['list'].add(value)
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST].add(value)
 
     def on_isupport_extban(self, value):
         """ Extended ban prefixes. """
@@ -137,7 +137,7 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         if not value:
             value = INVITE_EXCEPT_MODE
         self._channel_modes.add(value)
-        self._channel_modes_behaviour['list'].add(value)
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST].add(value)
 
     def on_isupport_maxbans(self, value):
         """ Maximum entries in ban list. Replaced by MAXLIST. """
@@ -199,10 +199,10 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         modes, prefixes = value.lstrip('(').split(')', 1)
 
         # Update valid channel modes and their behaviour as CHANMODES doesn't include PREFIX modes.
-        self._channel_modes.union(set(prefixes))
+        self._channel_modes.update(set(modes))
         if not rfc1459.protocol.BEHAVIOUR_PARAMETER in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER] = set()
-        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER].union(set(prefixes))
+        self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER].update(set(modes))
 
         self._nickname_prefixes = collections.OrderedDict()
         for mode, prefix in zip(modes, prefixes):
