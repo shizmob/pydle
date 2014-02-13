@@ -3,14 +3,9 @@
 import re
 from abc import ABCMeta, abstractmethod
 
-# While this *technically* is supposed to be 143, I've yet to see a server that actually uses those.
-DEFAULT_PORT = 6667
-
 DEFAULT_ENCODING = 'utf-8'
 FALLBACK_ENCODING = 'iso-8859-1'
 
-LINE_SEPARATOR = '\r\n'
-MINIMAL_LINE_SEPARATOR = '\n'
 
 ## Errors.
 

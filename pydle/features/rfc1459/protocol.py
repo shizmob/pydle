@@ -4,6 +4,10 @@ import re
 import collections
 
 
+# While this *technically* is supposed to be 143, I've yet to see a server that actually uses those.
+DEFAULT_PORT = 6667
+
+
 ## Limits.
 
 CHANNEL_LIMITS_GROUPS = {
@@ -24,6 +28,7 @@ MESSAGE_LENGTH_LIMIT = 512
 CHANNEL_LENGTH_LIMIT = 200
 NICKNAME_LENGTH_LIMIT = 8
 TOPIC_LENGTH_LIMIT = 450
+
 
 ## Defaults.
 
@@ -52,7 +57,11 @@ USER_MODES_BEHAVIOUR = {
     BEHAVIOUR_NO_PARAMETER: { 'i', 'w', 's', 'o' }
 }
 
+
 ## Message parsing.
+
+LINE_SEPARATOR = '\r\n'
+MINIMAL_LINE_SEPARATOR = '\n'
 
 FORBIDDEN_CHARACTERS = { '\r', '\n', '\0' }
 USER_SEPARATOR = '!'

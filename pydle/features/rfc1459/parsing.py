@@ -31,10 +31,10 @@ class RFC1459Message(pydle.protocol.Message):
             valid = False
 
         # Strip message separator.
-        if message.endswith(pydle.protocol.LINE_SEPARATOR):
-            message = message[:-len(pydle.protocol.LINE_SEPARATOR)]
-        elif message.endswith(pydle.protocol.MINIMAL_LINE_SEPARATOR):
-            message = message[:-len(pydle.protocol.MINIMAL_LINE_SEPARATOR)]
+        if message.endswith(protocol.LINE_SEPARATOR):
+            message = message[:-len(protocol.LINE_SEPARATOR)]
+        elif message.endswith(protocol.MINIMAL_LINE_SEPARATOR):
+            message = message[:-len(protocol.MINIMAL_LINE_SEPARATOR)]
 
         # Sanity check for forbidden characters.
         if any(ch in message for ch in protocol.FORBIDDEN_CHARACTERS):
@@ -121,7 +121,7 @@ class RFC1459Message(pydle.protocol.Message):
             raise pydle.protocol.ProtocolViolation('The constructed message contains forbidden characters ({chs}).'.format(chs=', '.join(protocol.FORBIDDEN_CHARACTERS)), message=message)
 
         # Sanity check for length.
-        message += pydle.protocol.LINE_SEPARATOR
+        message += protocol.LINE_SEPARATOR
         if len(message) > protocol.MESSAGE_LENGTH_LIMIT and not force:
             raise pydle.protocol.ProtocolViolation('The constructed message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=protocol.MESSAGE_LENGTH_LIMIT), message=message)
 
