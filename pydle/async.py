@@ -96,7 +96,11 @@ class EventLoop:
 
 
     def _update_events(self, fd):
-        self.io_loop.remove_handler(fd)
+        try:
+            self.io_loop.remove_handler(fd)
+        except KeyError:
+            # It's okay if there are no handlers yet.
+            pass
 
         events = 0
         for event, ident in self.EVENT_MAPPING.items():
@@ -116,10 +120,7 @@ class EventLoop:
 
     def on_future(self, _future, _callback, *_args, **_kwargs):
         """ Add a callback for when the given future has been resolved. """
-        self.io_loop.add_future(_future, functools.partial(self._do_on_future, _callback, _args, _kwargs))
-
-    def _do_on_future(self, callback, args, kwargs):
-        return callback(*args, **kwargs)
+        self.io_loop.add_future(_future, functools.partial(_callback, *_args, **_kwargs))
 
 
     def schedule(self, _callback, *_args, **_kwargs):
@@ -169,9 +170,8 @@ class EventLoop:
             self.running = True
 
     def __exit__(self):
-        if self.running:
-            if self._context_future:
-                self._resolve_context_future()
+        if self.running and self._context_future:
+            self._resolve_context_future()
             self.running = False
 
     def _create_context_future(self):
