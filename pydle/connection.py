@@ -242,9 +242,9 @@ class Connection:
             if self.eventloop.handles_read(self.socket.fileno(), self._on_read):
                 self.eventloop.off_read(self.socket.fileno(), self._on_read)
             if self.eventloop.handles_write(self.socket.fileno(), self._on_write):
-                self.eventloop.off_error(self.socket.fileno(), self._on_write)
-            if self.eventloop.handles_write(self.socket.fileno(), self._on_error):
-                self.eventloop.off_write(self.socket.fileno(), self._on_error)
+                self.eventloop.off_write(self.socket.fileno(), self._on_write)
+            if self.eventloop.handles_error(self.socket.fileno(), self._on_error):
+                self.eventloop.off_error(self.socket.fileno(), self._on_error)
 
     def update_write_handler(self):
         if not self.connected:
