@@ -85,6 +85,26 @@ class Connection:
         self.eventloop.register(self.socket.fileno())
         self.setup_handlers()
 
+
+    def upgrade_to_tls(self, tls_verify=False, tls_certificate_file=None, tls_certificate_keyfile=None, tls_certificate_password=None):
+        """ Uprade existing connection to TLS. """
+        # Set local config options.
+        self.tls = True
+        self.tls_verify = False
+        if tls_certificate_file:
+            self.tls_certificate_file = tls_certificate_file
+        if tls_certificate_keyfile:
+            self.tls_certificate_keyfile = tls_certificate_keyfile
+        if tls_certificate_password:
+            self.tls_certificate_password = tls_certificate_password
+
+        # Remove socket callbacks since the fd might change as the event loop sees it, setup TLS, and setup handlers again.
+        self.remove_handlers()
+        self.eventloop.unregister(self.socket.fileno())
+        self.setup_tls()
+        self.eventloop.register(self.socket.fileno())
+        self.setup_handlers()
+
     def setup_tls(self):
         """ Transform our regular socket into a TLS socket. """
         # Set up context.
