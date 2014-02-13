@@ -340,7 +340,7 @@ class BasicClient:
         """ Handle a single message. """
         self.logger.debug('<< [%s] %s %s', message.source or '', message.command, message.params)
         if not message._valid:
-            self.logger.warning('Encountered strictly invalid IRC message from server.')
+            self.logger.warning('Encountered strictly invalid IRC message from server: %s', message._raw)
 
         if isinstance(message.command, int):
             cmd = str(message.command).zfill(3)

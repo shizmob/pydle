@@ -57,7 +57,7 @@ class TaggedMessage(rfc1459.RFC1459Message):
 
         # Parse rest of message.
         message = super().parse(message.lstrip().encode(encoding), encoding=encoding)
-        return TaggedMessage(message.command, message.params, _valid=message._valid and valid, source=message.source, tags=tags, **message.kw)
+        return TaggedMessage(message.command, message.params, _raw=message._raw, _valid=message._valid and valid, source=message.source, tags=tags, **message.kw)
 
     def construct(self, force=False):
         """
