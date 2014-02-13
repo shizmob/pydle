@@ -3,6 +3,15 @@
 import functools
 import tornado.concurrent
 import tornado.ioloop
+import tornado.gen
+
+
+class Future(tornado.concurrent.TracebackFuture):
+    """ A future. """
+
+def blocking(func):
+    """ Decorator for coroutine functions that need to block. """
+    return tornado.gen.coroutine(func)
 
 
 class EventLoop:
