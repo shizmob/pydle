@@ -13,8 +13,10 @@ class EventLoop:
         'error': tornado.ioloop.IOLoop.ERROR
     }
 
-    def __init__(self):
-        self.io_loop = tornado.ioloop.IOLoop.current()
+    def __init__(self, io_loop=None):
+        if io_loop is None:
+            io_loop = tornado.ioloop.IOLoop.current()
+        self.io_loop = io_loop
         self.running = False
         self.handlers = {}
         self._context_future = None
@@ -137,7 +139,7 @@ class EventLoop:
         handle = self._do_schedule_in(interval, callback, args, kwargs)
         if callback(*args, **kwargs) == False:
             self.io_loop.remove_timeout(handle)
-            
+
 
 
     def run(self):
