@@ -670,7 +670,7 @@ class RFC1459Support(BasicClient):
             'hostname': hostname,
             'realname': realname
         }
-        
+
         if nickname in self._requests['whowas']:
             self._whowas_info[nickname].update(info)
 
