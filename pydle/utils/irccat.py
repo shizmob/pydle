@@ -33,7 +33,7 @@ class IRCCat(Client):
                 break
             self.raw(line)
 
-    def on_ctcp_version(self, source, target):
+    def on_ctcp_version(self, source, target, contents):
         self.ctcp_reply(source, 'VERSION', 'pydle-irccat v{}'.format(__version__))
 
 
