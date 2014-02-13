@@ -114,27 +114,27 @@ class EventLoop:
                     handler(fd)
 
 
-    def on_future(_self, _future, _callback, *_args, **_kwargs):
+    def on_future(self, _future, _callback, *_args, **_kwargs):
         """ Add a callback for when the given future has been resolved. """
-        _self.io_loop.add_future(_future, functools.partial(_self._do_on_future, _callback, _args, _kwargs))
+        self.io_loop.add_future(_future, functools.partial(self._do_on_future, _callback, _args, _kwargs))
 
     def _do_on_future(self, callback, args, kwargs):
         return callback(*args, **kwargs)
 
 
-    def schedule(_self, _callback, *_args, **_kwargs):
+    def schedule(self, _callback, *_args, **_kwargs):
         """ Schedule a callback to be ran as soon as possible in this loop. """
-        _self.io_loop.add_callback(_callback, *_args, **_kwargs)
+        self.io_loop.add_callback(_callback, *_args, **_kwargs)
 
-    def schedule_in(_self, _when, _callback, *_args, **_kwargs):
+    def schedule_in(self, _when, _callback, *_args, **_kwargs):
         """ Schedule a callback to be ran as soon as possible after `when` seconds have passed. """
         # Schedule scheduling in IOLoop thread because of thread-safety.
-        _self.schedule(functools.partial(_self._do_schedule_in, _when, _callback, _args, _kwargs))
+        self.schedule(functools.partial(self._do_schedule_in, _when, _callback, _args, _kwargs))
 
-    def schedule_periodically(_self, _interval, _callback, *_args, **_kwargs):
+    def schedule_periodically(self, _interval, _callback, *_args, **_kwargs):
         """ Schedule a callback to be ran every `interval` seconds. """
         # Schedule scheduling in IOLoop thread because of thread-safety.
-        _self.schedule(functools.partial(_self._do_schedule_periodically, _interval, _callback, _args, _kwargs))
+        self.schedule(functools.partial(self._do_schedule_periodically, _interval, _callback, _args, _kwargs))
 
     def _do_schedule_in(self, when, callback, args, kwargs):
         return self.io_loop.add_timeout(when, functools.partial(callback, *args, **kwargs))
@@ -148,7 +148,6 @@ class EventLoop:
         handle = self._do_schedule_in(interval, callback, args, kwargs)
         if callback(*args, **kwargs) == False:
             self.io_loop.remove_timeout(handle)
-
 
 
     def run(self):
