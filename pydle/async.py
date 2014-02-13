@@ -121,7 +121,7 @@ class EventLoop:
         _self.schedule(functools.partial(_self._do_schedule_periodically, _interval, _callback, _args, _kwargs))
 
     def _do_schedule_in(self, when, callback, args, kwargs):
-        return self.io_loop.add_timeout(when, lambda: calback(*args, **kwargs))
+        return self.io_loop.add_timeout(when, functools.partial(callback, *args, **kwargs))
 
     def _do_schedule_periodically(self, interval, callback, args, kwargs):
         # Use a wrapper function

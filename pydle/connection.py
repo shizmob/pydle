@@ -3,6 +3,7 @@ import os.path as path
 import collections
 import time
 import threading
+import datetime
 
 import socket
 import ssl
@@ -52,6 +53,7 @@ class Connection:
         self.send_queue = collections.deque()
         self.send_queue_lock = threading.RLock()
         self.unthrottled_sends = 0
+        self.throttling = False
         self.last_sent = None
         self.last_sent_pos = 0
 
@@ -249,7 +251,7 @@ class Connection:
             return
 
         with self.send_queue_lock, self.socket_lock:
-            if self.send_queue:
+            if self.send_queue and not self.throttling:
                 if not self.eventloop.handles_write(self.socket.fileno(), self._on_write):
                     self.eventloop.on_write(self.socket.fileno(), self._on_write)
             else:
@@ -301,7 +303,8 @@ class Connection:
                 if current - self.last_sent < MESSAGE_THROTTLE_DELAY:
                     if self.unthrottled_sends >= MESSAGE_THROTTLE_TRESHOLD:
                         # Enough unthrottled messages let through: introduce some delay.
-                        self.last_sent += MESSAGE_THROTTLE_DELAY
+                        self.throttling = True
+                        self.eventloop.schedule_in(datetime.timedelta(seconds=self.last_sent + MESSAGE_THROTTLE_DELAY - current), self._unthrottle)
                         break
                     else:
                         # Allow message through, but note that the unthrottling should be recorded.
@@ -335,6 +338,11 @@ class Connection:
             return
         for handler in self.handlers['write']:
             handler(sent_messages)
+
+    def _unthrottle(self):
+        self.unthrottled_sends = 0
+        self.throttling = False
+        self.update_write_handler()
 
     def _on_error(self, fd):
         for handler in self.handlers['error']:
