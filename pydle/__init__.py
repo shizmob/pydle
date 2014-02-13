@@ -1,5 +1,6 @@
-from . import connection, protocol, client, features
+from . import async, connection, protocol, client, features
 
+from .async import EventLoop, Future, blocking
 from .connection import NotConnected
 from .client import NotInChannel, AlreadyInChannel, BasicClient, ClientPool
 from .features.ircv3_1.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as CAPABILITY_FAILED, NEGOTIATED as CAPABILITY_NEGOTIATED
