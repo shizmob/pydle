@@ -9,6 +9,7 @@ setup(
         'pydle.features',
         'pydle.utils'
     ],
+    requires=['tornado'],
     extras_require={
         'SASL': 'pure-sasl >=0.1.6'   # for pydle.features.sasl
     },
