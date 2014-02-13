@@ -68,7 +68,7 @@ class EventLoop:
 
     def off_error(self, fd, callback):
         """ Remove error callback for given file descriptor. """
-        self.handlers[fd]['write'].remove(callback)
+        self.handlers[fd]['error'].remove(callback)
         self._update_events(fd)
 
     def handles_read(self, fd, callback):
