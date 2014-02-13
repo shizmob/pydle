@@ -670,7 +670,7 @@ class RFC1459Support(BasicClient):
             'hostname': hostname,
             'realname': realname
         }
-        
+
         if nickname in self._requests['whowas']:
             self._whowas_info[nickname].update(info)
 
@@ -799,7 +799,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_401(self, message):
         """ No such nick/channel. """
-        nickname = message.params[0]
+        nickname = message.params[1]
         if nickname in self._requests['whois']:
             future = self._requests['whois'].pop(nickname)
             future.set_result(None)
