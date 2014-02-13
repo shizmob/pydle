@@ -3,6 +3,7 @@
 import datetime
 import copy
 
+from pydle.async import Future
 from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
 from . import parsing
 from . import protocol
@@ -283,7 +284,7 @@ class RFC1459Support(BasicClient):
           info = yield self.whois('Nick')
         """
         if nickname not in self._requests['whois']:
-            self.raw('WHOIS', nickname)
+            self.rawmsg('WHOIS', nickname)
             self._whois_info[nickname] = {
                 'oper': False,
                 'idle': 0,
@@ -292,7 +293,7 @@ class RFC1459Support(BasicClient):
             }
 
             # Create a future for when the WHOIS requests succeeds.
-            self._requests['whois'][nickname] = async.Future()
+            self._requests['whois'][nickname] = Future()
 
         return self._requests['whois'][nickname]
 
@@ -304,11 +305,11 @@ class RFC1459Support(BasicClient):
           info = yield self.whois('Nick')
         """
         if nickname not in _self.requests['whowas']:
-            self.raw('WHOWAS', nickname)
+            self.rawmsg('WHOWAS', nickname)
             self._whowas_info[nickname] = {}
 
             # Create a future for when the WHOWAS requests succeeds.
-            self._requests['whowas'][nickname] = async.Future()
+            self._requests['whowas'][nickname] = Future()
 
         return self._requests['whowas'][nickname]
 
@@ -627,7 +628,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_311(self, message):
         """ WHOIS user info. """
-        nickname, username, hostname, _, realname = message.params
+        target, nickname, username, hostname, _, realname = message.params
         info = {
             'username': username,
             'hostname': hostname,
@@ -640,7 +641,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_312(self, message):
         """ WHOIS server info. """
-        nickname, server, serverinfo = message.params
+        target, nickname, server, serverinfo = message.params
         info = {
             'server': server,
             'server_info': serverinfo
@@ -653,7 +654,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_313(self, message):
         """ WHOIS operator info. """
-        nickname = message.params[0]
+        target, nickname = message.params[0]
         info = {
             'oper': True
         }
@@ -663,7 +664,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_314(self, message):
         """ WHOWAS user info. """
-        nickname, username, hostname, _, realname = message.params
+        target, nickname, username, hostname, _, realname = message.params
         info = {
             'username': username,
             'hostname': hostname,
@@ -677,7 +678,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_317(self, message):
         """ WHOIS idle time. """
-        nickname, idle_time = message.params[:2]
+        target, nickname, idle_time = message.params[:2]
         info = {
             'idle': int(idle_time),
         }
@@ -687,7 +688,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_318(self, message):
         """ End of /WHOIS list. """
-        nickname =  message.params[0]
+        target, nickname =  message.params[0]
 
         # Mark future as done.
         if nickname in self._requests['whois']:
@@ -696,7 +697,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_319(self, message):
         """ WHOIS active channels. """
-        nickname, channels = message.params[:2]
+        target, nickname, channels = message.params[:2]
         channels = { channel.lstrip() for channel in channels.split(' ') }
         info = {
             'channels': channels
