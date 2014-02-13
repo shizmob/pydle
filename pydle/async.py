@@ -1,9 +1,10 @@
 ## async.py
 # Light wrapper around whatever async library pydle uses.
 import functools
+import itertools
+import collections
 import tornado.concurrent
 import tornado.ioloop
-import tornado.gen
 
 
 class Future(tornado.concurrent.TracebackFuture):
@@ -28,6 +29,23 @@ def blocking(func):
             return
 
     return wrapper
+
+def parallel(*futures):
+    """ Create a single future that will be completed when all the given futures are. """
+    result_future = Future()
+    results = collections.OrderedDict(zip(futures, itertools.repeat(None)))
+    futures = list(futures)
+
+    def done(future):
+        futures.remove(future)
+        results[future] = future.result()
+        if not futures:
+            result_future.set_result(list(results.values()))
+
+    for future in futures:
+        future.add_done_callback(done)
+
+    return result_future
 
 
 class EventLoop:
