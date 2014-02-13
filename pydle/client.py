@@ -354,9 +354,8 @@ class BasicClient:
         # Invoke dispatcher, if we have one.
         method = 'on_raw_' + cmd.lower()
         try:
-            if not hasattr(self, method):
-                method = 'on_unknown'
-            getattr(self, method)(message)
+            handler = getattr(self, method, self.on_unknown)
+            self.connection.eventloop.schedule(handler, message)
         except:
             self.logger.exception('Failed to execute %s handler.', method)
 
