@@ -59,6 +59,7 @@ class BasicClient:
     def _reset_connection_attributes(self):
         """ Reset connection attributes. """
         self.connection = None
+        self.encoding = None
         self._has_quit = False
         self._autojoin_channels = []
         self._reconnect_attempts = 0
@@ -99,7 +100,9 @@ class BasicClient:
 
         # Create connection if we can't reuse it.
         if not reconnect or not self.connection:
-            self.connection = connection.Connection(hostname, port or protocol.DEFAULT_PORT, encoding=encoding, source_adress=source_address)
+            self.connection = connection.Connection(hostname, port or protocol.DEFAULT_PORT, source_adress=source_address)
+            self.encoding = encoding
+
         # Connect.
         self.connection.connect()
         # Add handlers.
@@ -303,8 +306,12 @@ class BasicClient:
         raise NotImplementedError()
 
     def _send(self, input):
-        data = str(input)
-        self.connection.send(data)
+        if not isinstance(input, (bytes, str)):
+            input = str(input)
+        if isinstance(input, str):
+            input = input.encode(self.encoding)
+
+        self.connection.send(input)
 
     def handle_forever(self):
         """ Handle data forever. """

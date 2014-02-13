@@ -157,17 +157,17 @@ class RFC1459Support(BasicClient):
 
     def _has_message(self):
         """ Whether or not we have messages available for processing. """
-        sep = protocol.MINIMAL_LINE_SEPARATOR.encode(self.connection.encoding)
+        sep = protocol.MINIMAL_LINE_SEPARATOR.encode(self.encoding)
         return sep in self._receive_buffer
 
     def _create_message(self, command, *params, **kwargs):
         return parsing.RFC1459Message(command, params, **kwargs)
 
     def _parse_message(self):
-        sep = protocol.MINIMAL_LINE_SEPARATOR.encode(self.connection.encoding)
+        sep = protocol.MINIMAL_LINE_SEPARATOR.encode(self.encoding)
         message, _, data = self._receive_buffer.partition(sep)
         self._receive_buffer = data
-        return parsing.RFC1459Message.parse(message, encoding=self.connection.encoding)
+        return parsing.RFC1459Message.parse(message, encoding=self.encoding)
 
     ## IRC API.
 

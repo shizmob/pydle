@@ -68,7 +68,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         saslclient = puresasl.client.SASLClient(self.connection.hostname, 'irc', mechanism='PLAIN',
             username=self.sasl_username, password=self.sasl_password, identity=self.sasl_identity)
 
-        response = base64.b64encode(saslclient.process(challenge=self._sasl_challenge)).decode(self.connection.encoding)
+        response = base64.b64encode(saslclient.process(challenge=self._sasl_challenge)).decode(self.encoding)
         to_send = len(response)
 
         # Send response in chunks.

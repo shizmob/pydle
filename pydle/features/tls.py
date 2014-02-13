@@ -39,11 +39,12 @@ class TLSSupport(rfc1459.RFC1459Support):
         # Create connection if we can't reuse it.
         if not reconnect:
             self.connection = connection.Connection(hostname, port,
+                source_address=source_address,
                 tls=tls, tls_verify=tls_verify,
                 tls_certificate_file=self.tls_client_cert,
                 tls_certificate_keyfile=self.tls_client_cert_key,
-                tls_certificate_password=self.tls_client_cert_password,
-                encoding=encoding, source_address=source_address)
+                tls_certificate_password=self.tls_client_cert_password)
+            self.encoding = encoding
 
         # Connect.
         self.connection.connect()

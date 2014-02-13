@@ -31,12 +31,11 @@ class Connection:
     """ A TCP connection over the IRC protocol. """
     CONNECT_TIMEOUT = 10
 
-    def __init__(self, hostname, port, tls=False, tls_verify=True, encoding='utf-8', tls_certificate_file=None, tls_certificate_keyfile=None, tls_certificate_password=None, ping_timeout=240, source_address=None):
+    def __init__(self, hostname, port, tls=False, tls_verify=True, tls_certificate_file=None, tls_certificate_keyfile=None, tls_certificate_password=None, ping_timeout=240, source_address=None):
         self.hostname = hostname
         self.port = port
         self.source_address = source_address
         self.ping_timeout = ping_timeout
-        self.encoding = encoding
 
         self.tls = tls
         self.tls_context = None
@@ -274,9 +273,6 @@ class Connection:
 
     def send(self, data):
         """ Send data. """
-        if isinstance(data, str):
-            data = data.encode(self.encoding)
-
         with self.send_queue_lock:
             self.send_queue.append(data)
         self.update_write_handler()
