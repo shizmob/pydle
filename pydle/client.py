@@ -4,6 +4,7 @@ import time
 import itertools
 import logging
 
+from . import async
 from . import connection
 from . import protocol
 
@@ -37,6 +38,7 @@ class BasicClient:
         self._nicknames = [nickname] + fallback_nicknames
         self.username = username or nickname.lower()
         self.realname = realname or nickname
+        self.eventloop = None
         self._reset_connection_attributes()
         self._reset_attributes()
 
@@ -70,7 +72,7 @@ class BasicClient:
 
     ## Connection.
 
-    def connect(self, hostname=None, port=None, reconnect=False, **kwargs):
+    def connect(self, hostname=None, port=None, reconnect=False, eventloop=None, **kwargs):
         """ Connect to IRC server. """
         if (not hostname or not port) and not reconnect:
             raise ValueError('Have to specify hostname and port if not reconnecting.')
@@ -78,6 +80,12 @@ class BasicClient:
         # Disconnect from current connection.
         if self.connected:
             self.disconnect()
+
+        # Set event loop.
+        if eventloop:
+            self.eventloop = eventloop
+        elif not self.eventloop:
+            self.eventloop = async.EventLoop()
 
         # Reset attributes and connect.
         if not reconnect:
@@ -96,14 +104,12 @@ class BasicClient:
             # Reset any attributes.
             self._reset_attributes()
 
-    def _connect(self, hostname, port, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING, source_address=None, eventloop=None):
+    def _connect(self, hostname, port, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING, source_address=None):
         """ Connect to IRC host. """
-        if not reconnect:
-            self._autojoin_channels = channels
-
         # Create connection if we can't reuse it.
         if not reconnect or not self.connection:
-            self.connection = connection.Connection(hostname, port or protocol.DEFAULT_PORT, source_adress=source_address, eventloop=eventloop)
+            self._autojoin_channels = channels
+            self.connection = connection.Connection(hostname, port, source_adress=source_address, eventloop=self.eventloop)
             self.encoding = encoding
 
         # Connect.
@@ -355,7 +361,7 @@ class BasicClient:
         method = 'on_raw_' + cmd.lower()
         try:
             handler = getattr(self, method, self.on_unknown)
-            self.connection.eventloop.schedule(handler, message)
+            self.eventloop.schedule(handler, message)
         except:
             self.logger.exception('Failed to execute %s handler.', method)
 
