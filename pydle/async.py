@@ -14,20 +14,31 @@ def blocking(func):
     """ Decorator for coroutine functions that need to block. """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        def handle_future(future):
-            try:
-                future = gen.send(future.result())
-                future.add_done_callback(handle_future)
-            except StopIteration:
-                pass
+        return_future = Future()
 
+        def handle_future(future):
+            # Chained futures!
+            try:
+                result = gen.send(future.result())
+                if isinstance(result, Future):
+                    result.add_done_callback(handle_future)
+                else:
+                    return_future.set_result(result)
+            except StopIteration as e:
+                return_future.set_result(getattr(e, 'value', None))
+
+        # Handle initial value.
         gen = func(*args, **kwargs)
         try:
-            future = next(gen)
-            future.add_done_callback(handle_future)
-        except StopIteration:
-            return
+            result = next(gen)
+            if isinstance(result, Future):
+                result.add_done_callback(handle_future)
+            else:
+                return_future.set_result(result)
+        except StopIteration as e:
+            return_future.set_result(getattr(e, 'value', None))
 
+        return return_future
     return wrapper
 
 def parallel(*futures):
@@ -39,6 +50,7 @@ def parallel(*futures):
     def done(future):
         futures.remove(future)
         results[future] = future.result()
+        # All out of futures. set the result.
         if not futures:
             result_future.set_result(list(results.values()))
 
