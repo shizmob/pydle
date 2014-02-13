@@ -105,9 +105,6 @@ class RFC1459Support(BasicClient):
             metadata['hostname'] = host
         return nickname, metadata
 
-    def _parse_message(self, line):
-        return parsing.Message.parse(line, encoding=self.connection.encoding)
-
     def _parse_user_modes(self, user, modes, current=None):
         if current is None:
             current = self.users[user]['modes']
@@ -121,13 +118,13 @@ class RFC1459Support(BasicClient):
 
     ## Connection.
 
-    def connect(self, *args, password=None, **kwargs):
+    def connect(self, hostname=None, port=None, password=None, **kwargs):
+        port = port or protocol.DEFAULT_PORT
+
         # Connect...
-        super().connect(*args, **kwargs)
+        super().connect(hostname, port, **kwargs)
         # Set password.
         self.password = password
-        # Set message class...
-        self.connection.message = parsing.RFC1459Message
         # And initiate the IRC connection.
         self._register()
 
@@ -156,6 +153,21 @@ class RFC1459Support(BasicClient):
             fakemsg = self._create_message('NICK', target, source=self.nickname)
             self.on_raw_nick(fakemsg)
 
+    ## Message handling.
+
+    def _has_message(self):
+        """ Whether or not we have messages available for processing. """
+        sep = protocol.MINIMAL_LINE_SEPARATOR.encode(self.connection.encoding)
+        return sep in self._receive_buffer
+
+    def _create_message(self, command, *params, **kwargs):
+        return parsing.RFC1459Message(command, params, **kwargs)
+
+    def _parse_message(self):
+        sep = protocol.MINIMAL_LINE_SEPARATOR.encode(self.connection.encoding)
+        message, _, data = self._receive_buffer.partition(sep)
+        self._receive_buffer = data
+        return parsing.RFC1459Message.parse(message, encoding=self.connection.encoding)
 
     ## IRC API.
 
@@ -322,6 +334,8 @@ class RFC1459Support(BasicClient):
     def on_quit(self, user, message=None):
         pass
 
+
+    ## Callback handlers.
 
     def on_raw_invite(self, message):
         """ INVITE command. """

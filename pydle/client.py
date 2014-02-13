@@ -46,6 +46,9 @@ class BasicClient:
         self.channels = {}
         self.users = {}
 
+        # Buffers and locks.
+        self._receive_buffer = b''
+
         # Misc.
         self.logger = logging.getLogger(__name__)
 
@@ -65,8 +68,8 @@ class BasicClient:
 
     def connect(self, hostname=None, port=None, reconnect=False, **kwargs):
         """ Connect to IRC server. """
-        if not hostname and not reconnect:
-            raise ValueError('Have to specify hostname if not reconnecting.')
+        if (not hostname or not port) and not reconnect:
+            raise ValueError('Have to specify hostname and port if not reconnecting.')
 
         # Disconnect from current connection.
         if self.connected:
@@ -89,7 +92,7 @@ class BasicClient:
             # Reset any attributes.
             self._reset_attributes()
 
-    def _connect(self, hostname, port=None, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING, source_address=None):
+    def _connect(self, hostname, port, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING, source_address=None):
         """ Connect to IRC host. """
         if not reconnect:
             self._autojoin_channels = channels
@@ -99,6 +102,9 @@ class BasicClient:
             self.connection = connection.Connection(hostname, port or protocol.DEFAULT_PORT, encoding=encoding, source_adress=source_address)
         # Connect.
         self.connection.connect()
+        # Add handlers.
+        self.connection.on('read', self.on_data)
+        self.connection.on('error', self.on_data_error)
 
     def _reconnect_delay(self):
         """ Calculate reconnection delay. """
@@ -240,18 +246,17 @@ class BasicClient:
         else:
             return None
 
+
     ## IRC API.
 
     def raw(self, message):
         """ Send raw command. """
-        if not message.endswith(protocol.LINE_SEPARATOR):
-            message += protocol.LINE_SEPARATOR
-        self._send_raw(message)
+        self._send(message)
 
-    def rawmsg(self, command, *params, source=None):
+    def rawmsg(self, command, *args, **kwargs):
         """ Send raw message. """
-        message = self._create_message(command, *params, source=source)
-        self._send_message(message)
+        message = str(self._create_message(command, *args, **kwargs))
+        self._send(message)
 
 
     ## Overloadable callbacks.
@@ -289,56 +294,40 @@ class BasicClient:
 
     def _has_message(self):
         """ Whether or not we have messages available for processing. """
-        return self.connection.has_message()
-
-    def _wait_for_message(self):
-        """ Poll for a received message. """
-        self.connection.wait_for_message()
-
-    def _get_message(self):
-        """ Get a single message. """
-        return self.connection.get_message()
-
-
-    def _send_raw(self, message):
-        """ Send a raw message. """
-        self.logger.debug('>> %s', message)
-        self.connection.send_string(message)
-
-    def _send_message(self, message):
-        """ Send a message. """
-        self.connection.send_message(message)
-
-    def _create_message(self, command, *params, **kwargs):
-        return self.connection.create_message(command, *params, **kwargs)
-
-    def _parse_message(self, line):
         raise NotImplementedError()
 
+    def _create_message(self, command, *params, **kwargs):
+        raise NotImplementedError()
 
-    def poll_single(self):
-        """ Poll until a single message is available and handle it. """
-        if not self.connected:
-            raise connection.NotConnected('Not connected.')
+    def _parse_message(self):
+        raise NotImplementedError()
 
-        try:
-            self._wait_for_message()
-            message = self._get_message()
-        except connection.NotConnected:
-            self.disconnect()
-        else:
-            self.on_raw(message)
+    def _send(self, input):
+        data = str(input)
+        self.connection.send(data)
 
-    def poll_forever(self):
-        """ Poll for messages forever. Main loop. """
-        while self.connected:
-            self.poll_single()
+    def handle_forever(self):
+        """ Handle data forever. """
+        self.connection.on('read', self.on_data)
+        self.connection.on('error', self.on_data_error)
+        self.connection.run_forever()
+        self.connection.off('read', self.on_data)
+        self.connection.off('error', self.on_data_error)
 
 
     ## Raw message handlers.
 
     def on_data(self, data):
-        """ Handle data. """
+        """ Handle received data. """
+        self._receive_buffer += data
+
+        if self._has_message():
+            message = self._parse_message()
+            self.on_raw(message)
+
+    def on_data_error(self):
+        """ Handle error. """
+        self.disconnect()
 
     def on_raw(self, message):
         """ Handle a single message. """

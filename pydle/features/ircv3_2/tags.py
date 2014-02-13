@@ -89,7 +89,12 @@ class TaggedMessageSupport(rfc1459.RFC1459Support):
     def _enable_message_tags(self):
         self._message_tags_enabled = True
 
-    def _parse_message(self, line):
+    def _parse_message(self):
         if self._message_tags_enabled:
-            return TaggedMessage.parse(line, self.connection.encoding)
-        return super()._parse_message(line)
+            sep = rfc1459.parsing.MINIMAL_LINE_SEPARATOR.encode(self.connection.encoding)
+            message, _, data = self._receive_buffer.partition(sep)
+            self._receive_buffer = data
+
+            return TaggedMessage.parse(message, encoding=self.connection.encoding)
+        else:
+            return super()._parse_message()
