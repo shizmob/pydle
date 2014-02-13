@@ -23,7 +23,10 @@ class AlreadyInChannel(IRCError):
 
 
 class BasicClient:
-    """ Basic IRC client. """
+    """
+    Base IRC client class.
+    This class on its own is not complete: in order to be able to run properly, _has_message, _parse_message and _create_message have to be overloaded.
+    """
     RECONNECT_ON_ERROR = True
     RECONNECT_MAX_ATTEMPTS = 3
     RECONNECT_DELAYED = True
@@ -38,7 +41,7 @@ class BasicClient:
         self._reset_attributes()
 
         if kwargs:
-            self.logger.warning('Unused arguments: %s', kwargs)
+            self.logger.warning('Unused arguments: %s', ', '.join(kwargs.keys()))
 
     def _reset_attributes(self):
         """ Reset attributes. """

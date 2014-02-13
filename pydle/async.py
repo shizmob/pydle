@@ -24,9 +24,11 @@ class EventLoop:
 
 
     def register(self, fd):
+        """ Register a file descriptor with this event loop. """
         self.handlers[fd] = { key: [] for key in self.EVENT_MAPPING }
 
     def unregister(self, fd):
+        """ Unregister a file descriptor with this event loop. """
         del self.handlers[fd]
 
 
@@ -70,12 +72,15 @@ class EventLoop:
         self._update_events(fd)
 
     def handles_read(self, fd, callback):
+        """ Return whether or the given read callback is active for the given file descriptor. """
         return callback in self.handlers[fd]['read']
 
     def handles_write(self, fd, callback):
+        """ Return whether or the given write callback is active for the given file descriptor. """
         return callback in self.handlers[fd]['write']
 
     def handles_error(self, fd, callback):
+        """ Return whether or the given error callback is active for the given file descriptor. """
         return callback in self.handlers[fd]['error']
 
 

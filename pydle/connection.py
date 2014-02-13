@@ -274,7 +274,7 @@ class Connection:
         self.handlers[method].remove(callback)
 
     def send(self, data):
-        """ Send data. """
+        """ Add data to send queue. """
         with self.send_queue_lock:
             self.send_queue.append(data)
         self.update_write_handler()

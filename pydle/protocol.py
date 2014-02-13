@@ -19,6 +19,7 @@ class ProtocolViolation(Exception):
 ## Bases.
 
 class Message:
+    """ Abstract message class. Messages must inherit from this class. """
     @classmethod
     @abstractmethod
     def parse(cls, line, encoding=DEFAULT_ENCODING):
