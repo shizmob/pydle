@@ -29,6 +29,7 @@ class EventLoop:
         self.running = False
         self.handlers = {}
         self._context_future = None
+        self._context_depth = 0
 
     def __del__(self):
         self.io_loop.close()
@@ -168,11 +169,15 @@ class EventLoop:
         if not self.running:
             self.io_loop.run_sync(self._create_context_future)
             self.running = True
+            self._context_depth += 1
 
     def __exit__(self):
         if self.running and self._context_future:
-            self._resolve_context_future()
-            self.running = False
+            self._context_depth -= 1
+
+            if self._context_depth == 0:
+                self._resolve_context_future()
+                self.running = False
 
     def _create_context_future(self):
         # Resolve any existing future first.
