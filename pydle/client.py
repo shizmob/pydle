@@ -53,6 +53,7 @@ class BasicClient:
 
         # Buffers and locks.
         self._receive_buffer = b''
+        self._requests = {}
 
         # Misc.
         self.logger = logging.getLogger(__name__)

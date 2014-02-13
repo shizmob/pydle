@@ -44,6 +44,12 @@ class RFC1459Support(BasicClient):
         self._registration_attempts = 0
         self._attempt_nicknames = self._nicknames[:]
 
+        # Info.
+        self._requests['whois'] = {}
+        self._requests['whowas'] = {}
+        self._whois_info = {}
+        self._whowas_info = {}
+
         # Misc.
         self.motd = None
         self._case_mapping = protocol.DEFAULT_CASE_MAPPING
@@ -268,6 +274,43 @@ class RFC1459Support(BasicClient):
     def back(self):
         """ Mark self as not away. """
         self.rawmsg('AWAY')
+
+    def whois(self, nickname):
+        """
+        Return information about user.
+        This is an asynchronous method: decorate the calling function with `pydle.async.blocking`,
+        and yield from this function as follows:
+          info = yield self.whois('Nick')
+        """
+        if nickname not in self._requests['whois']:
+            self.raw('WHOIS', nickname)
+            self._whois_info[nickname] = {
+                'oper': False,
+                'idle': 0,
+                'away': False,
+                'away_message': None
+            }
+
+            # Create a future for when the WHOIS requests succeeds.
+            self._requests['whois'][nickname] = async.Future()
+
+        return self._requests['whois'][nickname]
+
+    def whowas(self, nickname):
+        """
+        Return information about offline user.
+        This is an asynchronous method: decorate the calling function with `pydle.async.blocking`,
+        and yield from this function as follows:
+          info = yield self.whois('Nick')
+        """
+        if nickname not in _self.requests['whowas']:
+            self.raw('WHOWAS', nickname)
+            self._whowas_info[nickname] = {}
+
+            # Create a future for when the WHOWAS requests succeeds.
+            self._requests['whowas'][nickname] = async.Future()
+
+        return self._requests['whowas'][nickname]
 
 
     ## IRC helpers.
@@ -568,7 +611,99 @@ class RFC1459Support(BasicClient):
     on_raw_255 = _registration_completed # Amount of local users and servers.
     on_raw_265 = _registration_completed # Amount of local users.
     on_raw_266 = _registration_completed # Amount of global users.
+
+    def on_raw_301(self, message):
+        """ User is away. """
+        nickname, message = message.params[0]
+        info = {
+            'away': True,
+            'away_message': message
+        }
+
+        if nickname in self.users:
+            self._sync_user(nickname, info)
+        if nickname in self._requests['whois']:
+            self._whois_info[nickname].update(info)
+
+    def on_raw_311(self, message):
+        """ WHOIS user info. """
+        nickname, username, hostname, _, realname = message.params
+        info = {
+            'username': username,
+            'hostname': hostname,
+            'realname': realname
+        }
+
+        self._sync_user(nickname, info)
+        if nickname in self._requests['whois']:
+            self._whois_info[nickname].update(info)
+
+    def on_raw_312(self, message):
+        """ WHOIS server info. """
+        nickname, server, serverinfo = message.params
+        info = {
+            'server': server,
+            'server_info': serverinfo
+        }
+
+        if nickname in self._requests['whois']:
+            self._whois_info[nickname].update(info)
+        if nickname in self._requests['whowas']:
+            self._whowas_info[nickname].update(info)
+
+    def on_raw_313(self, message):
+        """ WHOIS operator info. """
+        nickname = message.params[0]
+        info = {
+            'oper': True
+        }
+
+        if nickname in self._requests['whois']:
+            self._whois_info[nickname].update(info)
+
+    def on_raw_314(self, message):
+        """ WHOWAS user info. """
+        nickname, username, hostname, _, realname = message.params
+        info = {
+            'username': username,
+            'hostname': hostname,
+            'realname': realname
+        }
+        
+        if nickname in self._requests['whowas']:
+            self._whowas_info[nickname].update(info)
+
     on_raw_315 = BasicClient._ignored    # End of /WHO list.
+
+    def on_raw_317(self, message):
+        """ WHOIS idle time. """
+        nickname, idle_time = message.params[:2]
+        info = {
+            'idle': int(idle_time),
+        }
+
+        if nickname in self._requests['whois']:
+            self._whois_info[nickname].update(info)
+
+    def on_raw_318(self, message):
+        """ End of /WHOIS list. """
+        nickname =  message.params[0]
+
+        # Mark future as done.
+        if nickname in self._requests['whois']:
+            future = self._requests['whois'].pop(nickname)
+            future.set_result(self._whois_info[nickname])
+
+    def on_raw_319(self, message):
+        """ WHOIS active channels. """
+        nickname, channels = message.params[:2]
+        channels = { channel.lstrip() for channel in channels.split(' ') }
+        info = {
+            'channels': channels
+        }
+
+        if nickname in self._requests['whois']:
+            self._whois_info[nickname].update(info)
 
     def on_raw_324(self, message):
         """ Channel mode. """
@@ -660,6 +795,18 @@ class RFC1459Support(BasicClient):
 
         # MOTD is done, let's tell our bot the connection is ready.
         self.on_connect()
+
+    def on_raw_401(self, message):
+        """ No such nick/channel. """
+        nickname = message.params[0]
+        if nickname in self._requests['whois']:
+            future = self._requests['whois'].pop(nickname)
+            future.set_result(None)
+            del self._whois_info[nickname]
+
+    def on_raw_402(self, message):
+        """ No such server. """
+        return self.on_raw_401(message)
 
     def on_raw_422(self, message):
         """ MOTD is missing. """
