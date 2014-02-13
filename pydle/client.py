@@ -329,7 +329,7 @@ class BasicClient:
         """ Handle received data. """
         self._receive_buffer += data
 
-        if self._has_message():
+        while self._has_message():
             message = self._parse_message()
             self.on_raw(message)
 
