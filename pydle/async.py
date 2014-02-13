@@ -11,7 +11,23 @@ class Future(tornado.concurrent.TracebackFuture):
 
 def blocking(func):
     """ Decorator for coroutine functions that need to block. """
-    return tornado.gen.coroutine(func)
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        def handle_future(future):
+            try:
+                future = gen.send(future.result())
+                future.add_done_callback(handle_future)
+            except StopIteration:
+                pass
+
+        gen = func(*args, **kwargs)
+        try:
+            future = next(gen)
+            future.add_done_callback(handle_future)
+        except StopIteration:
+            return
+
+    return wrapper
 
 
 class EventLoop:
