@@ -688,7 +688,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_318(self, message):
         """ End of /WHOIS list. """
-        target, nickname =  message.params[0]
+        target, nickname =  message.params[:2]
 
         # Mark future as done.
         if nickname in self._requests['whois']:
