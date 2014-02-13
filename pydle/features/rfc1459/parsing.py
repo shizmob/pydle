@@ -5,12 +5,13 @@ from . import protocol
 
 class RFC1459Message(pydle.protocol.Message):
     def __init__(self, command, params, source=None, _raw=None, _valid=True, **kw):
-        self.command = command
-        self.params = params
-        self.source = source
-        self.kw = kw
+        self._kw = kw
+        self._kw['command'] = command
+        self._kw['params'] = params
+        self._kw['source'] = source
         self._valid = _valid
         self._raw = _raw
+        self.__dict__.update(self._kw)
 
     @classmethod
     def parse(cls, line, encoding=pydle.protocol.DEFAULT_ENCODING):

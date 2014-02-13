@@ -11,11 +11,10 @@ TAGGED_MESSAGE_LENGTH_LIMIT = 1024
 
 
 class TaggedMessage(rfc1459.RFC1459Message):
-    def __init__(self, command, params, tags=None, **kw):
-        if tags is None:
-            tags = {}
-        super().__init__(command, params, **kw)
-        self.tags = tags
+    def __init__(self, tags=None, **kw):
+        super().__init__(**kw)
+        self._kw['tags'] = tags
+        self.__dict__.update(self._kw)
 
     @classmethod
     def parse(cls, line, encoding=pydle.protocol.DEFAULT_ENCODING):
@@ -40,6 +39,7 @@ class TaggedMessage(rfc1459.RFC1459Message):
             message = message[:-len(pydle.protocol.LINE_SEPARATOR)]
         elif message.endswith(pydle.protocol.MINIMAL_LINE_SEPARATOR):
             message = message[:-len(pydle.protocol.MINIMAL_LINE_SEPARATOR)]
+        raw = message
 
         # Parse tags.
         tags = {}
@@ -57,7 +57,7 @@ class TaggedMessage(rfc1459.RFC1459Message):
 
         # Parse rest of message.
         message = super().parse(message.lstrip().encode(encoding), encoding=encoding)
-        return TaggedMessage(message.command, message.params, _raw=message._raw, _valid=message._valid and valid, source=message.source, tags=tags, **message.kw)
+        return TaggedMessage(_raw=raw, _valid=message._valid and valid, tags=tags, **message._kw)
 
     def construct(self, force=False):
         """
@@ -88,6 +88,13 @@ class TaggedMessageSupport(rfc1459.RFC1459Support):
 
     def _enable_message_tags(self):
         self._message_tags_enabled = True
+
+    def _create_message(self, command, *params, tags={}, **kwargs):
+        message = super()._create_message(command, *params, **kwargs)
+        if self._message_tags_enabled:
+            return TaggedMessage(tags=tags, **message._kw)
+        else:
+            return message
 
     def _parse_message(self):
         if self._message_tags_enabled:
