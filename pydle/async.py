@@ -89,6 +89,9 @@ class EventLoop:
         self.io_loop.add_handler(fd, self._do_on_event, events)
 
     def _do_on_event(self, fd, events):
+        if fd not in self.handlers:
+            return
+
         for event, ident in self.EVENT_MAPPING.items():
             if events & ident:
                 for handler in self.handlers[fd][event]:
