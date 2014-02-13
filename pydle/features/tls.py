@@ -49,6 +49,9 @@ class TLSSupport(rfc1459.RFC1459Support):
 
         # Connect.
         self.connection.connect()
+        # Add handlers.
+        self.connection.on('read', self.on_data)
+        self.connection.on('error', self.on_data_error)
 
     def _register(self):
         # Send STARTTLS if we're not on TLS already.
