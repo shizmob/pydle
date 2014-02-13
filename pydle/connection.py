@@ -1,16 +1,13 @@
 import sys
 import os.path as path
-import itertools
+import collections
 import time
+import threading
 
 import socket
 import ssl
-import select
 
-import errno
-import collections
-import threading
-
+from . import async
 from . import protocol
 
 __all__ = [ 'BUFFER_SIZE', 'TIMEOUT', 'NotConnected', 'NoMessageAvailable', 'Connection' ]
@@ -23,18 +20,12 @@ DEFAULT_CA_PATHS = {
 }
 
 BUFFER_SIZE = 4096
-TIMEOUT = 0.5
-
-MESSAGE_THROTTLE_TIME = 2
 MESSAGE_THROTTLE_TRESHOLD = 3
+MESSAGE_THROTTLE_DELAY = 2
 
 
 class NotConnected(Exception):
     pass
-
-class NoMessageAvailable(Exception):
-    pass
-
 
 class Connection:
     """ A TCP connection over the IRC protocol. """
@@ -46,8 +37,6 @@ class Connection:
         self.source_address = source_address
         self.ping_timeout = ping_timeout
         self.encoding = encoding
-        self.unthrottled_messages = 0
-        self.last_message_sent = None
 
         self.tls = tls
         self.tls_context = None
@@ -56,16 +45,17 @@ class Connection:
         self.tls_certificate_keyfile = tls_certificate_keyfile
         self.tls_certificate_password = tls_certificate_password
 
-        self.timer = None
-        self.timer_lock = threading.RLock()
         self.socket = None
         self.socket_lock = threading.RLock()
-        self.buffer = None
-        self.buffer_lock = threading.RLock()
-        self.message_queue = None
-        self.message_lock = threading.RLock()
+        self.eventloop = async.EventLoop()
+        self.handlers = { 'read': [], 'write': [], 'error': [] }
 
-        self.message = protocol.Message
+        self.send_queue = collections.deque()
+        self.send_queue_lock = threading.RLock()
+        self.unthrottled_sends = 0
+        self.last_sent = None
+        self.last_sent_pos = 0
+
 
     def connect(self):
         """ Connect to target. """
@@ -77,7 +67,6 @@ class Connection:
             if self.tls:
                 self.setup_tls()
 
-            self.socket.settimeout(TIMEOUT)
             # Enable keep-alive.
             if hasattr(socket, 'SO_KEEPALIVE'):
                 self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
@@ -86,12 +75,15 @@ class Connection:
                 self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_NOSIGPIPE, 1)
 
         # Reset message buffer and queue.
-        with self.buffer_lock:
-            self.buffer = b''
-        with self.message_lock:
-            self.message_queue = collections.deque()
-            self.unthrottled_messages = 0
-            self.last_message_sent = None
+        with self.send_queue_lock:
+            self.send_queue = collections.deque()
+            self.unthrottled_sends = 0
+            self.last_sent = 0
+            self.last_sent_pos = 0
+
+        # Add handlers.
+        self.eventloop.register(self.socket.fileno())
+        self.setup_handlers()
 
     def setup_tls(self):
         """ Transform our regular socket into a TLS socket. """
@@ -165,6 +157,10 @@ class Connection:
         if not self.connected:
             return
 
+        # Remove handlers.
+        self.remove_handlers()
+        self.eventloop.unregister(self.socket.fileno())
+
         with self.socket_lock:
             if self.tls:
                 self.teardown_tls()
@@ -177,11 +173,11 @@ class Connection:
             self.socket.close()
             self.socket = None
 
-        # Clear buffers and queues.
-        with self.buffer_lock:
-            self.buffer = None
-        with self.message_lock:
-            self.message_queue = None
+        # Clear buffers.
+        with self.send_queue_lock:
+            self.send_queue = None
+            self.unthrottled_sends = 0
+            self.last_sent = None
 
     def teardown_tls(self):
         """ Tear down our TLS connection and give us our regular socket back. """
@@ -197,294 +193,135 @@ class Connection:
         """ Whether this connection is... connected to something. """
         return self.socket is not None
 
+    def run_forever(self):
+        """ Enter the IO loop. """
+        self.setup_handlers()
+        self.eventloop.run()
+        self.remove_handlers()
 
-    ## High-level message-related methods.
 
-    def generate_messages(self):
-        """ Create an iterator out of this connection which will blockingly generate messages as they come. """
-        return iter(self)
+    ## Handler setup and teardown.
 
-    def has_message(self):
-        """ Determine if this connection has a message ready for processing. """
+    def setup_handlers(self):
         if not self.connected:
-            return False
+            return
+        
+        self.remove_handlers()
+        with self.socket_lock:
+            self.eventloop.on_read(self.socket.fileno(), self._on_read)
+            self.eventloop.on_error(self.socket.fileno(), self._on_error)
 
-        # Low-hanging fruit: is there a message ready in the queue?
-        if len(self.message_queue) > 0:
-            return True
+        self.update_write_handler()
 
-        # See if we have data that isn't parsed yet.
-        if self.has_data() and self.receive_data():
-            added = self.parse_data()
-            return added
-
-        return False
-
-    def get_message(self, retry=False):
-        """ Get an IRC message for processing. """
+    def remove_handlers(self):
         if not self.connected:
-            raise NotConnected('Not connected.')
-
-        with self.message_lock:
-            try:
-                message = self.message_queue.popleft()
-            except IndexError:
-                if retry or not self.has_data():
-                    raise NoMessageAvailable('No message available.')
-
-                # Try to parse any messages we have and try again.
-                if not self.receive_data() or not self.parse_data():
-                    raise NoMessageAvailable('No message available.')
-
-                # New messages were added, let's fetch them.
-                return self.get_message(retry=True)
-
-        return message
-
-    def create_message(self, command, *params, **kwargs):
-         return self.message(command, params, **kwargs)
-
-    def send_message(self, message):
-         """ Send a message to the other endpoint. """
-         message = message.construct()
-
-         with self.message_lock:
-            # Should we throttle?
-            if self.last_message_sent and time.time() - self.last_message_sent < MESSAGE_THROTTLE_TIME:
-                if self.unthrottled_messages >= MESSAGE_THROTTLE_TRESHOLD:
-                    # Enough messages unthrottled; we should throttle.
-                    self.last_message_sent += MESSAGE_THROTTLE_TIME
-                    timer = threading.Timer(self.last_message_sent - time.time(), self.send_string, [ message ])
-                    timer.start()
-                else:
-                    # We can still afford to not throttle.
-                    self.unthrottled_messages += 1
-                    self.last_message_sent = time.time()
-                    return self.send_string(message)
-            else:
-                # We don't need to throttle.
-                self.unthrottled_messages = 0
-                self.last_message_sent = time.time()
-                return self.send_string(message)
-
-    def wait_for_message(self):
-        """ Wait until a message has arrived. """
-        # No use waiting if we already have a message.
-        if self.has_message():
             return
 
+        with self.socket_lock:
+            if self.eventloop.handles_read(self.socket.fileno(), self._on_read):
+                self.eventloop.off_read(self.socket.fileno(), self._on_read)
+            if self.eventloop.handles_write(self.socket.fileno(), self._on_write):
+                self.eventloop.off_error(self.socket.fileno(), self._on_write)
+            if self.eventloop.handles_write(self.socket.fileno(), self._on_error):
+                self.eventloop.off_write(self.socket.fileno(), self._on_error)
+
+    def update_write_handler(self):
         if not self.connected:
-            raise NotConnected('Not connected.')
+            return
 
-        while True:
-            try:
-                select.select([ self.socket ], [], [])
-            except Exception as e:
-                self.disconnect()
-                raise NotConnected('Error while select()ing on socket: ' + str(e))
-
-            if self.has_message():
-                break
-
-
-    ## Iterator stuff.
-
-    def __iter__(self):
-        """ Create an iterator out of this pool that will blockingly generate messages as they come. """
-        return self
-
-    def __next__(self):
-        """ Wait for next message to arrive and return it. """
-        if not self.connected:
-            raise StopIteration
-
-        self.wait_for_message()
-        return self.get_message()
+        with self.send_queue_lock, self.socket_lock:
+            if self.send_queue:
+                if not self.eventloop.handles_write(self.socket.fileno(), self._on_write):
+                    self.eventloop.on_write(self.socket.fileno(), self._on_write)
+            else:
+                if self.eventloop.handles_write(self.socket.fileno(), self._on_write):
+                    self.eventloop.off_write(self.socket.fileno(), self._on_write)
 
 
     ## Lower-level data-related methods.
 
-    def has_data(self):
-        """ Check if socket has data. """
-        if not self.connected:
-            return False
+    def on(self, method, callback):
+        """ Add callback for event. """
+        if method not in self.handlers:
+            raise ValueError('Given method must be one of: {}'.format(', '.join(self.handlers)))
+        self.handlers[method].append(callback)
 
+    def off(self, method, callback):
+        """ Remove callback for event. """
+        if method not in self.handlers:
+            raise ValueError('Given method must be one of: {}'.format(', '.join(self.handlers)))
+        self.handlers[method].remove(callback)
+
+    def send(self, data):
+        """ Send data. """
+        if isinstance(data, str):
+            data = data.encode(self.encoding)
+
+        with self.send_queue_lock:
+            self.send_queue.append(data)
+        self.update_write_handler()
+
+    def _on_read(self, fd):
         with self.socket_lock:
-            try:
-                readable, writable, error = select.select([ self.socket ], [], [], 0)
-            except Exception as e:
-                self.disconnect()
-                raise NotConnected('Error while select()ing on socket: ' + str(e))
+            data = self.socket.recv(BUFFER_SIZE)
 
-            return self.socket in readable
-
-
-    def receive_data(self):
-        """ Try and receive any data and process it. Will return True if new data was added. """
-        if not self.has_data():
-            return False
-
-        if hasattr(socket, 'MSG_NOSIGNAL') and not isinstance(self.socket, ssl.SSLSocket):
-            flags = socket.MSG_NOSIGNAL
+        if data == b'':
+            return self._on_error(fd)
         else:
-            flags = 0
+            for handler in self.handlers['read']:
+                handler(data)
 
-        data = b''
-        with self.socket_lock:
-            try:
-                data = self.socket.recv(BUFFER_SIZE, flags)
-                # No data while select() indicates we have data available means the other party has closed the socket.
-                if not data:
-                    self.disconnect()
-            except (OSError, IOError) as e:
-                 if hasattr(errno, 'EAGAIN') and e.errno == errno.EAGAIN:
-                     return self.receive_data()
-                 raise
-
-        if data:
-            with self.buffer_lock:
-                self.buffer += data
-            return True
-        return False
-
-    def extract_data(self):
-        """ Extract lines from current data. """
-        # Some IRC servers use only \n as the line separator, so use that.
-        sep = protocol.MINIMAL_LINE_SEPARATOR.encode('us-ascii')
-
-        # Extract message lines from buffer.
-        with self.buffer_lock:
-            if not sep in self.buffer:
-                return False
-
-            lines = [ line + sep for line in self.buffer.split(sep) ]
-            # Put last line (the remainder) back into the buffer, minus the added separator.
-            self.buffer = lines.pop()[:-len(sep)]
-
-        return lines
-
-    def parse_data(self):
-        """ Attempt to parse existing data into IRC messages. Will return True if new messages were added. """
-        lines = self.extract_data()
-        if not lines:
-            return False
-
-        # Parse messages and put them into the message queue.
-        with self.message_lock:
-            for line in lines:
-                # Parse message.
-                try:
-                    parsed = self.message.parse(line, encoding=self.encoding)
-                except protocol.ProtocolViolation:
-                    # TODO: Notify (logging?)
-                    continue
-
-                self.message_queue.append(parsed)
-
-        return True
-
-    def send_string(self, string):
-        """ Send raw string to other end point. """
-        self.send_data(string.encode(self.encoding))
-
-    def send_data(self, data):
-        """ Send raw data to other end point. """
-        sent = 0
-
-        if not self.connected:
-            raise NotConnected('Not connected.')
-
-        with self.socket_lock:
-            # Continue until all data has been sent.
-            while sent < len(data):
-                try:
-                    sent += self.socket.send(data[sent:])
-                except (OSError, IOError) as e:
-                    if hasattr(errno, 'EAGAIN') and e.errno == errno.EAGAIN:
-                        continue
-                    raise
-
-
-class ConnectionPool:
-    """ A pool of connections. """
-    def __init__(self, conns=None):
-        if not conns:
-            conns = []
-
-        self.connections = set(conns)
-        self.connection_cycle = itertools.cycle(self.connections)
-        self.index = 0
-
-    def add(self, connection):
-        """ Add connection to pool. """
-        self.connections.add(connection)
-        self.connection_cycle = itertools.cycle(self.connections)
-
-    def remove(self, connection):
-        self.connections.remove(connection)
-        self.connection_cycle = itertools.cycle(self.connections)
-
-
-    ## High-level message stuff.
-
-    def generate_messages(self):
-        """ Create an iterator out of this pool which will blockingly generate messages as they come. """
-        return iter(self)
-
-    def has_message(self):
-        """ Check if any connection has messages available. """
-        return any(conn.has_message() for conn in self.connections)
-
-    def get_message(self):
-        """
-        Get first available message from any connection. Returns a (connection, message) tuple.
-        Tries to be fair towards connections by cycling the start connection it tries to take a message from.
-        """
-        if not self.has_message():
-            raise NoMessageAvailable('No message available.')
-
-        for conn in self.connection_cycle:
-            if conn.has_message():
-                return (conn, conn.get_message())
-
-    def wait_for_message(self):
-        """ Wait until any connection has a message available. """
-        sockets = { conn.socket: conn for conn in self.connections if conn.connected }
-        found = False
-
-        if self.has_message():
-            return
-
-        while not found:
-            # Wait forever until a socket becomes readable.
-            readable, writable, error = select.select(sockets.keys(), [], [])
-
-            # Iterate and parse.
-            for socket in readable:
-                conn = sockets[socket]
-
-                if conn.has_message():
-                    found = True
+    def _on_write(self, fd):
+        sent_messages = []
+        with self.send_queue_lock:
+            # Keep sending while we can and have data left.
+            while self.send_queue:
+                current = time.time()
+                # No writing if we're being throttled.
+                if current < self.last_sent:
                     break
 
+                # Do we need to throttle messages?
+                if current - self.last_sent < MESSAGE_THROTTLE_DELAY:
+                    if self.unthrottled_sends >= MESSAGE_THROTTLE_TRESHOLD:
+                        # Enough unthrottled messages let through: introduce some delay.
+                        self.last_sent += MESSAGE_THROTTLE_DELAY
+                        break
+                    else:
+                        # Allow message through, but note that the unthrottling should be recorded.
+                        unthrottle = True
+                else:
+                    # No need to throttle.
+                    unthrottle = False
+                    self.unthrottled_sends = 0
 
-    ## Lower-level data stuff.
+                # Send as much data as we can.
+                to_send = self.send_queue[0]
+                with self.socket_lock:
+                    sent = self.socket.send(to_send)
 
-    def has_data(self):
-        """ Check if any socket has data available. """
-        sockets = [ conn.socket for conn in self.connections if conn.connected ]
+                self.last_sent_pos += sent
+                fully_sent = (self.last_sent_pos == len(to_send))
 
-        readable, writable, error = select.select(sockets, [], [], 0)
-        return len(readable) > 0
+                if not fully_sent:
+                    # The message was not fully sent, so presume we can't send anymore.
+                    break
+                else:
+                    sent_messages.append(self.send_queue.popleft())
+                    # Throttling only counts if we sent a whole message.
+                    self.last_sent = time.time()
+                    self.last_sent_pos = 0
+                    if unthrottle:
+                        self.unthrottled_sends += 1
+
+        self.update_write_handler()
+        if not sent_messages:
+            return
+        for handler in self.handlers['write']:
+            handler(sent_messages)
+
+    def _on_error(self, fd):
+        for handler in self.handlers['error']:
+            handler()
 
 
-    ## Iterator stuff.
-
-    def __iter__(self):
-        """ Create an iterator out of this pool that will blockingly generate messages as they come. """
-        return self
-
-    def __next__(self):
-        """ Wait for next message to arrive and return it. """
-        self.wait_for_message()
-        return self.get_message()
