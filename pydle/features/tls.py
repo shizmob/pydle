@@ -30,7 +30,7 @@ class TLSSupport(rfc1459.RFC1459Support):
                 port = rfc1459.protocol.DEFAULT_PORT
         return super().connect(hostname, port, tls=tls, **kwargs)
 
-    def _connect(self, hostname, port, reconnect=False, password=None, encoding=pydle.protocol.DEFAULT_ENCODING, channels=[], tls=False, tls_verify=False, source_address=None):
+    def _connect(self, hostname, port, reconnect=False, password=None, encoding=pydle.protocol.DEFAULT_ENCODING, channels=[], tls=False, tls_verify=False, source_address=None, eventloop=None):
         """ Connect to IRC server, optionally over TLS. """
         self.password = password
         if not reconnect:
@@ -43,7 +43,8 @@ class TLSSupport(rfc1459.RFC1459Support):
                 tls=tls, tls_verify=tls_verify,
                 tls_certificate_file=self.tls_client_cert,
                 tls_certificate_keyfile=self.tls_client_cert_key,
-                tls_certificate_password=self.tls_client_cert_password)
+                tls_certificate_password=self.tls_client_cert_password,
+                eventloop=eventloop)
             self.encoding = encoding
 
         # Connect.

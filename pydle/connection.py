@@ -32,7 +32,7 @@ class Connection:
     """ A TCP connection over the IRC protocol. """
     CONNECT_TIMEOUT = 10
 
-    def __init__(self, hostname, port, tls=False, tls_verify=True, tls_certificate_file=None, tls_certificate_keyfile=None, tls_certificate_password=None, ping_timeout=240, source_address=None):
+    def __init__(self, hostname, port, tls=False, tls_verify=True, tls_certificate_file=None, tls_certificate_keyfile=None, tls_certificate_password=None, ping_timeout=240, source_address=None, eventloop=None):
         self.hostname = hostname
         self.port = port
         self.source_address = source_address
@@ -47,7 +47,7 @@ class Connection:
 
         self.socket = None
         self.socket_lock = threading.RLock()
-        self.eventloop = async.EventLoop()
+        self.eventloop = eventloop or async.EventLoop()
         self.handlers = { 'read': [], 'write': [], 'error': [] }
 
         self.send_queue = collections.deque()
@@ -226,7 +226,7 @@ class Connection:
     def setup_handlers(self):
         if not self.connected:
             return
-        
+
         self.remove_handlers()
         with self.socket_lock:
             self.eventloop.on_read(self.socket.fileno(), self._on_read)
