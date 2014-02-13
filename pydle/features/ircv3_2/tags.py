@@ -95,6 +95,6 @@ class TaggedMessageSupport(rfc1459.RFC1459Support):
             message, _, data = self._receive_buffer.partition(sep)
             self._receive_buffer = data
 
-            return TaggedMessage.parse(message, encoding=self.encoding)
+            return TaggedMessage.parse(message + sep, encoding=self.encoding)
         else:
             return super()._parse_message()

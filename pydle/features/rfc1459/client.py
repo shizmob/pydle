@@ -167,7 +167,7 @@ class RFC1459Support(BasicClient):
         sep = protocol.MINIMAL_LINE_SEPARATOR.encode(self.encoding)
         message, _, data = self._receive_buffer.partition(sep)
         self._receive_buffer = data
-        return parsing.RFC1459Message.parse(message, encoding=self.encoding)
+        return parsing.RFC1459Message.parse(message + sep, encoding=self.encoding)
 
     ## IRC API.
 
