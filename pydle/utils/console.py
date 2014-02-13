@@ -11,7 +11,7 @@ def main():
     client = _args.client_from_args('ipydle', description='Interactive pydle console.')
 
     # Let client do stuff in background.
-    thread = threading.Thread(target=client.poll_forever)
+    thread = threading.Thread(target=client.handle_forever)
     thread.start()
 
     # Run console.

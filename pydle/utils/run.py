@@ -5,7 +5,7 @@ from . import _args
 
 def main():
     client = _args.client_from_args('pydle', description='pydle IRC library.')
-    client.poll_forever()
+    client.handle_forever()
 
 if __name__ == '__main__':
     main()

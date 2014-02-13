@@ -11,19 +11,10 @@ from . import _args
 
 class IRCCat(Client):
     """ irccat. Takes raw messages on stdin, dumps raw messages to stdout. Life has never been easier. """
-    def _get_message(self):
-        """ Get message and print it to stdout. """
-        message = self.connection.get_message()
-        sys.stdout.write(message.construct(force=True))
-        return message
 
-    def _send_message(self, message):
-        sys.stdout.write(message.construct(force=True))
-        super()._send_message(message)
-
-    def _send_raw(self, raw):
-        sys.stdout.write(raw)
-        super()._send_raw(raw)
+    def _send(self, data):
+        sys.stdout.write(data)
+        super()._send(data)
 
     def process_stdin_forever(self):
         """ Yes. """
@@ -32,6 +23,10 @@ class IRCCat(Client):
             if not line:
                 break
             self.raw(line)
+
+    def on_raw(self, message):
+        print(message._raw)
+        super().on_raw(message)
 
     def on_ctcp_version(self, source, target):
         self.ctcp_reply(source, 'VERSION', 'pydle-irccat v{}'.format(__version__))
@@ -47,7 +42,7 @@ def main():
     thread = None
     if irccat.connected:
         # Let's rock.
-        thread = threading.Thread(target=irccat.poll_forever)
+        thread = threading.Thread(target=irccat.handle_forever)
         thread.start()
 
         # Process input in main thread.
