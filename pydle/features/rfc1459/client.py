@@ -657,7 +657,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_313(self, message):
         """ WHOIS operator info. """
-        target, nickname = message.params[0]
+        target, nickname = message.params[:2]
         info = {
             'oper': True
         }
@@ -681,7 +681,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_317(self, message):
         """ WHOIS idle time. """
-        target, nickname, idle_time = message.params[:2]
+        target, nickname, idle_time = message.params[:3]
         info = {
             'idle': int(idle_time),
         }
@@ -700,7 +700,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_319(self, message):
         """ WHOIS active channels. """
-        target, nickname, channels = message.params[:2]
+        target, nickname, channels = message.params[:3]
         channels = { channel.lstrip() for channel in channels.split(' ') }
         info = {
             'channels': channels
@@ -711,7 +711,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_324(self, message):
         """ Channel mode. """
-        target, channel = message.params[0], message.params[1]
+        target, channel = message.params[:2]
         modes = message.params[2:]
         if not self.in_channel(channel):
             return

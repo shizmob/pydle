@@ -1,9 +1,10 @@
 ## async.py
 # Light wrapper around whatever async library pydle uses.
 import functools
+import itertools
+import collections
 import tornado.concurrent
 import tornado.ioloop
-import tornado.gen
 
 
 class Future(tornado.concurrent.TracebackFuture):
@@ -11,7 +12,52 @@ class Future(tornado.concurrent.TracebackFuture):
 
 def blocking(func):
     """ Decorator for coroutine functions that need to block. """
-    return tornado.gen.coroutine(func)
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return_future = Future()
+
+        def handle_future(future):
+            # Chained futures!
+            try:
+                result = gen.send(future.result())
+                if isinstance(result, Future):
+                    result.add_done_callback(handle_future)
+                else:
+                    return_future.set_result(result)
+            except StopIteration as e:
+                return_future.set_result(getattr(e, 'value', None))
+
+        # Handle initial value.
+        gen = func(*args, **kwargs)
+        try:
+            result = next(gen)
+            if isinstance(result, Future):
+                result.add_done_callback(handle_future)
+            else:
+                return_future.set_result(result)
+        except StopIteration as e:
+            return_future.set_result(getattr(e, 'value', None))
+
+        return return_future
+    return wrapper
+
+def parallel(*futures):
+    """ Create a single future that will be completed when all the given futures are. """
+    result_future = Future()
+    results = collections.OrderedDict(zip(futures, itertools.repeat(None)))
+    futures = list(futures)
+
+    def done(future):
+        futures.remove(future)
+        results[future] = future.result()
+        # All out of futures. set the result.
+        if not futures:
+            result_future.set_result(list(results.values()))
+
+    for future in futures:
+        future.add_done_callback(done)
+
+    return result_future
 
 
 class EventLoop:
