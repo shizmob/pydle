@@ -36,7 +36,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
         self.rawmsg('CAP', 'LS')
 
         # Register as usual.
-        super()._register()
+        return super()._register()
 
     def _capability_normalize(self, cap):
         return cap.lstrip(PREFIXES).lower()

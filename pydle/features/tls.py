@@ -58,7 +58,7 @@ class TLSSupport(rfc1459.RFC1459Support):
             return
         if not self.connection.tls:
             self.rawmsg('STARTTLS')
-        super()._register()
+        return super()._register()
 
 
     ## Message callbacks.

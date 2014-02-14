@@ -51,7 +51,7 @@ class BasicClient:
         self.channels = {}
         self.users = {}
 
-        # Buffers and locks.
+        # Buffers, locks, futures.
         self._receive_buffer = b''
         self._requests = {}
 
