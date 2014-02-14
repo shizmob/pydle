@@ -19,24 +19,25 @@ def blocking(func):
         def handle_future(future):
             # Chained futures!
             try:
-                result = gen.send(future.result())
-                if isinstance(result, Future):
-                    result.add_done_callback(handle_future)
+                if future.exception() is not None:
+                    result = gen.throw(future.exception())
                 else:
-                    return_future.set_result(result)
+                    result = gen.send(future.result())
+                result.add_done_callback(handle_future)
             except StopIteration as e:
                 return_future.set_result(getattr(e, 'value', None))
+            except BaseException as e:
+                return_future.set_exception(e)
 
         # Handle initial value.
         gen = func(*args, **kwargs)
         try:
             result = next(gen)
-            if isinstance(result, Future):
-                result.add_done_callback(handle_future)
-            else:
-                return_future.set_result(result)
+            result.add_done_callback(handle_future)
         except StopIteration as e:
             return_future.set_result(getattr(e, 'value', None))
+        except BaseException as e:
+            return_future.set_exception(e)
 
         return return_future
     return wrapper
@@ -202,7 +203,7 @@ class EventLoop:
             self.running = True
             self.io_loop.start()
             self.running = False
-    
+
     def run_with(self, func):
         """ Run loop, call function, stop loop. If function returns a future, run until the future has been resolved. """
         self.running = True
