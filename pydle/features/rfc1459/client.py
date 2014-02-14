@@ -701,7 +701,7 @@ class RFC1459Support(BasicClient):
     def on_raw_319(self, message):
         """ WHOIS active channels. """
         target, nickname, channels = message.params[:3]
-        channels = { channel.lstrip() for channel in channels.split(' ') }
+        channels = { channel.lstrip() for channel in channels.lstrip().split(' ') }
         info = {
             'channels': channels
         }
