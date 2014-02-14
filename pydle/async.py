@@ -10,8 +10,8 @@ import tornado.ioloop
 class Future(tornado.concurrent.TracebackFuture):
     """ A future. """
 
-def blocking(func):
-    """ Decorator for coroutine functions that need to block. """
+def coroutine(func):
+    """ Decorator for coroutine functions that need to block for asynchronous operations. """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         return_future = Future()
@@ -23,20 +23,24 @@ def blocking(func):
                     result = gen.throw(future.exception())
                 else:
                     result = gen.send(future.result())
+                if isinstance(result, tuple):
+                    result = parallel(*result)
                 result.add_done_callback(handle_future)
             except StopIteration as e:
                 return_future.set_result(getattr(e, 'value', None))
-            except BaseException as e:
+            except Exception as e:
                 return_future.set_exception(e)
 
         # Handle initial value.
         gen = func(*args, **kwargs)
         try:
             result = next(gen)
+            if isinstance(result, tuple):
+                result = parallel(*result)
             result.add_done_callback(handle_future)
         except StopIteration as e:
             return_future.set_result(getattr(e, 'value', None))
-        except BaseException as e:
+        except Exception as e:
             return_future.set_exception(e)
 
         return return_future

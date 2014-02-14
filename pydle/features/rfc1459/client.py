@@ -279,7 +279,7 @@ class RFC1459Support(BasicClient):
     def whois(self, nickname):
         """
         Return information about user.
-        This is an asynchronous method: decorate the calling function with `pydle.async.blocking`,
+        This is an asynchronous method: decorate the calling function with `pydle.coroutine`,
         and yield from this function as follows:
           info = yield self.whois('Nick')
         """
@@ -300,7 +300,7 @@ class RFC1459Support(BasicClient):
     def whowas(self, nickname):
         """
         Return information about offline user.
-        This is an asynchronous method: decorate the calling function with `pydle.async.blocking`,
+        This is an asynchronous method: decorate the calling function with `pydle.coroutine`,
         and yield from this function as follows:
           info = yield self.whois('Nick')
         """
