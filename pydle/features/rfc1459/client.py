@@ -316,17 +316,20 @@ class RFC1459Support(BasicClient):
 
     ## IRC helpers.
 
+    def normalize(self, s):
+        return parsing.normalize(s, case_mapping=self._case_mapping)
+
     def is_channel(self, chan):
         """ Check if given argument is a channel name or not. """
         return any(chan.startswith(prefix) for prefix in self._channel_prefixes)
 
     def is_same_nick(self, left, right):
         """ Check if given nicknames are equal in the server's case mapping. """
-        return parsing.normalize(left, case_mapping=self._case_mapping) == parsing.normalize(right, case_mapping=self._case_mapping)
+        return self.normalize(left) == self.normalize(right)
 
     def is_same_channel(self, left, right):
         """ Check if given nicknames are equal in the server's case mapping. """
-        return parsing.normalize(left, case_mapping=self._case_mapping) == parsing.normalize(right, case_mapping=self._case_mapping)
+        return self.normalize(left) == self.normalize(right)
 
 
     ## Overloadable callbacks.
