@@ -48,7 +48,7 @@ class RFC1459Message(pydle.protocol.Message):
             parts = protocol.ARGUMENT_SEPARATOR.split(message[1:], 2)
         else:
             parts = [ None ] + protocol.ARGUMENT_SEPARATOR.split(message, 1)
-    
+
         if len(parts) == 3:
             source, command, raw_params = parts
         elif len(parts) == 2:
@@ -106,9 +106,9 @@ class RFC1459Message(pydle.protocol.Message):
             message += ' '
         for idx, param in enumerate(self.params):
             # Trailing parameter?
-            if ' ' in param:
+            if ' ' in param or param[0] == ':':
                 if idx + 1 < len(self.params) and not force:
-                    raise pydle.protocol.ProtocolViolation('Only the final parameter of an IRC message can be trailing and thus contain spaces.', message=param)
+                    raise pydle.protocol.ProtocolViolation('Only the final parameter of an IRC message can be trailing and thus contain spaces, or start with a colon.', message=param)
                 message += ' ' + protocol.TRAILING_PREFIX + param
             # Regular parameter.
             else:
