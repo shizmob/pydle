@@ -199,39 +199,23 @@ class EventLoop:
     def run(self):
         """ Run the event loop. """
         if not self.running:
-            self.io_loop.start()
             self.running = True
+            self.io_loop.start()
+            self.running = False
+    
+    def run_with(self, func):
+        """ Run loop, call function, stop loop. If function returns a future, run until the future has been resolved. """
+        self.running = True
+        self.io_loop.run_sync(func)
+        self.running = False
+
+    def run_until(self, future):
+        """ Run until future is resolved. """
+        return self.run_with(lambda: future)
 
     def stop(self):
         """ Stop the event loop. """
         if self.running:
             self.io_loop.stop()
-            self.running = False
 
-
-    def __enter__(self):
-        if not self.running:
-            self.io_loop.run_sync(self._create_context_future)
-            self.running = True
-            self._context_depth += 1
-
-    def __exit__(self):
-        if self.running and self._context_future:
-            self._context_depth -= 1
-
-            if self._context_depth == 0:
-                self._resolve_context_future()
-                self.running = False
-
-    def _create_context_future(self):
-        # Resolve any existing future first.
-        if self._context_future:
-            self._resolve_context_future()
-
-        self._context_future = tornado.concurrent.Future()
-        return self._context_future
-
-    def _resolve_context_future(self):
-        self._context_future.set_result(True)
-        self._context_future = None
 
