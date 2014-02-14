@@ -40,17 +40,16 @@ class RFC1459Support(BasicClient):
         self._user_modes = set(protocol.USER_MODES)
         self._user_modes_behaviour = copy.deepcopy(protocol.USER_MODES_BEHAVIOUR)
 
+        # Registration.
+        self.registered = False
+        self._registration_attempts = 0
+        self._attempt_nicknames = self._nicknames[:]
+
         # Info.
         self._requests['whois'] = {}
         self._requests['whowas'] = {}
         self._whois_info = {}
         self._whowas_info = {}
-
-        # Registration.
-        self.registered = False
-        self._requests['register'] = None
-        self._registration_attempts = 0
-        self._attempt_nicknames = self._nicknames[:]
 
         # Misc.
         self.motd = None
@@ -135,14 +134,13 @@ class RFC1459Support(BasicClient):
         # Set password.
         self.password = password
         # And initiate the IRC connection.
-        self.eventloop.run_with(self._register)
+        self._register()
 
     def _register(self):
         """ Perform IRC connection registration. """
         if self.registered:
             return
 
-        self._requests['register'] = Future()
         self._registration_attempts += 1
 
         # Password first.
@@ -155,20 +153,13 @@ class RFC1459Support(BasicClient):
         # And now for the rest of the user information.
         self.rawmsg('USER', self.username, '0', '*', self.realname)
 
-        # Return future.
-        return self._requests['register']
-
-    def _registered(self, message):
+    def _registration_completed(self, message):
         """ We're connected and registered. Receive proper nickname and emit fake NICK message. """
         if not self.registered:
             self.registered = True
-
             target = message.params[0]
             fakemsg = self._create_message('NICK', target, source=self.nickname)
             self.on_raw_nick(fakemsg)
-
-            future = self._requests.pop('register')
-            future.set_result(None)
 
     ## Message handling.
 
@@ -599,9 +590,9 @@ class RFC1459Support(BasicClient):
     # Since RFC1459 specifies no specific banner message upon completion of registration,
     # take any of the below commands as an indication that registration succeeded.
 
-    on_raw_001 = _registered # Welcome message.
-    on_raw_002 = _registered # Server host.
-    on_raw_003 = _registered # Server creation time.
+    on_raw_001 = _registration_completed # Welcome message.
+    on_raw_002 = _registration_completed # Server host.
+    on_raw_003 = _registration_completed # Server creation time.
 
     def on_raw_004(self, message):
         """ Basic server information. """
@@ -611,16 +602,16 @@ class RFC1459Support(BasicClient):
         self._channel_modes = set(channel_modes)
         self._user_modes = set(user_modes)
 
-    on_raw_008 = _registered # Server notice mask.
-    on_raw_042 = _registered # Unique client ID.
-    on_raw_250 = _registered # Connection statistics.
-    on_raw_251 = _registered # Amount of users online.
-    on_raw_252 = _registered # Amount of operators online.
-    on_raw_253 = _registered # Amount of unknown connections.
-    on_raw_254 = _registered # Amount of channels.
-    on_raw_255 = _registered # Amount of local users and servers.
-    on_raw_265 = _registered # Amount of local users.
-    on_raw_266 = _registered # Amount of global users.
+    on_raw_008 = _registration_completed # Server notice mask.
+    on_raw_042 = _registration_completed # Unique client ID.
+    on_raw_250 = _registration_completed # Connection statistics.
+    on_raw_251 = _registration_completed # Amount of users online.
+    on_raw_252 = _registration_completed # Amount of operators online.
+    on_raw_253 = _registration_completed # Amount of unknown connections.
+    on_raw_254 = _registration_completed # Amount of channels.
+    on_raw_255 = _registration_completed # Amount of local users and servers.
+    on_raw_265 = _registration_completed # Amount of local users.
+    on_raw_266 = _registration_completed # Amount of global users.
 
     def on_raw_301(self, message):
         """ User is away. """
@@ -792,7 +783,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_375(self, message):
         """ Start message of the day. """
-        self._registered(message)
+        self._registration_completed(message)
         self.motd = message.params[1] + '\n'
 
     def on_raw_372(self, message):
