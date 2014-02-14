@@ -629,6 +629,16 @@ class RFC1459Support(BasicClient):
         if nickname in self._requests['whois']:
             self._whois_info[nickname].update(info)
 
+    def on_raw_307(self, message):
+        """ User is identified (Anope). """
+        target, nickname = message.params[:2]
+        info = {
+            'identified': True
+        }
+
+        if nickname in self._requests['whois']:
+            self._whois_info[nickname].update(info)
+
     def on_raw_311(self, message):
         """ WHOIS user info. """
         target, nickname, username, hostname, _, realname = message.params
@@ -725,6 +735,18 @@ class RFC1459Support(BasicClient):
             return
 
         self.channels[channel]['created'] = datetime.datetime.fromtimestamp(int(timestamp))
+
+    def on_raw_330(self, message):
+        """ WHOIS account name (Atheme). """
+        target, nickname, account = message.params[:3]
+        info = {
+            'account': account
+        }
+
+        if nickname in self.users:
+            self._sync_user(nickname, info)
+        if nickname in self._requests['whois']:
+            self._whois_info[nickname].update(info)
 
     def on_raw_332(self, message):
         """ Current topic on channel join. """
