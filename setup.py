@@ -7,6 +7,9 @@ setup(
     packages=[
         'pydle',
         'pydle.features',
+        'pydle.features.rfc1459',
+        'pydle.features.ircv3_1',
+        'pydle.features.ircv3_2',
         'pydle.utils'
     ],
     requires=['tornado'],
