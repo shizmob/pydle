@@ -283,6 +283,12 @@ class RFC1459Support(BasicClient):
         and yield from this function as follows:
           info = yield self.whois('Nick')
         """
+
+        if " " in nickname:
+            fut = Future()
+            fut.set_result(None)
+            return fut
+
         if nickname not in self._requests['whois']:
             self.rawmsg('WHOIS', nickname)
             self._whois_info[nickname] = {
