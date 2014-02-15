@@ -294,7 +294,7 @@ class RFC1459Support(BasicClient):
         # NOTE: This may break on PlexusIRCd because apparently Rizon network
         #       administrators sometimes like to put spaces in their nicknames
         #       (yes, really)!
-        if " " in nickname:
+        if protocol.ARGUMENT_SEPARATOR.search(nickname) is not None:
             fut = Future()
             fut.set_result(None)
             return fut
