@@ -287,20 +287,13 @@ class RFC1459Support(BasicClient):
           info = yield self.whois('Nick')
         """
 
-        # Some IRCDs are wonky and send strange responses for spaces in
-        # nicknames.
-        #
-        # We just check if there's a space in the nickname -- if there is, then
-        # we immediately set the future's result to None and don't bother
-        # checking.
-        #
-        # NOTE: This may break on PlexusIRCd because apparently Rizon network
-        #       administrators sometimes like to put spaces in their nicknames
-        #       (yes, really)!
+        # Some IRCDs are wonky and send strange responses for spaces in nicknames.
+        # We just check if there's a space in the nickname -- if there is,
+        # then we immediately set the future's result to None and don't bother checking.
         if protocol.ARGUMENT_SEPARATOR.search(nickname) is not None:
-            fut = Future()
-            fut.set_result(None)
-            return fut
+            result = Future()
+            result.set_result(None)
+            return result
 
         if nickname not in self._requests['whois']:
             self.rawmsg('WHOIS', nickname)
