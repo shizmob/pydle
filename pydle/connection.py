@@ -7,6 +7,7 @@ import datetime
 
 import socket
 import ssl
+import errno
 
 from . import async
 from . import protocol
@@ -19,6 +20,7 @@ DEFAULT_CA_PATHS = {
     'linux2': '/etc/ssl/certs',
     'freebsd': '/etc/ssl/certs'
 }
+WOULD_BLOCK_ERRORS = (getattr(errno, 'EAGAIN', None), getattr(errno, 'EWOULDBLOCK', None))
 
 BUFFER_SIZE = 4096
 MESSAGE_THROTTLE_TRESHOLD = 3
@@ -68,6 +70,8 @@ class Connection:
             if self.tls:
                 self.setup_tls()
 
+            # Make socket non-blocking.
+            self.socket.setblocking(0)
             # Enable keep-alive.
             if hasattr(socket, 'SO_KEEPALIVE'):
                 self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
@@ -281,7 +285,14 @@ class Connection:
 
     def _on_read(self, fd):
         with self.socket_lock:
-            data = self.socket.recv(BUFFER_SIZE)
+            try:
+                data = self.socket.recv(BUFFER_SIZE)
+            except socket.error as e:
+                if e.errno in WOULD_BLOCK_ERRORS:
+                    # Nothing to do here.
+                    return
+                # Else, re-raise.
+                raise
 
         if data == b'':
             return self._on_error(fd)
@@ -317,7 +328,14 @@ class Connection:
                 # Send as much data as we can.
                 to_send = self.send_queue[0]
                 with self.socket_lock:
-                    sent = self.socket.send(to_send)
+                    try:
+                        sent = self.socket.send(to_send)
+                    except socket.error as e:
+                        if e.errno in WOULD_BLOCK_ERRORS:
+                            # Nothing more to do here.
+                            break
+                        # Else, re-raise.
+                        raise
 
                 self.last_sent_pos += sent
                 fully_sent = (self.last_sent_pos == len(to_send))
