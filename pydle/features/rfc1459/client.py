@@ -76,6 +76,7 @@ class RFC1459Support(BasicClient):
         super()._create_user(nickname)
         self.users[nickname].update({
             'account': None,
+            'identified': False,
             'away': False,
             'away_message': None,
         })
@@ -83,6 +84,8 @@ class RFC1459Support(BasicClient):
     def _rename_user(self, user, new):
         super()._rename_user(user, new)
 
+        # Unset account info.
+        self._sync_user(new, { 'account': None, 'identified': False })
         # Rename in mode lists, too.
         for ch in self.channels.values():
             for mode in self._nickname_prefixes.values():
@@ -287,6 +290,7 @@ class RFC1459Support(BasicClient):
             self.rawmsg('WHOIS', nickname)
             self._whois_info[nickname] = {
                 'oper': False,
+                'identified': False,
                 'idle': 0,
                 'away': False,
                 'away_message': None
@@ -630,7 +634,7 @@ class RFC1459Support(BasicClient):
             self._whois_info[nickname].update(info)
 
     def on_raw_307(self, message):
-        """ User is identified (Anope). """
+        """ WHOIS: User has identified for this nickname. (Anope) """
         target, nickname = message.params[:2]
         info = {
             'identified': True
@@ -740,11 +744,12 @@ class RFC1459Support(BasicClient):
         """ WHOIS account name (Atheme). """
         target, nickname, account = message.params[:3]
         info = {
-            'account': account
+            'account': account,
+            'identified': True,
         }
 
         if nickname in self.users:
-            self._sync_user(nickname, info)
+            self._sync_user(nickname, { 'account': info['account'] })
         if nickname in self._requests['whois']:
             self._whois_info[nickname].update(info)
 
