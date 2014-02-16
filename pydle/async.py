@@ -4,6 +4,7 @@ import functools
 import itertools
 import collections
 import threading
+import datetime
 
 import tornado.concurrent
 import tornado.ioloop
@@ -186,6 +187,9 @@ class EventLoop:
         When called from within the event loop, will return an opaque handle that can be passed to `unschedule`
         to unschedule the function.
         """
+        if not isinstance(_when, datetime.timedelta):
+            _when = datetime.timedelta(seconds=_when)
+
         if self.run_thread != threading.current_thread().ident:
             # Schedule scheduling in IOLoop thread because of thread-safety.
             self.schedule(functools.partial(self._do_schedule_in, _when, _callback, _args, _kwargs))
@@ -199,6 +203,9 @@ class EventLoop:
         to unschedule the first call of the function.
         After that, a function will stop being scheduled if it returns False or raises an Exception.
         """
+        if not isinstance(_interval, datetime.timedelta):
+            _interval = datetime.timedelta(seconds=_interval)
+
         if self.run_thread != threading.current_thread().ident:
             # Schedule scheduling in IOLoop thread because of thread-safety.
             self.schedule(functools.partial(self._do_schedule_periodically, _interval, _callback, _args, _kwargs))
