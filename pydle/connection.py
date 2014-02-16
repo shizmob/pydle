@@ -20,7 +20,14 @@ DEFAULT_CA_PATHS = {
     'linux2': '/etc/ssl/certs',
     'freebsd': '/etc/ssl/certs'
 }
-WOULD_BLOCK_ERRORS = (getattr(errno, 'EAGAIN', None), getattr(errno, 'EWOULDBLOCK', None))
+if hasattr(ssl, 'SSLWantReadError') and hasattr(ssl, 'SSLWantWriteError'):
+    WOULD_BLOCK_ERRORS = (ssl.SSLWantReadError, ssl.SSLWantWriteError)
+else:
+    WOULD_BLOCK_ERRORS = ()
+WOULD_BLOCK_ERRNOS = [
+    getattr(errno, 'EAGAIN', None),
+    getattr(errno, 'EWOULDBLOCK', None),
+]
 
 BUFFER_SIZE = 4096
 MESSAGE_THROTTLE_TRESHOLD = 3
@@ -287,12 +294,15 @@ class Connection:
         with self.socket_lock:
             try:
                 data = self.socket.recv(BUFFER_SIZE)
-            except socket.error as e:
-                if e.errno in WOULD_BLOCK_ERRORS:
-                    # Nothing to do here.
-                    return
-                # Else, re-raise.
-                raise
+            except WOULD_BLOCK_ERRORS as e:
+                # Nothing to do here.
+                return
+            except OSError as e:
+                if e.errno not in WOULD_BLOCK_ERRNOS:
+                    # Re-raise irrelevant errors.
+                    raise
+                # Nothing to do here.
+                return
 
         if data == b'':
             return self._on_error(fd)
@@ -334,13 +344,16 @@ class Connection:
                 to_send = self.send_queue[0]
                 with self.socket_lock:
                     try:
-                        sent = self.socket.send(to_send)
-                    except socket.error as e:
-                        if e.errno in WOULD_BLOCK_ERRORS:
-                            # Nothing more to do here.
-                            break
-                        # Else, re-raise.
-                        raise
+                        sent = self.socket.send(to_send, send_flags)
+                    except WOULD_BLOCK_ERRORS as e:
+                        # Nothing more to do here.
+                        break
+                    except OSError as e:
+                        if e.errno not in WOULD_BLOCK_ERRNOS:
+                            # Re-raise irrelevant errors.
+                            raise
+                        # Nothing more to do here.
+                        break
 
                 self.last_sent_pos += sent
                 fully_sent = (self.last_sent_pos == len(to_send))
