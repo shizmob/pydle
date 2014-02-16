@@ -303,6 +303,11 @@ class Connection:
     def _on_write(self, fd):
         sent_messages = []
         with self.send_queue_lock:
+            if hasattr(socket, 'MSG_NOSIGNAL'):
+                send_flags = socket.MSG_NOSIGNAL
+            else:
+                send_flags = 0
+
             # Keep sending while we can and have data left.
             while self.send_queue:
                 current = time.time()
