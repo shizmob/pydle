@@ -1,6 +1,5 @@
 ## sasl.py
 # SASL authentication support. Currently we only support PLAIN authentication.
-import threading
 import base64
 try:
     import puresasl
@@ -95,8 +94,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     def on_capability_sasl_enabled(self):
         """ Start SASL authentication. """
         # Set a timeout handler.
-        self._sasl_timer = threading.Timer(self.SASL_TIMEOUT, self._sasl_abort)
-        self._sasl_timer.start()
+        self._sasl_timer = self.eventloop.schedule_in(self.SASL_TIMEOUT, self._sasl_abort)
 
         # Initialize SASL.
         self._sasl_start()
@@ -110,7 +108,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     def on_raw_authenticate(self, message):
         """ Received part of the authentication challenge. """
         # Cancel timeout timer.
-        self._sasl_timer.cancel()
+        self.eventloop.unschedule(self._sasl_timer)
 
         # Add response data.
         response = ' '.join(message.params)
@@ -122,8 +120,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
             self._sasl_respond()
         else:
             # Response not done yet. Restart timer.
-            self._sasl_timer = threading.Timer(self.SASL_TIMEOUT, self._sasl_abort)
-            self._sasl_timer.start()
+            self._sasl_timer = self.eventloop.schedule_in(self.SASL_TIMEOUT, self._sasl_abort)
 
 
     on_raw_900 = cap.CapabilityNegotiationSupport._ignored # You are now logged in as...
