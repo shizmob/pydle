@@ -192,9 +192,9 @@ class EventLoop:
 
     def _do_schedule_periodically(self, interval, callback, args, kwargs):
         # Use a wrapper function
-        return self.io_loop.add_timeout(interval, functools.partial(self._periodical_handler, interval, callback, args, kwargs))
+        return self.io_loop.add_timeout(interval, functools.partial(self._periodic_handler, interval, callback, args, kwargs))
 
-    def _periodical_handler(self, interval, callback, args, kwargs):
+    def _periodic_handler(self, interval, callback, args, kwargs):
         # Call callback, and schedule again if it doesn't return False.
         handle = self._do_schedule_in(interval, callback, args, kwargs)
         if callback(*args, **kwargs) == False:
