@@ -1,5 +1,6 @@
 ## parsing.py
-# Message parsing and construction.
+# RFC1459 parsing and construction.
+import collections
 import pydle.protocol
 from . import protocol
 
@@ -143,6 +144,28 @@ def normalize(input, case_mapping=protocol.DEFAULT_CASE_MAPPING):
         input = input.replace('~', '^')
 
     return input
+
+class NormalizedDict(collections.MutableMapping):
+    """ A dict that normalizes entries according to the given case mapping. """
+    def __init__(self, *args, case_mapping):
+        self.storage = {}
+        self.case_mapping = case_mapping
+        self.update(dict(*args))
+
+    def __getitem__(self, key):
+        return self.storage[normalize(key, case_mapping=self.case_mapping)]
+
+    def __setitem__(self, key, value):
+        self.storage[normalize(key, case_mapping=self.case_mapping)] = value
+
+    def __delitem__(self, key):
+        del self.storage[normalize(key, case_mapping=self.case_mapping)]
+
+    def __iter__(self):
+        return iter(self.storage)
+
+    def __len__(self):
+        return len(self.storage)
 
 
 # Parsing.

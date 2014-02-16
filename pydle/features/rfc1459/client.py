@@ -54,6 +54,8 @@ class RFC1459Support(BasicClient):
         # Misc.
         self.motd = None
         self._case_mapping = protocol.DEFAULT_CASE_MAPPING
+        self.channels = parsing.NormalizedDict(self.users, case_mapping=self._case_mapping)
+        self.users = parsing.NormalizedDict(self.users, case_mapping=self._case_mapping)
 
     def _reset_connection_attributes(self):
         super()._reset_connection_attributes()

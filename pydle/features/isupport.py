@@ -72,9 +72,11 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         self._away_message_length_limit = int(value)
 
     def on_isupport_casemapping(self, value):
-        """ IRC case mapping for nickname comparisons. """
+        """ IRC case mapping for nickname and channel name comparisons. """
         if value in rfc1459.protocol.CASE_MAPPINGS:
             self._case_mapping = value
+            self.channels = rfc1459.parsing.NormalizedDict(self.channels, case_mapping=value)
+            self.users = rfc1459.parsing.NormalizedDict(self.users, case_mapping=value)
 
     def on_isupport_channellen(self, value):
         """ Channel name length limit. """
