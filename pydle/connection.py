@@ -314,7 +314,7 @@ class Connection:
         sent_messages = []
         with self.send_queue_lock:
             # ssl.SSLSocket does not allow any flags to be added to send().
-            if not tls and hasattr(socket, 'MSG_NOSIGNAL'):
+            if not self.tls and hasattr(socket, 'MSG_NOSIGNAL'):
                 send_flags = socket.MSG_NOSIGNAL
             else:
                 send_flags = 0
