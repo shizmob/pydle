@@ -186,7 +186,7 @@ class EventLoop:
         When called from within the event loop, will return an opaque handle that can be passed to `unschedule`
         to unschedule the function.
         """
-        if self.run_thread != threading.current_thread.ident():
+        if self.run_thread != threading.current_thread().ident:
             # Schedule scheduling in IOLoop thread because of thread-safety.
             self.schedule(functools.partial(self._do_schedule_in, _when, _callback, _args, _kwargs))
         else:
@@ -199,7 +199,7 @@ class EventLoop:
         to unschedule the first call of the function.
         After that, a function will stop being scheduled if it returns False or raises an Exception.
         """
-        if self.run_thread != threading.current_thread.ident():
+        if self.run_thread != threading.current_thread().ident:
             # Schedule scheduling in IOLoop thread because of thread-safety.
             self.schedule(functools.partial(self._do_schedule_periodically, _interval, _callback, _args, _kwargs))
         else:
