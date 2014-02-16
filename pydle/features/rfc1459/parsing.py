@@ -145,7 +145,7 @@ def normalize(input, case_mapping=protocol.DEFAULT_CASE_MAPPING):
 
     return input
 
-class NormalizedDict(collections.MutableMapping):
+class NormalizingDict(collections.MutableMapping):
     """ A dict that normalizes entries according to the given case mapping. """
     def __init__(self, *args, case_mapping):
         self.storage = {}
@@ -166,6 +166,11 @@ class NormalizedDict(collections.MutableMapping):
 
     def __len__(self):
         return len(self.storage)
+
+    def __repr__(self):
+        return '{mod}.{cls}({dict}, case_mapping={cm})'.format(
+            mod=__name__, cls=self.__class__.__name__, 
+            dict=self.storage, cm=self.case_mapping)
 
 
 # Parsing.
