@@ -221,7 +221,7 @@ class EventLoop:
 
     def _periodic_handler(self, interval, callback, args, kwargs):
         # Call callback, and schedule again if it doesn't return False.
-        handle = self._do_schedule_in(interval, callback, args, kwargs)
+        handle = self._do_schedule_periodically(interval, callback, args, kwargs)
         result = False
 
         try:
