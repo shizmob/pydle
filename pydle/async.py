@@ -3,6 +3,8 @@
 import functools
 import itertools
 import collections
+import threading
+
 import tornado.concurrent
 import tornado.ioloop
 
@@ -76,6 +78,7 @@ class EventLoop:
     def __init__(self, io_loop=None):
         self.io_loop = io_loop or tornado.ioloop.IOLoop.current()
         self.running = False
+        self.run_thread = None
         self.handlers = {}
         self._context_future = None
         self._context_depth = 0
@@ -178,40 +181,68 @@ class EventLoop:
         self.io_loop.add_callback(_callback, *_args, **_kwargs)
 
     def schedule_in(self, _when, _callback, *_args, **_kwargs):
-        """ Schedule a callback to be ran as soon as possible after `when` seconds have passed. """
-        # Schedule scheduling in IOLoop thread because of thread-safety.
-        self.schedule(functools.partial(self._do_schedule_in, _when, _callback, _args, _kwargs))
+        """
+        Schedule a callback to be ran as soon as possible after `when` seconds have passed.
+        When called from within the event loop, will return an opaque handle that can be passed to `unschedule`
+        to unschedule the function.
+        """
+        if self.run_thread != threading.current_thread.ident():
+            # Schedule scheduling in IOLoop thread because of thread-safety.
+            self.schedule(functools.partial(self._do_schedule_in, _when, _callback, _args, _kwargs))
+        else:
+            return self._do_schedule_in(_when, _callback, _args, _kwargs)
 
     def schedule_periodically(self, _interval, _callback, *_args, **_kwargs):
-        """ Schedule a callback to be ran every `interval` seconds. """
-        # Schedule scheduling in IOLoop thread because of thread-safety.
-        self.schedule(functools.partial(self._do_schedule_periodically, _interval, _callback, _args, _kwargs))
+        """
+        Schedule a callback to be ran every `interval` seconds.
+        When called from within the event loop, will return an opaque handle that can be passed to unschedule()
+        to unschedule the first call of the function.
+        After that, a function will stop being scheduled if it returns False or raises an Exception.
+        """
+        if self.run_thread != threading.current_thread.ident():
+            # Schedule scheduling in IOLoop thread because of thread-safety.
+            self.schedule(functools.partial(self._do_schedule_periodically, _interval, _callback, _args, _kwargs))
+        else:
+            return self._do_schedule_periodically(_interval, _callback, _args, _kwargs)
 
     def _do_schedule_in(self, when, callback, args, kwargs):
         return self.io_loop.add_timeout(when, functools.partial(callback, *args, **kwargs))
 
     def _do_schedule_periodically(self, interval, callback, args, kwargs):
-        # Use a wrapper function
+        # Use a wrapper function.
         return self.io_loop.add_timeout(interval, functools.partial(self._periodic_handler, interval, callback, args, kwargs))
 
     def _periodic_handler(self, interval, callback, args, kwargs):
         # Call callback, and schedule again if it doesn't return False.
         handle = self._do_schedule_in(interval, callback, args, kwargs)
-        if callback(*args, **kwargs) == False:
-            self.io_loop.remove_timeout(handle)
+        result = False
+
+        try:
+            result = callback(*args, **kwargs)
+        finally:
+            if result == False:
+                self.io_loop.remove_timeout(handle)
+
+    def unschedule(self, handle):
+        """ Unschedule a given timeout or periodical callback. """
+        self.io_loop.remove_timeout(handle)
 
 
     def run(self):
         """ Run the event loop. """
         if not self.running:
             self.running = True
+            self.run_thread = threading.current_thread.ident()
             self.io_loop.start()
+            self.run_thread = None
             self.running = False
 
     def run_with(self, func):
         """ Run loop, call function, stop loop. If function returns a future, run until the future has been resolved. """
         self.running = True
+        self.run_thread = threading.current_thread.ident()
         self.io_loop.run_sync(func)
+        self.run_thread = None
         self.running = False
 
     def run_until(self, future):
