@@ -313,7 +313,8 @@ class Connection:
     def _on_write(self, fd):
         sent_messages = []
         with self.send_queue_lock:
-            if hasattr(socket, 'MSG_NOSIGNAL'):
+            # ssl.SSLSocket does not allow any flags to be added to send().
+            if not tls and hasattr(socket, 'MSG_NOSIGNAL'):
                 send_flags = socket.MSG_NOSIGNAL
             else:
                 send_flags = 0
@@ -383,5 +384,3 @@ class Connection:
     def _on_error(self, fd):
         for handler in self.handlers['error']:
             handler()
-
-
