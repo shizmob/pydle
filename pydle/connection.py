@@ -70,19 +70,16 @@ class Connection:
     def connect(self):
         """ Connect to target. """
         with self.socket_lock:
-            # Create regular socket.
             self.socket = socket.create_connection((self.hostname, self.port), timeout=self.CONNECT_TIMEOUT, source_address=self.source_address)
-
-            # Wrap it in a TLS socket if we have to.
             if self.tls:
                 self.setup_tls()
 
-            # Make socket non-blocking.
-            self.socket.setblocking(0)
-            # Enable keep-alive.
+            # Make socket non-blocking, we are already told by the event loop when we can read and/or write without blocking.
+            self.socket.setblocking(False)
+            # Enable TCP keep-alive to keep the connection from timing out. This is strictly unnecessary as IRC already has in-band keepalive.
             if hasattr(socket, 'SO_KEEPALIVE'):
                 self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            # Have the socket return an error instead of signaling SIGPIPE.
+            # Have the socket return an error instead of signaling SIGPIPE -- having socket operations disturb the process is annoying.
             if hasattr(socket, 'SO_NOSIGPIPE'):
                 self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_NOSIGPIPE, 1)
 
@@ -119,45 +116,42 @@ class Connection:
 
     def setup_tls(self):
         """ Transform our regular socket into a TLS socket. """
-        # Set up context.
+        # Create context manually, as we're going to set our own options.
         self.tls_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
 
         # Load client/server certificate.
         if self.tls_certificate_file:
             self.tls_context.load_cert_chain(self.tls_certificate_file, self.tls_certificate_keyfile, password=self.tls_certificate_password)
 
-        # Set some relevant options.
-        # No server should use SSLv2 any more, it's outdated and full of security holes.
-        # Disable compression to counter the CRIME attack. (https://en.wikipedia.org/wiki/CRIME_%28security_exploit%29)
+        # Set some relevant options:
+        # - No server should use SSLv2 any more, it's outdated and full of security holes.
+        # - Disable compression in order to counter the CRIME attack. (https://en.wikipedia.org/wiki/CRIME_%28security_exploit%29)
         for opt in [ 'NO_SSLv2', 'NO_COMPRESSION']:
             if hasattr(ssl, 'OP_' + opt):
                 self.tls_context.options |= getattr(ssl, 'OP_' + opt)
 
         # Set TLS verification options.
         if self.tls_verify:
-            # Set our custom verification callback.
+            # Set our custom verification callback, if the library supports it.
             if hasattr(self.tls_context, 'set_servername_callback'):
                 self.tls_context.set_servername_callback(self.verify_tls)
 
-            # Always set default root certificate storage paths.
+            # Load certificate verification paths.
             self.tls_context.set_default_verify_paths()
-
-            # Try OS-specific paths too in case the above failed.
             if sys.platform in DEFAULT_CA_PATHS and path.isdir(DEFAULT_CA_PATHS[sys.platform]):
                 self.tls_context.load_verify_locations(capath=DEFAULT_CA_PATHS[sys.platform])
 
-            # Enable verification.
+            # If we want to verify the TLS connection, we first need a certicate.
+            # Check this certificate and its entire chain, if possible, against revocation lists.
             self.tls_context.verify_mode = ssl.CERT_REQUIRED
-            # Verify the entire chain if possible.
             if hasattr(self.tls_context, 'verify_flags'):
                 self.tls_context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
 
-        # Wrap socket into a snuggly TLS blanket.
         self.socket = self.tls_context.wrap_socket(self.socket,
             # Send hostname over SNI, but only if our TLS library supports it.
             server_hostname=self.hostname if ssl.HAS_SNI else None)
 
-        # And verify the peer here if our TLS library doesn't have callback functionality.
+        # Verify the peer certificate here if our TLS library doesn't have callback functionality.
         if self.tls_verify and not hasattr(self.tls_context, 'set_servername_callback'):
             self.verify_tls(self.socket, self.hostname, self.tls_context, as_callback=False)
 
@@ -170,11 +164,13 @@ class Connection:
         cert = socket.getpeercert()
 
         try:
+            # Make sure the hostnames for which this certificate is valid include the one we're connecting to.
             ssl.match_hostname(cert, hostname)
         except ssl.CertificateError:
             if not as_callback:
                 raise
 
+            # Try to give back a more elaborate error message if possible.
             if hasattr(ssl, 'ALERT_DESCRIPTION_BAD_CERTIFICATE'):
                 return ssl.ALERT_DESCRIPTION_BAD_CERTIFICATE
             return True
@@ -235,6 +231,7 @@ class Connection:
     ## Handler setup and teardown.
 
     def setup_handlers(self):
+        """ Register underlying event loop handlers. """
         if not self.connected:
             return
 
@@ -246,6 +243,7 @@ class Connection:
         self.update_write_handler()
 
     def remove_handlers(self):
+        """ Remove underlying event loop handlers. """
         if not self.connected:
             return
 
@@ -258,10 +256,15 @@ class Connection:
                 self.eventloop.off_error(self.socket.fileno(), self._on_error)
 
     def update_write_handler(self):
+        """
+        Update underlying event loop to listen to write events if we have data to write,
+        and stop listening if we have nothing to write or being throttled.
+        """
         if not self.connected:
             return
 
         with self.send_queue_lock, self.socket_lock:
+            # Only listen to write events if we aren't throttling our write handler.
             if self.send_queue and not self.throttling:
                 if not self.eventloop.handles_write(self.socket.fileno(), self._on_write):
                     self.eventloop.on_write(self.socket.fileno(), self._on_write)
@@ -305,6 +308,7 @@ class Connection:
                 return
 
         if data == b'':
+            # Some I/O notification backends use a zero-length read as error indicator.
             return self._on_error(fd)
         else:
             for handler in self.handlers['read']:
@@ -315,6 +319,7 @@ class Connection:
         with self.send_queue_lock:
             # ssl.SSLSocket does not allow any flags to be added to send().
             if not self.tls and hasattr(socket, 'MSG_NOSIGNAL'):
+                # Don't let socket errors disrupt the entire process.
                 send_flags = socket.MSG_NOSIGNAL
             else:
                 send_flags = 0
@@ -345,7 +350,7 @@ class Connection:
                 to_send = self.send_queue[0]
                 with self.socket_lock:
                     try:
-                        sent = self.socket.send(to_send, send_flags)
+                        self.last_sent_pos += self.socket.send(to_send[self.last_sent_pos:] send_flags)
                     except WOULD_BLOCK_ERRORS as e:
                         # Nothing more to do here.
                         break
@@ -356,10 +361,7 @@ class Connection:
                         # Nothing more to do here.
                         break
 
-                self.last_sent_pos += sent
-                fully_sent = (self.last_sent_pos == len(to_send))
-
-                if not fully_sent:
+                if self.last_sent_pos != len(to_send):
                     # The message was not fully sent, so presume we can't send anymore.
                     break
                 else:
@@ -370,7 +372,9 @@ class Connection:
                     if unthrottle:
                         self.unthrottled_sends += 1
 
+        # We might not need to listen for write events anymore if our queue is empty or if we're throttling.
         self.update_write_handler()
+
         if not sent_messages:
             return
         for handler in self.handlers['write']:
