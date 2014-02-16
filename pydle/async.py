@@ -232,7 +232,7 @@ class EventLoop:
         """ Run the event loop. """
         if not self.running:
             self.running = True
-            self.run_thread = threading.current_thread.ident()
+            self.run_thread = threading.current_thread().ident()
             self.io_loop.start()
             self.run_thread = None
             self.running = False
@@ -240,7 +240,7 @@ class EventLoop:
     def run_with(self, func):
         """ Run loop, call function, stop loop. If function returns a future, run until the future has been resolved. """
         self.running = True
-        self.run_thread = threading.current_thread.ident()
+        self.run_thread = threading.current_thread().ident()
         self.io_loop.run_sync(func)
         self.run_thread = None
         self.running = False
