@@ -350,7 +350,7 @@ class Connection:
                 to_send = self.send_queue[0]
                 with self.socket_lock:
                     try:
-                        self.last_sent_pos += self.socket.send(to_send[self.last_sent_pos:] send_flags)
+                        self.last_sent_pos += self.socket.send(to_send[self.last_sent_pos:], send_flags)
                     except WOULD_BLOCK_ERRORS as e:
                         # Nothing more to do here.
                         break
