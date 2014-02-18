@@ -153,12 +153,18 @@ class NormalizingDict(collections.MutableMapping):
         self.update(dict(*args))
 
     def __getitem__(self, key):
+        if not isinstance(key, str):
+            raise KeyError(key)
         return self.storage[normalize(key, case_mapping=self.case_mapping)]
 
     def __setitem__(self, key, value):
+        if not isinstance(key, str):
+            raise KeyError(key)
         self.storage[normalize(key, case_mapping=self.case_mapping)] = value
 
     def __delitem__(self, key):
+        if not isinstance(key, str):
+            raise KeyError(key)
         del self.storage[normalize(key, case_mapping=self.case_mapping)]
 
     def __iter__(self):
@@ -169,7 +175,7 @@ class NormalizingDict(collections.MutableMapping):
 
     def __repr__(self):
         return '{mod}.{cls}({dict}, case_mapping={cm})'.format(
-            mod=__name__, cls=self.__class__.__name__, 
+            mod=__name__, cls=self.__class__.__name__,
             dict=self.storage, cm=self.case_mapping)
 
 
