@@ -341,8 +341,9 @@ class BasicClient:
             message = self._parse_message()
             self.on_raw(message)
 
-    def on_data_error(self):
+    def on_data_error(self, exception):
         """ Handle error. """
+        self.logger.error('Encountered error on socket. Reconnecting.', exc_info=(type(exception), exception, None))
         self.disconnect()
 
     def on_raw(self, message):

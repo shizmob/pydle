@@ -1,4 +1,5 @@
 import sys
+import os
 import os.path as path
 import collections
 import time
@@ -276,7 +277,14 @@ class Connection:
     ## Lower-level data-related methods.
 
     def on(self, method, callback):
-        """ Add callback for event. """
+        """
+        Add callback for event.
+
+        Handlers are called as follows:
+         - read: Called with the read data.
+         - write: Called with the a list of the written messages.
+         - error: Called with the exception that occurred.
+        """
         if method not in self.handlers:
             raise ValueError('Given method must be one of: {}'.format(', '.join(self.handlers)))
         self.handlers[method].append(callback)
@@ -386,5 +394,13 @@ class Connection:
         self.update_write_handler()
 
     def _on_error(self, fd):
+        # Get native error and create exception from it.
+        errno = self.socket.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
+        try:
+            message = os.strerror(errno)
+        except ValueError:
+            message = 'Unknown error'
+        exception = IOError(errno, message)
+
         for handler in self.handlers['error']:
-            handler()
+            handler(exception)
