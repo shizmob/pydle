@@ -9,9 +9,17 @@ import datetime
 import tornado.concurrent
 import tornado.ioloop
 
+FUTURE_TIMEOUT = 30
+
 
 class Future(tornado.concurrent.TracebackFuture):
     """ A future. """
+
+class FutureTimeout:
+    """ A timeout has occurred when trying to resolve the future. """
+    def __bool__(self):
+        return False
+
 
 def coroutine(func):
     """ Decorator for coroutine functions that need to block for asynchronous operations. """
@@ -81,6 +89,8 @@ class EventLoop:
         self.running = False
         self.run_thread = None
         self.handlers = {}
+        self.future_timeout = FUTURE_TIMEOUT
+        self._future_timeouts = {}
         self._timeout_id = 0
         self._timeout_handles = {}
 
@@ -174,7 +184,26 @@ class EventLoop:
 
     def on_future(self, _future, _callback, *_args, **_kwargs):
         """ Add a callback for when the given future has been resolved. """
-        self.io_loop.add_future(_future, functools.partial(_callback, *_args, **_kwargs))
+        callback = functools.partial(self._do_on_future, _callback, _args, _kwargs)
+
+        # Create timeout handler and regular handler.
+        self._future_timeouts[_future] = self.schedule_in(self.future_timeout, callback)
+        self.io_loop.add_future(_future, callback)
+
+    def _do_on_future(self, callback, args, kwargs, future):
+        # This was a time-out.
+        if not future.done():
+            future.set_result(FutureTimeout)
+            del self._future_timeouts[future]
+        # This was a time-out that already has been handled.
+        elif future.result() == FutureTimeout:
+            return
+        # A regular result. Cancel the timeout.
+        else:
+            self.unschedule(self._future_timeouts.pop(future))
+
+        # Call callback.
+        callback(*args, **kwargs)
 
 
     def _get_schedule_handle(self):
