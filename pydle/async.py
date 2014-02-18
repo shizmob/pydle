@@ -15,11 +15,6 @@ FUTURE_TIMEOUT = 30
 class Future(tornado.concurrent.TracebackFuture):
     """ A future. """
 
-class FutureTimeout:
-    """ A timeout has occurred when trying to resolve the future. """
-    def __bool__(self):
-        return False
-
 
 def coroutine(func):
     """ Decorator for coroutine functions that need to block for asynchronous operations. """
@@ -193,10 +188,10 @@ class EventLoop:
     def _do_on_future(self, callback, args, kwargs, future):
         # This was a time-out.
         if not future.done():
-            future.set_result(FutureTimeout)
+            future.set_exception(TimeoutError('Future timed out before yielding a result.'))
             del self._future_timeouts[future]
         # This was a time-out that already has been handled.
-        elif future.result() == FutureTimeout:
+        elif isinstance(future.exception(), TimeoutError):
             return
         # A regular result. Cancel the timeout.
         else:
