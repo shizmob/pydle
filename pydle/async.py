@@ -81,8 +81,9 @@ class EventLoop:
         self.running = False
         self.run_thread = None
         self.handlers = {}
-        self._context_future = None
-        self._context_depth = 0
+        self.periodics = {}
+        self._timeout_id = 0
+        self._timeout_handles = {}
 
     def __del__(self):
         self.io_loop.close()
@@ -177,6 +178,14 @@ class EventLoop:
         self.io_loop.add_future(_future, functools.partial(_callback, *_args, **_kwargs))
 
 
+    def _get_schedule_handle(self):
+        """ Get a unique handle for use in the schedule_* functions. """
+        # Just use a simple monotonically increasing number.
+        handle = self._timeout_id
+        self._timeout_id += 1
+
+        return handle
+
     def schedule(self, _callback, *_args, **_kwargs):
         """ Schedule a callback to be ran as soon as possible in this loop. """
         self.io_loop.add_callback(_callback, *_args, **_kwargs)
@@ -184,55 +193,73 @@ class EventLoop:
     def schedule_in(self, _when, _callback, *_args, **_kwargs):
         """
         Schedule a callback to be ran as soon as possible after `when` seconds have passed.
-        When called from within the event loop, will return an opaque handle that can be passed to `unschedule`
-        to unschedule the function.
+        Will return an opaque handle that can be passed to `unschedule` to unschedule the function.
         """
         if not isinstance(_when, datetime.timedelta):
             _when = datetime.timedelta(seconds=_when)
 
+        # Create ID for this timeout.
+        id = self._get_schedule_handle()
+
         if self.run_thread != threading.current_thread().ident:
             # Schedule scheduling in IOLoop thread because of thread-safety.
-            self.schedule(functools.partial(self._do_schedule_in, _when, _callback, _args, _kwargs))
+            self.schedule(functools.partial(self._do_schedule_in, id, _when, _callback, _args, _kwargs))
         else:
-            return self._do_schedule_in(_when, _callback, _args, _kwargs)
+            self._do_schedule_in(id, _when, _callback, _args, _kwargs)
+
+        return id
 
     def schedule_periodically(self, _interval, _callback, *_args, **_kwargs):
         """
         Schedule a callback to be ran every `interval` seconds.
-        When called from within the event loop, will return an opaque handle that can be passed to unschedule()
-        to unschedule the first call of the function.
-        After that, a function will stop being scheduled if it returns False or raises an Exception.
+        Will return an opaque handle that can be passed to unschedule() to unschedule the interval function.
+        A function will also stop being scheduled if it returns False or raises an Exception.
         """
         if not isinstance(_interval, datetime.timedelta):
             _interval = datetime.timedelta(seconds=_interval)
 
+        # Create ID for this periodic.
+        id = self._get_schedule_handle()
+
         if self.run_thread != threading.current_thread().ident:
             # Schedule scheduling in IOLoop thread because of thread-safety.
-            self.schedule(functools.partial(self._do_schedule_periodically, _interval, _callback, _args, _kwargs))
+            self.schedule(functools.partial(self._do_schedule_periodically, id, _interval, _callback, _args, _kwargs))
         else:
-            return self._do_schedule_periodically(_interval, _callback, _args, _kwargs)
+            self._do_schedule_periodically(id, _interval, _callback, _args, _kwargs)
 
-    def _do_schedule_in(self, when, callback, args, kwargs):
-        return self.io_loop.add_timeout(when, functools.partial(callback, *args, **kwargs))
+        return id
 
-    def _do_schedule_periodically(self, interval, callback, args, kwargs):
+    def _do_schedule_in(self, id, when, callback, args, kwargs):
+        self._timeout_handles[id] = self.io_loop.add_timeout(when, functools.partial(callback, *args, **kwargs))
+
+    def _do_schedule_periodically(self, id, interval, callback, args, kwargs):
         # Use a wrapper function.
-        return self.io_loop.add_timeout(interval, functools.partial(self._periodic_handler, interval, callback, args, kwargs))
+        self._timeout_handles[id] = self.io_loop.add_timeout(interval, functools.partial(self._periodic_handler, interval, callback, args, kwargs))
 
-    def _periodic_handler(self, interval, callback, args, kwargs):
+    def _periodic_handler(self, id, interval, callback, args, kwargs):
+        # We could've been unscheduled for some reason.
+        if not self.is_scheduled(id):
+            return
+
         # Call callback, and schedule again if it doesn't return False.
-        handle = self._do_schedule_periodically(interval, callback, args, kwargs)
+        self._do_schedule_periodically(id, interval, callback, args, kwargs)
         result = False
 
         try:
             result = callback(*args, **kwargs)
         finally:
             if result == False:
-                self.io_loop.remove_timeout(handle)
+                self.unschedule(id)
+
+    def is_scheduled(self, handle):
+        """ Return whether or not the given handle is still scheduled. """
+        return handle in self._timeout_handles
 
     def unschedule(self, handle):
         """ Unschedule a given timeout or periodical callback. """
-        self.io_loop.remove_timeout(handle)
+        if self.is_scheduled(handle):
+            handle = self._timeout_handles.pop(handle)
+            self.io_loop.remove_timeout(handle)
 
 
     def run(self):
