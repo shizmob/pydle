@@ -81,7 +81,6 @@ class EventLoop:
         self.running = False
         self.run_thread = None
         self.handlers = {}
-        self.periodics = {}
         self._timeout_id = 0
         self._timeout_handles = {}
 
