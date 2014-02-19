@@ -58,6 +58,7 @@ class BasicClient:
         self._last_data_received = time.time()
         self._receive_buffer = b''
         self._requests = {}
+        self._ping_checker_handle = None
         self._ping_timeout_handle = None
 
         # Misc.
@@ -99,16 +100,24 @@ class BasicClient:
         self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
 
         # Schedule pinger.
-        self.eventloop.schedule_periodically(PING_DELAY, self._check_ping)
+        self._ping_checker_handle = self.eventloop.schedule_periodically(PING_DELAY, self._check_ping)
         # Set logger name.
         self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
 
     def disconnect(self):
         """ Disconnect from server. """
         if self.connected:
+            # Unschedule remaining ping handlers.
+            self.eventloop.unschedule(self._ping_checker_handle)
+            if self._ping_timeout_handle:
+                self.eventloop.unschedule(self._ping_timeout_handle)
+
+            # Shutdown connection.
             self.connection.off('read', self.on_data)
             self.connection.off('error', self.on_data_error)
             self.connection.disconnect()
+
+            # Callback.
             self.on_disconnect(self._has_quit)
 
             # Reset any attributes.
@@ -154,7 +163,7 @@ class BasicClient:
 
     def _on_ping_timeout(self):
         """ No pong received from server within PONG_TIMEOUT seconds. """
-        if self._ping_timeout_handle:
+        if self.connected and self._ping_timeout_handle:
             error = TimeoutError('Ping timeout: no pong received from server after {timeout} seconds.'.format(timeout=PING_TIMEOUT))
             self.on_data_error(error)
 
