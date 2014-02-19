@@ -257,7 +257,7 @@ class EventLoop:
 
     def _do_schedule_periodically(self, id, interval, callback, args, kwargs):
         # Use a wrapper function.
-        self._timeout_handles[id] = self.io_loop.add_timeout(interval, functools.partial(self._periodic_handler, interval, callback, args, kwargs))
+        self._timeout_handles[id] = self.io_loop.add_timeout(interval, functools.partial(self._periodic_handler, id, interval, callback, args, kwargs))
 
     def _periodic_handler(self, id, interval, callback, args, kwargs):
         # We could've been unscheduled for some reason.
