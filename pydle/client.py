@@ -10,6 +10,9 @@ from . import protocol
 
 __all__ = [ 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
 UNREGISTERED_NICKNAME = '<unregistered>'
+PING_DELAY = 30
+PING_TIMEOUT = 180
+PING_IDENTIFIER = 'pydle-ping-timeout'
 
 
 class IRCError(Exception):
@@ -52,8 +55,10 @@ class BasicClient:
         self.users = {}
 
         # Buffers and locks.
+        self._last_data_received = time.time()
         self._receive_buffer = b''
         self._requests = {}
+        self._ping_timeout_handle = None
 
         # Misc.
         self.logger = logging.getLogger(__name__)
@@ -93,6 +98,8 @@ class BasicClient:
             self._reset_connection_attributes()
         self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
 
+        # Schedule pinger.
+        self.eventloop.schedule_periodically(PING_DELAY, self._check_ping)
         # Set logger name.
         self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
 
@@ -130,6 +137,26 @@ class BasicClient:
                 return self.RECONNECT_DELAYS[self._reconnect_attempts]
         else:
             return 0
+
+    def _check_ping(self):
+        """ Check if we should ping the server. """
+        if time.time() - self._last_data_received >= PING_DELAY and not self._ping_timeout_handle:
+            # PING_DELAY time of no data. Send a ping.
+            self.ping(PING_IDENTIFIER)
+            self._ping_timeout_handle = self.eventloop.schedule_in(PING_TIMEOUT, self._on_ping_timeout)
+
+    def _on_pong_received(self, identifier):
+        """ Received pong from server. Check if it goes for us. """
+        if identifier == PING_IDENTIFIER:
+            # Unschedule ping timeout.
+            self.eventloop.unschedule(self._ping_timeout_handle)
+            self._ping_timeout_handle = None
+
+    def _on_ping_timeout(self):
+        """ No pong received from server within PONG_TIMEOUT seconds. """
+        if self._ping_timeout_handle:
+            error = TimeoutError('Ping timeout: no pong received from server after {timeout} seconds.'.format(timeout=PING_TIMEOUT))
+            self.on_data_error(error)
 
 
     ## Internal database management.
@@ -274,6 +301,10 @@ class BasicClient:
         message = str(self._create_message(command, *args, **kwargs))
         self._send(message)
 
+    def ping(self, identifier=None):
+        """ Ping connection with identifier. """
+        raise NotImplementedError()
+
 
     ## Overloadable callbacks.
 
@@ -336,6 +367,7 @@ class BasicClient:
     def on_data(self, data):
         """ Handle received data. """
         self._receive_buffer += data
+        self._last_data_received = time.time()
 
         while self._has_message():
             message = self._parse_message()

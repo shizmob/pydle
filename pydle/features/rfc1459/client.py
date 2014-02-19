@@ -184,6 +184,10 @@ class RFC1459Support(BasicClient):
 
     ## IRC API.
 
+    def ping(self, identifier=None):
+        """ Ping server. """
+        self.rawmsg('PING', identifier or 'pydle')
+
     @property
     def nickname(self):
         """ Our currently active nickname. """
@@ -555,6 +559,11 @@ class RFC1459Support(BasicClient):
         """ PING command. """
         # Respond with a pong.
         self.rawmsg('PONG', *message.params)
+
+    def on_raw_pong(self, message):
+        """ PING response. """
+        identifier = message.params[0]
+        self._on_pong_received(identifier)
 
     def on_raw_privmsg(self, message):
         """ PRIVMSG command. """
