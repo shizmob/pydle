@@ -249,14 +249,14 @@ class RFC1459Support(BasicClient):
             for chunk in chunkify(line, chunklen):
                 self.rawmsg('NOTICE', target, chunk)
 
-    def mode(self, target, *modes):
+    def set_mode(self, target, *modes):
         """ Set mode on target. """
         if self.is_channel(target) and not self.in_channel(target):
             raise NotInChannel('Not in channel {}'.format(target))
 
         self.rawmsg('MODE', target, *modes)
 
-    def topic(self, target, topic):
+    def set_topic(self, target, topic):
         """ Set topic on channel. """
         if not self.is_channel(target):
             raise ValueError('Not a channel: {}'.format(target))
