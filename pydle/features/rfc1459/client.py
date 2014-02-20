@@ -320,8 +320,8 @@ class RFC1459Support(BasicClient):
 
     ## IRC helpers.
 
-    def normalize(self, s):
-        return parsing.normalize(s, case_mapping=self._case_mapping)
+    def normalize(self, input):
+        return parsing.normalize(input, case_mapping=self._case_mapping)
 
     def is_channel(self, chan):
         """ Check if given argument is a channel name or not. """
@@ -825,6 +825,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_422(self, message):
         """ MOTD is missing. """
+        self._registration_completed(message)
         self.motd = None
         self.on_connect()
 
