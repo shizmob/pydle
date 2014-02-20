@@ -80,9 +80,6 @@ class Connection:
             # Enable TCP keep-alive to keep the connection from timing out. This is strictly unnecessary as IRC already has in-band keepalive.
             if hasattr(socket, 'SO_KEEPALIVE'):
                 self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            # Have the socket return an error instead of signaling SIGPIPE -- having socket operations disturb the process is annoying.
-            if hasattr(socket, 'SO_NOSIGPIPE'):
-                self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_NOSIGPIPE, 1)
 
         # Reset message buffer and queue.
         with self.send_queue_lock:
@@ -325,13 +322,6 @@ class Connection:
     def _on_write(self, fd):
         sent_messages = []
         with self.send_queue_lock:
-            # ssl.SSLSocket does not allow any flags to be added to send().
-            if not self.tls and hasattr(socket, 'MSG_NOSIGNAL'):
-                # Don't let socket errors disrupt the entire process.
-                send_flags = socket.MSG_NOSIGNAL
-            else:
-                send_flags = 0
-
             # Keep sending while we can and have data left.
             while self.send_queue:
                 current = time.time()
@@ -358,7 +348,7 @@ class Connection:
                 to_send = self.send_queue[0]
                 with self.socket_lock:
                     try:
-                        self.last_sent_pos += self.socket.send(to_send[self.last_sent_pos:], send_flags)
+                        self.last_sent_pos += self.socket.send(to_send[self.last_sent_pos:])
                     except WOULD_BLOCK_ERRORS as e:
                         # Nothing more to do here.
                         break
