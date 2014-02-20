@@ -9,5 +9,5 @@ from .whox import WHOXSupport
 from .ircv3_1 import IRCv3_1Support
 from .ircv3_2 import IRCv3_2Support
 
-ALL = [ IRCv3_1Support, IRCv3_2Support, WHOXSupport, ISUPPORTSupport, CTCPSupport, TLSSupport, AccountSupport, RFC1459Support ]
+ALL = [ IRCv3_1Support, IRCv3_2Support, WHOXSupport, ISUPPORTSupport, CTCPSupport, AccountSupport, TLSSupport, RFC1459Support ]
 LITE = [ WHOXSupport, ISUPPORTSupport, CTCPSupport, TLSSupport, RFC1459Support ]
