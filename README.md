@@ -25,8 +25,11 @@ Structure
 * `pydle.MinimalClient` - tinier client that supports `pydle.BasicClient` plus some features in `pydle.features`. (currently `ctcp`, `isupport` and `rfc1459`)
 * `pydle.BasicClient` - base IRC message handler. Has no functionality.
 * `pydle.ClientPool` - a 'pool' of several clients in order to handle multiple clients in one swift main loop.
+* `pydle.EventLoop` - asynchronous event loop wrapper.
+* `pydle.Future` - the future asynchronous primitive.
 * `pydle.features` - IRC protocol implementations and extensions.
    - `pydle.features.rfc1459` - basic [RFC1459](https://tools.ietf.org/html/rfc1459.html) implementation with a few commonly-implemented [RF](https://tools.ietf.org/html/rfc2810.html)[C2](https://tools.ietf.org/html/rfc2811.html)[81](https://tools.ietf.org/html/rfc2812.html)[x](https://tools.ietf.org/html/rfc2813.html) extensions.
+   - `pydle.features.account` - Basic features for an account system as implemented by services (in progress).
    - `pydle.features.ctcp` - [Client-to-Client Protocol](http://www.irchelp.org/irchelp/rfc/ctcpspec.html) support.
    - `pydle.features.tls` - [Transport Layer Security](https://tools.ietf.org/html/rfc5246.html) and [STARTTLS](https://ircv3.atheme.org/extensions/tls-3.1) support.
    - `pydle.features.isupport` - [ISUPPORT/PROTOCTL](http://tools.ietf.org/html/draft-hardy-irc-isupport-00) support.
@@ -59,7 +62,7 @@ class MyOwnBot(pydle.Client):
 
 client = MyOwnBot('MyBot', realname='My Bot')
 client.connect('irc.rizon.net', 6697, tls=True, tls_verify=False)
-client.poll_forever()
+client.handle_forever()
 ```
 
 *But wait, I want to handle multiple clients!*
@@ -73,7 +76,7 @@ for i in range(10):
     pool.add(client)
 
 # This will make sure all clients are treated in a fair way priority-wise.
-pool.poll_forever()
+pool.handle_forever()
 ```
 
 If you want to customize bot features, you can subclass `pydle.BasicClient` and one or more features from `pydle.features` or your own feature classes, like such:
@@ -90,7 +93,7 @@ class ACMESupport(pydle.BasicClient):
     def on_raw_999(self, source, params):
         """ ACME's custom 999 numeric tells us to change our nickname. """
         nickname = params[0]
-        self.nickname = nickname
+        self.set_nickname(nickname)
 ```
 
 FAQ
@@ -139,9 +142,9 @@ with `pydle.features.tls`, two extra keyword arguments are added:
 - `tls`: whether or not to use TLS for this connection. Default is `False`;
 - `tls_verify`: whether or not to strictly verify the server certificate. Default is `False`.
 
-`Client.disconnect()` - disconnect from server.
+`Client.disconnect()` - disconnect from server. If using `pydle.features.rfc1459`, `Client.quit(reason)` is preferred.
 
-`Client.poll_forever()` - a 'main loop'-esque method. Will not return until the client disconnected.
+`Client.handle_forever()` - a 'main loop'-esque method. Will not return until the client disconnected.
 
 *Attributes*
 
@@ -149,9 +152,11 @@ with `pydle.features.tls`, two extra keyword arguments are added:
 
 `Client.connection` - the `pydle.connection.Connection` instance associated with this client.
 
+`Client.eventloop` - the `pydle.async.EventLoop` instance for the client this thread is in.
+
 `Client.logger` - the `pydle.logging.Logger` instance associated with this client.
 
-`Client.nickname` - get or set to retrieve or attempt to set current nickname.
+`Client.nickname` - the current nickname. Changes will have no effect: use `Client.set_nickname(nick)`.
 
 `Client.username` - the current username. Changes will only take effect on reconnect.
 
@@ -191,6 +196,8 @@ with `pydle.features.sasl`, four extra attributes are added:
 
 `Client.raw(message)` - send raw IRC command.
 
+`Client.ping(identifier)` - ping server.
+
 with `pydle.features.rfc1459`:
 
 `Client.join(channel, password=None)` - join channel.
@@ -201,15 +208,23 @@ with `pydle.features.rfc1459`:
 
 `Client.quit(message=pydle.DEFAULT_QUIT_MESSAGE)` - quit network.
 
+`Client.set_nickname(nick)` - attempt to change client nickname.
+
 `Client.message(target, message)` - send a message.
 
 `Client.notice(target, message)` - send a notice.
 
-`Client.mode(target, *modes)` - set channel or user modes.
+`Client.set_mode(target, *modes)` - set channel or user modes.
+
+`Client.set_topic(channel, topic)` - set a channel topic.
 
 `Client.away(message)` - set self as away with message.
 
 `Client.back()` - set self as not away anymore.
+
+`Client.whois(nickname)` - retrieve information about user. This method returns a `pydle.async.Future`: calling methods should be wrapped in the `pydle.coroutine` decorator and `yield` the returned future.
+
+`Client.whowas(nickname)` - retrieve information about former user. This method returns a `pydle.async.Future`: see `Client.whois(nickname)` for usage.
 
 with `pydle.features.ctcp`, two extra methods are added:
 
@@ -220,7 +235,15 @@ with `pydle.features.cap`, one extra method is added:
 
 - `Client.capability_negotiated(cap, success=True)` - indicate the capability `cap` has been negotiated, where `success` indicates if negotiation succeeded.
 
+with `pydle.features.ircv3_2.monitor`, three methods are added:
+
+- `Client.monitor(nickname)` - add the given nickname to the monitoring list: client will be informed when user gets online or goes offline.
+- `Client.unmonitor(nickname)` - remove the given nickname from the monitoring list.
+- `Client.is_monitoring(nickname)` - return whether or not the client is monitoring the given nickname.
+
 *Helpers*
+
+`Client.normalize(input)` - normalize input according to currently active connection rules.
 
 `Client.is_channel(target)` - return whether or not `target` is a channel.
 
@@ -289,6 +312,11 @@ with `pydle.features.cap`, three generic callbacks are added:
   * `pydle.CAPABILITY_NEGOTIATING` - the callback is still negotiating the capability. Stall general capability negotiation until `Client.capability_negotiated(<cap>)` has been called.
   * `pydle.CAPABILITY_FAILED` - the callback failed to negotiate the capability. Attempt to disable it again.
 - `Client.on_capability_<cap>_disabled()` - callback called when capability `cap` that was requested before has been disabled.
+
+with `pydle.features.ircv3_2.monitor`, two generic callbacks are added:
+
+- `Client.on_user_online(nickname)` - called when a monitored user got online.
+- `Client.on_user_offline(nickname)` - called when a monitored user went offline.
 
 You can also overload `Client.on_raw_<cmd>(message)`, where `cmd` is the raw IRC command (either a text command or a zero-filled numeric code) and `message` an instance of (a subclass of) `protocol.Message` if you really want to, but this is not advisable if you're not building features as it may disable certain built-in functionalities if you're not careful.
 
