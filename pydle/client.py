@@ -198,13 +198,6 @@ class BasicClient:
         if not nick in self.users:
             self._create_user(nick)
 
-        is_self = self.is_same_nick(self.nickname, nick)
-        # Update user/host combination.
-        if is_self:
-            if 'username' in metadata:
-                self.username = metadata['username']
-            if 'hostname' in metadata:
-                self.hostname = metadata['hostname']
         self.users[nick].update(metadata)
 
     def _rename_user(self, user, new):
