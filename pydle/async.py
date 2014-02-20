@@ -5,6 +5,7 @@ import itertools
 import collections
 import threading
 import datetime
+import types
 
 import tornado.concurrent
 import tornado.ioloop
@@ -39,6 +40,11 @@ def coroutine(func):
 
         # Handle initial value.
         gen = func(*args, **kwargs)
+
+        # If this isn't a generator, then just return it.
+        if not isinstance(gen, types.GeneratorType):
+            return gen
+
         try:
             result = next(gen)
             if isinstance(result, tuple):
