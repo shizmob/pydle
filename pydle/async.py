@@ -69,12 +69,17 @@ def parallel(*futures):
     results = collections.OrderedDict(zip(futures, itertools.repeat(None)))
     futures = list(futures)
 
+    if not futures:
+        # If we don't have any futures, then we return an empty tuple.
+        result_future.set_result(())
+        return result_future
+
     def done(future):
         futures.remove(future)
         results[future] = future.result()
         # All out of futures. set the result.
         if not futures:
-            result_future.set_result(list(results.values()))
+            result_future.set_result(tuple(results.values()))
 
     for future in futures:
         future.add_done_callback(done)
