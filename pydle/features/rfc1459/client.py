@@ -547,7 +547,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_pong(self, message):
         """ PING response. """
-        identifier = message.params[0]
+        identifier = message.params[-1]
         self._on_pong_received(identifier)
 
     def on_raw_privmsg(self, message):
