@@ -38,12 +38,17 @@ def coroutine(func):
             except Exception as e:
                 return_future.set_exception(e)
 
-        # Handle initial value.
-        gen = func(*args, **kwargs)
-
-        # If this isn't a generator, then just return it.
-        if not isinstance(gen, types.GeneratorType):
-            return gen
+        try:
+            # Handle initial value.
+            gen = func(*args, **kwargs)
+        except Exception as e:
+            return_future.set_exception(e)
+            return return_future
+        else:
+            # If this isn't a generator, then wrap the result with a future.
+            if not isinstance(gen, types.GeneratorType):
+                return_future.set_result(gen)
+                return return_future
 
         try:
             result = next(gen)
