@@ -22,12 +22,14 @@ class AccountSupport(rfc1459.RFC1459Support):
     ## IRC API.
 
     def whois(self, nickname):
-        super().whois(nickname)
+        r = super().whois(nickname)
 
         # Add own info.
         if nickname in self._whois_info:
             self._whois_info[nickname].setdefault('account', None)
             self._whois_info[nickname].setdefault('identified', False)
+
+        return r
 
 
     ## Message handlers.
