@@ -33,7 +33,7 @@ class BasicClient:
     RECONNECT_ON_ERROR = True
     RECONNECT_MAX_ATTEMPTS = 3
     RECONNECT_DELAYED = True
-    RECONNECT_DELAYS = [0, 30, 120, 600]
+    RECONNECT_DELAYS = [0, 5, 10, 30, 120, 600]
 
     def __init__(self, nickname, fallback_nicknames=[], username=None, realname=None, **kwargs):
         """ Create a client. """
@@ -319,6 +319,8 @@ class BasicClient:
             self.join(channel)
 
     def on_disconnect(self, expected):
+        self._reset_attributes()
+
         if not expected:
             # Unexpected disconnect. Reconnect?
             if self.RECONNECT_ON_ERROR and (self.RECONNECT_MAX_ATTEMPTS is None or self._reconnect_attempts < self.RECONNECT_MAX_ATTEMPTS):
