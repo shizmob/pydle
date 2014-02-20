@@ -9,11 +9,10 @@ from . import connection
 from . import protocol
 
 __all__ = [ 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
-UNREGISTERED_NICKNAME = '<unregistered>'
 PING_DELAY = 30
 PING_TIMEOUT = 180
 PING_IDENTIFIER = 'pydle-ping-timeout'
-
+DEFAULT_NICKNAME = '<unregistered>'
 
 class IRCError(Exception):
     """ Base class for all pydle errors. """
@@ -65,7 +64,7 @@ class BasicClient:
         self.logger = logging.getLogger(__name__)
 
         # Public connection attributes.
-        self.nickname = UNREGISTERED_NICKNAME
+        self.nickname = DEFAULT_NICKNAME
         self.network = None
 
     def _reset_connection_attributes(self):
