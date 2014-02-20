@@ -149,7 +149,7 @@ class RFC1459Support(BasicClient):
             self.rawmsg('PASS', self.password)
 
         # Then nickname...
-        self.nickname = self._attempt_nicknames.pop(0)
+        self.set_nickname(self._attempt_nicknames.pop(0))
 
         # And now for the rest of the user information.
         self.rawmsg('USER', self.username, '0', '*', self.realname)
@@ -184,18 +184,8 @@ class RFC1459Support(BasicClient):
         """ Ping server. """
         self.rawmsg('PING', identifier or 'pydle')
 
-    @property
-    def nickname(self):
-        """ Our currently active nickname. """
-        return self._nickname
-
-    @nickname.setter
-    def nickname(self, value):
-        """ Change nickname. """
-        if self.connected:
-            self.rawmsg('NICK', value)
-        else:
-            self._nickname = value
+    def set_nickname(self, nickname):
+        self.rawmsg('NICK', nickname)
 
     def join(self, channel, password=None):
         """ Join channel, optionally with password. """
@@ -507,7 +497,7 @@ class RFC1459Support(BasicClient):
         # Acknowledgement of nickname change: set it internally, too.
         # Alternatively, we were force nick-changed. Nothing much we can do about it.
         if self.is_same_nick(self.nickname, nick):
-            self._nickname = new
+            self.nickname = new
 
         # Go through all user lists and replace.
         self._rename_user(nick, new)
@@ -854,16 +844,15 @@ class RFC1459Support(BasicClient):
             self._registration_attempts += 1
             # Attempt to set new nickname.
             if self._attempt_nicknames:
-                self.nickname = self._attempt_nicknames.pop(0)
+                self.set_nickname(self._attempt_nicknames.pop(0))
             else:
-                self.nickname = self._nicknames[0] + '_' * (self._registration_attempts - len(self._nicknames))
+                self.set_nickname(self._nicknames[0] + '_' * (self._registration_attempts - len(self._nicknames)))
 
     on_raw_436 = BasicClient._ignored # Nickname collision, issued right before the server kills us.
 
     def on_raw_451(self, message):
         """ We have to register first before doing X. """
-        # TODO: Implement. Warning?
-        pass
+        self.logger.warning('Attempted to send non-registration command before being registered.')
 
     on_raw_451 = BasicClient._ignored # You have to register first.
     on_raw_462 = BasicClient._ignored # You may not re-register.
