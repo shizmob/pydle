@@ -77,8 +77,6 @@ class RFC1459Support(BasicClient):
     def _create_user(self, nickname):
         super()._create_user(nickname)
         self.users[nickname].update({
-            'account': None,
-            'identified': False,
             'away': False,
             'away_message': None,
         })
@@ -86,8 +84,6 @@ class RFC1459Support(BasicClient):
     def _rename_user(self, user, new):
         super()._rename_user(user, new)
 
-        # Unset account info.
-        self._sync_user(new, { 'account': None, 'identified': False })
         # Rename in mode lists, too.
         for ch in self.channels.values():
             for mode in self._nickname_prefixes.values():
@@ -305,7 +301,6 @@ class RFC1459Support(BasicClient):
             self.rawmsg('WHOIS', nickname)
             self._whois_info[nickname] = {
                 'oper': False,
-                'identified': False,
                 'idle': 0,
                 'away': False,
                 'away_message': None
@@ -653,16 +648,6 @@ class RFC1459Support(BasicClient):
         if nickname in self._requests['whois']:
             self._whois_info[nickname].update(info)
 
-    def on_raw_307(self, message):
-        """ WHOIS: User has identified for this nickname. (Anope) """
-        target, nickname = message.params[:2]
-        info = {
-            'identified': True
-        }
-
-        if nickname in self._requests['whois']:
-            self._whois_info[nickname].update(info)
-
     def on_raw_311(self, message):
         """ WHOIS user info. """
         target, nickname, username, hostname, _, realname = message.params
@@ -760,19 +745,6 @@ class RFC1459Support(BasicClient):
 
         self.channels[channel]['created'] = datetime.datetime.fromtimestamp(int(timestamp))
 
-    def on_raw_330(self, message):
-        """ WHOIS account name (Atheme). """
-        target, nickname, account = message.params[:3]
-        info = {
-            'account': account,
-            'identified': True,
-        }
-
-        if nickname in self.users:
-            self._sync_user(nickname, { 'account': info['account'] })
-        if nickname in self._requests['whois']:
-            self._whois_info[nickname].update(info)
-
     def on_raw_332(self, message):
         """ Current topic on channel join. """
         target, channel, topic = message.params
@@ -850,6 +822,8 @@ class RFC1459Support(BasicClient):
     def on_raw_401(self, message):
         """ No such nick/channel. """
         nickname = message.params[1]
+
+        # Remove nickname from whois requests if it involves one of ours.
         if nickname in self._requests['whois']:
             future = self._requests['whois'].pop(nickname)
             future.set_result(None)

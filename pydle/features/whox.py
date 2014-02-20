@@ -1,12 +1,12 @@
 ## whox.py
 # WHOX support.
-from pydle.features import isupport
+from pydle.features import isupport, account
 
 NO_ACCOUNT = '0'
 # Maximum of 3 characters because Charybdis stupidity. The ASCII values of 'pydle' added together.
 WHOX_IDENTIFIER = '542'
 
-class WHOXSupport(isupport.ISUPPORTSupport):
+class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
 
     ## Overrides.
 
@@ -40,6 +40,7 @@ class WHOXSupport(isupport.ISUPPORTSupport):
             'hostname': message.params[3],
         }
         if message.params[5] != NO_ACCOUNT:
+            metadata['identified'] = True
             metadata['account'] = message.params[5]
 
         self._sync_user(metadata['nickname'], metadata)

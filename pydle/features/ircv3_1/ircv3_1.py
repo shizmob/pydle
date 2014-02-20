@@ -1,6 +1,6 @@
 ## ircv3_1.py
 # IRCv3.1 full spec support.
-from pydle.features import tls
+from pydle.features import account, tls
 from . import sasl
 
 
@@ -9,7 +9,7 @@ __all__ = [ 'IRCv3_1Support' ]
 
 NO_ACCOUNT = '*'
 
-class IRCv3_1Support(sasl.SASLSupport, tls.TLSSupport):
+class IRCv3_1Support(sasl.SASLSupport, account.AccountSupport, tls.TLSSupport):
     """ Support for IRCv3.1's base and optional extensions. """
 
     ## IRC callbacks.
@@ -50,8 +50,9 @@ class IRCv3_1Support(sasl.SASLSupport, tls.TLSSupport):
 
         self._sync_user(nick, metadata)
         if account == NO_ACCOUNT:
-            account = None
-        self.users[nick]['account'] = account
+            self._sync_user(nick, { 'account': None, 'identified': False })
+        else:
+            self._sync_user(nick, { 'account': account, 'identified': True })
 
     def on_raw_away(self, message):
         """ Process AWAY messages. """
