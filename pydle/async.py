@@ -85,6 +85,7 @@ class EventLoop:
         self.run_thread = None
         self.handlers = {}
         self.future_timeout = FUTURE_TIMEOUT
+        self._registered_events = False
         self._future_timeouts = {}
         self._timeout_id = 0
         self._timeout_handles = {}
@@ -155,17 +156,16 @@ class EventLoop:
 
 
     def _update_events(self, fd):
-        try:
+        if self._registered_events:
             self.io_loop.remove_handler(fd)
-        except KeyError:
-            # It's okay if there are no handlers yet.
-            pass
 
         events = 0
         for event, ident in self.EVENT_MAPPING.items():
             if self.handlers[fd][event]:
                 events |= ident
+
         self.io_loop.add_handler(fd, self._do_on_event, events)
+        self._registered_events = True
 
     def _do_on_event(self, fd, events):
         if fd not in self.handlers:
