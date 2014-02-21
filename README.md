@@ -143,10 +143,6 @@ class Client(MyBase):
 API
 ---
 
-**pydle**
-
-`featurize(*bases)`: create a client base class out of the given feature classes with a proper method resolution order. See the FAQ for details.
-
 **pydle.Client**
 
 `Client(nickname, fallback_nicknames=[], username=None, realname=None)` - construct a client. if `username`/`realname` are not given, they will be constructed from the nickname.
@@ -359,13 +355,7 @@ You can also overload `Client.on_raw_<cmd>(message)`, where `cmd` is the raw IRC
 
 `ClientPool.remove(client)` - remove client from pool.
 
-`ClientPool.has_message()` - check whether or not there are unprocessed message(s) available in this pool.
-
-`ClientPool.handle_message()` - handle a single unprocessed message.
-
-`ClientPool.poll_single()` - wait for a new message to arrive.
-
-`ClientPool.poll_forever()` - enter main loop for pool. Will not return until all clients disconnected.
+`ClientPool.handle_forever()` - handle clients in pool forever.
 
 Utilities
 ---------
