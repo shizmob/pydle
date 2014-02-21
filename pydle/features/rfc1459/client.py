@@ -179,11 +179,8 @@ class RFC1459Support(BasicClient):
         self._receive_buffer = data
         return parsing.RFC1459Message.parse(message + sep, encoding=self.encoding)
 
-    ## IRC API.
 
-    def ping(self, identifier=None):
-        """ Ping server. """
-        self.rawmsg('PING', identifier or 'pydle')
+    ## IRC API.
 
     def set_nickname(self, nickname):
         self.rawmsg('NICK', nickname)
@@ -555,11 +552,6 @@ class RFC1459Support(BasicClient):
         """ PING command. """
         # Respond with a pong.
         self.rawmsg('PONG', *message.params)
-
-    def on_raw_pong(self, message):
-        """ PING response. """
-        identifier = message.params[-1]
-        self._on_pong_received(identifier)
 
     def on_raw_privmsg(self, message):
         """ PRIVMSG command. """

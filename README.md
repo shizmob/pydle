@@ -196,8 +196,6 @@ with `pydle.features.sasl`, four extra attributes are added:
 
 `Client.raw(message)` - send raw IRC command.
 
-`Client.ping(identifier)` - ping server.
-
 with `pydle.features.rfc1459`:
 
 `Client.join(channel, password=None)` - join channel.

@@ -9,9 +9,7 @@ from . import connection
 from . import protocol
 
 __all__ = [ 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
-PING_DELAY = 30
 PING_TIMEOUT = 180
-PING_IDENTIFIER = 'pydle-ping-timeout'
 DEFAULT_NICKNAME = '<unregistered>'
 
 
@@ -63,7 +61,6 @@ class BasicClient:
         self._receive_buffer = b''
         self._requests = {}
         self._ping_checker_handle = None
-        self._ping_timeout_handle = None
 
         # Misc.
         self.logger = logging.getLogger(__name__)
@@ -103,17 +100,15 @@ class BasicClient:
         self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
 
         # Schedule pinger.
-        self._ping_checker_handle = self.eventloop.schedule_periodically(PING_DELAY, self._check_ping)
+        self._ping_checker_handle = self.eventloop.schedule_periodically(PING_TIMEOUT / 2, self._check_ping_timeout)
         # Set logger name.
         self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
 
     def disconnect(self, expected=True):
         """ Disconnect from server. """
         if self.connected:
-            # Unschedule remaining ping handlers.
+            # Unschedule ping checker.
             self.eventloop.unschedule(self._ping_checker_handle)
-            if self._ping_timeout_handle:
-                self.eventloop.unschedule(self._ping_timeout_handle)
 
             # Shutdown connection.
             self.connection.off('read', self.on_data)
@@ -150,24 +145,10 @@ class BasicClient:
         else:
             return 0
 
-    def _check_ping(self):
-        """ Check if we should ping the server. """
-        if time.time() - self._last_data_received >= PING_DELAY and not self._ping_timeout_handle:
-            # PING_DELAY time of no data. Send a ping.
-            self.ping(PING_IDENTIFIER)
-            self._ping_timeout_handle = self.eventloop.schedule_in(PING_TIMEOUT, self._on_ping_timeout)
-
-    def _on_pong_received(self, identifier):
-        """ Received pong from server. Check if it goes for us. """
-        if identifier == PING_IDENTIFIER:
-            # Unschedule ping timeout.
-            self.eventloop.unschedule(self._ping_timeout_handle)
-            self._ping_timeout_handle = None
-
-    def _on_ping_timeout(self):
-        """ No pong received from server within PONG_TIMEOUT seconds. """
-        if self.connected and self._ping_timeout_handle:
-            error = TimeoutError('Ping timeout: no pong received from server after {timeout} seconds.'.format(timeout=PING_TIMEOUT))
+    def _check_ping_timeout(self):
+        """ Check if we have received anything from the server in a while. """
+        if time.time() - self._last_data_received >= PING_TIMEOUT:
+            error = TimeoutError('Ping timeout: no data received from server in {timeout} seconds.'.format(timeout=PING_TIMEOUT))
             self.on_data_error(error)
 
 
@@ -305,10 +286,6 @@ class BasicClient:
         """ Send raw message. """
         message = str(self._create_message(command, *args, **kwargs))
         self._send(message)
-
-    def ping(self, identifier=None):
-        """ Ping connection with identifier. """
-        raise NotImplementedError()
 
 
     ## Overloadable callbacks.
