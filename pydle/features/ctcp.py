@@ -34,14 +34,14 @@ class CTCPSupport(rfc1459.RFC1459Support):
     def ctcp(self, target, query):
         """ CTCP request from target. """
         if self.is_channel(target) and not self.in_channel(target):
-            raise client.NotInChannel('Not in channel {}'.format(target))
+            raise client.NotInChannel(target)
 
         self.message(target, construct_ctcp(query))
 
     def ctcp_reply(self, target, query, response):
         """ CTCP reply to target. """
         if self.is_channel(target) and not self.in_channel(target):
-            raise client.NotInChannel('Not in channel {}'.format(target))
+            raise client.NotInChannel(target)
 
         self.notice(target, construct_ctcp(query, response))
 

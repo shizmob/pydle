@@ -190,7 +190,7 @@ class RFC1459Support(BasicClient):
     def join(self, channel, password=None):
         """ Join channel, optionally with password. """
         if self.in_channel(channel):
-            raise AlreadyInChannel('Already in channel {}'.format(channel))
+            raise AlreadyInChannel(channel)
 
         if password:
             self.rawmsg('JOIN', channel, password)
@@ -200,7 +200,7 @@ class RFC1459Support(BasicClient):
     def part(self, channel, message=None):
         """ Leave channel, optionally with message. """
         if not self.in_channel(channel):
-            raise NotInChannel('Not in channel {}'.format(channel))
+            raise NotInChannel(channel)
 
         # Message seems to be an extension to the spec.
         if message:
@@ -220,7 +220,7 @@ class RFC1459Support(BasicClient):
     def cycle(self, channel):
         """ Rejoin channel. """
         if not self.in_channel(channel):
-            raise NotInChannel('Not in channel {}'.format(channel))
+            raise NotInChannel(channel)
 
         password = self.channels[channel]['password']
         self.part(channel)
@@ -239,7 +239,7 @@ class RFC1459Support(BasicClient):
     def notice(self, target, message):
         """ Notice channel or user. """
         if self.is_channel(target) and not self.in_channel(target):
-            raise NotInChannel('Not in channel {}'.format(target))
+            raise NotInChannel(target)
 
         hostmask = self._format_hostmask(self.nickname)
         # Leeway.
@@ -252,7 +252,7 @@ class RFC1459Support(BasicClient):
     def set_mode(self, target, *modes):
         """ Set mode on target. """
         if self.is_channel(target) and not self.in_channel(target):
-            raise NotInChannel('Not in channel {}'.format(target))
+            raise NotInChannel(target)
 
         self.rawmsg('MODE', target, *modes)
 

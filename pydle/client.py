@@ -14,15 +14,20 @@ PING_TIMEOUT = 180
 PING_IDENTIFIER = 'pydle-ping-timeout'
 DEFAULT_NICKNAME = '<unregistered>'
 
+
 class IRCError(Exception):
     """ Base class for all pydle errors. """
     pass
 
 class NotInChannel(IRCError):
-    pass
+    def __init__(self, channel):
+        super().__init__('Not in channel: {}'.format(channel))
+        self.channel = channel
 
 class AlreadyInChannel(IRCError):
-    pass
+    def __init__(self, channel):
+        super().__init__('Already in channel: {}'.format(channel))
+        self.channel = channel
 
 
 class BasicClient:
