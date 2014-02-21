@@ -7,7 +7,7 @@ pydle is a compact, flexible and standards-abiding IRC library for Python 3.
 
 Features
 --------
-* Compact: At ~2100SLoC at time of writing, it's not hard to find what you're looking for in the well-organized source code.
+* Well-organized: Thanks to the modularized feature system, it's not hard to find what you're looking for in the well-organized source code.
 * Standards-abiding: Based on [RFC1459](https://tools.ietf.org/html/rfc1459.html) with some small extension tweaks, with full support of optional extension standards:
   - [TLS](http://tools.ietf.org/html/rfc5246)
   - [CTCP](http://www.irchelp.org/irchelp/rfc/ctcpspec.html)
