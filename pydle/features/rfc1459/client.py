@@ -225,9 +225,8 @@ class RFC1459Support(BasicClient):
         if message is None:
             message = self.DEFAULT_QUIT_MESSAGE
 
-        self._has_quit = True
         self.rawmsg('QUIT', message)
-        self.disconnect()
+        self.disconnect(expected=True)
 
     def cycle(self, channel):
         """ Rejoin channel. """
@@ -474,7 +473,7 @@ class RFC1459Support(BasicClient):
 
         self.on_kill(target, by, reason)
         if self.is_same_nick(self.nickname, target):
-            self.disconnect()
+            self.disconnect(expected=False)
         else:
             self._destroy_user(target)
 
@@ -591,7 +590,7 @@ class RFC1459Support(BasicClient):
             self._destroy_user(nick)
         # Else, we quit.
         elif self.connected:
-            self.disconnect()
+            self.disconnect(expected=True)
 
     def on_raw_topic(self, message):
         """ TOPIC command. """

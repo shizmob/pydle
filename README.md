@@ -142,7 +142,7 @@ with `pydle.features.tls`, two extra keyword arguments are added:
 - `tls`: whether or not to use TLS for this connection. Default is `False`;
 - `tls_verify`: whether or not to strictly verify the server certificate. Default is `False`.
 
-`Client.disconnect()` - disconnect from server. If using `pydle.features.rfc1459`, `Client.quit(reason)` is preferred.
+`Client.disconnect(expected=True)` - disconnect from server. If using `pydle.features.rfc1459`, `Client.quit(reason)` is preferred. If `expected` is False, assume an error and attempt to reconnect.
 
 `Client.handle_forever()` - a 'main loop'-esque method. Will not return until the client disconnected.
 
@@ -259,7 +259,7 @@ with `pydle.features.ircv3_2.monitor`, three methods are added:
 
 `Client.on_connect()` - callback called after the client has successfully connected and registered to the server.
 
-`Client.on_disconnect()` - callback called after the client has disconnected from the server.
+`Client.on_disconnect(expected=True)` - callback called after the client has disconnected from the server.
 
 with `pydle.features.rfc1459`:
 

@@ -76,7 +76,6 @@ class BasicClient:
         """ Reset connection attributes. """
         self.connection = None
         self.encoding = None
-        self._has_quit = False
         self._autojoin_channels = []
         self._reconnect_attempts = 0
 
@@ -90,7 +89,7 @@ class BasicClient:
 
         # Disconnect from current connection.
         if self.connected:
-            self.disconnect()
+            self.disconnect(expected=True)
 
         # Set event loop.
         if eventloop:
@@ -108,7 +107,7 @@ class BasicClient:
         # Set logger name.
         self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
 
-    def disconnect(self):
+    def disconnect(self, expected=True):
         """ Disconnect from server. """
         if self.connected:
             # Unschedule remaining ping handlers.
@@ -122,7 +121,7 @@ class BasicClient:
             self.connection.disconnect()
 
             # Callback.
-            self.on_disconnect(self._has_quit)
+            self.on_disconnect(expected)
 
             # Reset any attributes.
             self._reset_attributes()
@@ -382,7 +381,7 @@ class BasicClient:
     def on_data_error(self, exception):
         """ Handle error. """
         self.logger.error('Encountered error on socket. Reconnecting.', exc_info=(type(exception), exception, None))
-        self.disconnect()
+        self.disconnect(expected=False)
 
     def on_raw(self, message):
         """ Handle a single message. """
