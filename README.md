@@ -21,26 +21,57 @@ Features
 
 Structure
 ---------
+**Note:** This section only describes the public API.
+
+* `pydle.featurize` - create client class from given features.
 * `pydle.Client` - full-featured client that supports `pydle.BasicClient` plus all the features in `pydle.features`.
-* `pydle.MinimalClient` - tinier client that supports `pydle.BasicClient` plus some features in `pydle.features`. (currently `ctcp`, `isupport` and `rfc1459`)
-* `pydle.BasicClient` - base IRC message handler. Has no functionality.
-* `pydle.ClientPool` - a 'pool' of several clients in order to handle multiple clients in one swift main loop.
-* `pydle.EventLoop` - asynchronous event loop wrapper.
-* `pydle.Future` - the future asynchronous primitive.
+* `pydle.MinimalClient` - tinier client that supports `pydle.BasicClient` plus some features in `pydle.features`. (currently `ctcp`, `isupport`, `tls`, `whox` and `rfc1459`)
+* `pydle.async` - pydle's asynchronous networking components.
+   - `pydle.async.EventLoop` - asynchronous event loop wrapper around pydle's asynchronous backend.
+   - `pydle.async.Future` - the future asynchronous primitive.
+   - `pydle.async.coroutine` - decorator around functions to indicate they may do asynchronous operations and should be yielded from instead of simply called.
+   - `pydle.async.FUTURE_TIMEOUT` - the number of seconds a given future has to resolve before being timed out.
+* `pydle.connection` - low-level asynchronous network connection functionality.
+   - `pydle.connection.Connection` - wrapper for a low-level (non IRC-specific) asynchronous network connection.
+   - `pydle.connection.BUFFER_SIZE` - the buffer size to use when calling `socket.recv()`.
+   - `pydle.connection.MESSAGE_THROTTLE_TRESHOLD` - the number of messages to send at once before starting to throttle messages.
+   - `pydle.connection.MESSAGE_THROTTLE_DELAY` - the delay in seconds to hold messages when throttling.
+* `pydle.client` - very basic client code.
+   - `pydle.client.BasicClient` - base message handler. Has no protocol functionality. Useful for features to inherit from, depending on what base functionality they need.
+   - `pydle.client.ClientPool` - a 'pool' of several clients in order to handle multiple clients in one swift main loop. Also available as `pydle.ClientPool`.
+   - `pydle.client.Error` - base error class for all pydle exceptions. Also available as `pydle.Error`.
+   - `pydle.client.NotInChannel` - error indicating the client is not in the given channel. Also available as `pydle.NotInChannel`.
+   - `pydle.client.AlreadyInChannel` - error indicating the client is already in the given channel. Also available as `pydle.AlreadyInChannel`.
+   - `pydle.client.PING_TIMEOUT` - the delay in seconds after which to assume the connection died if having received no data.
 * `pydle.features` - IRC protocol implementations and extensions.
    - `pydle.features.rfc1459` - basic [RFC1459](https://tools.ietf.org/html/rfc1459.html) implementation with a few commonly-implemented [RF](https://tools.ietf.org/html/rfc2810.html)[C2](https://tools.ietf.org/html/rfc2811.html)[81](https://tools.ietf.org/html/rfc2812.html)[x](https://tools.ietf.org/html/rfc2813.html) extensions.
-   - `pydle.features.account` - Basic features for an account system as implemented by services (in progress).
+      + `pydle.features.rfc1459.RFC1459Support` - RFC1459 support feature.
+         * `pydle.features.rfc1459.RFC1459Support.DEFAULT_QUIT_MESSAGE` - default quit message.
+   - `pydle.features.account` - Basic features for an account system as implemented by IRC services packages (in progress).
+      + `pydle.features.account.AccountSupport` - account support feature.
    - `pydle.features.ctcp` - [Client-to-Client Protocol](http://www.irchelp.org/irchelp/rfc/ctcpspec.html) support.
+      + `pydle.features.ctcp.CTCPSupport` - CTCP support feature.
    - `pydle.features.tls` - [Transport Layer Security](https://tools.ietf.org/html/rfc5246.html) and [STARTTLS](https://ircv3.atheme.org/extensions/tls-3.1) support.
+      + `pydle.features.tls.TLSSupport` - TLS support feature.
    - `pydle.features.isupport` - [ISUPPORT/PROTOCTL](http://tools.ietf.org/html/draft-hardy-irc-isupport-00) support.
+      + `pydle.features.isupport.ISUPPORTSupport` - ISUPPORT support feature.
    - `pydle.features.ircv3_1` - [IRCv3.1](http://ircv3.atheme.org) support.
       + `pydle.features.ircv3_1.cap` - [CAP](http://ircv3.atheme.org/specification/capability-negotiation-3.1) capability negotiation support.
+         * `pydle.features.ircv3_1.cap.CapabilityNegotiationSupport` - CAP support feature.
+         * `pydle.features.ircv3_1.cap.NEGOTIATING` - constant to return from `on_<capability>_available` to indicate negotiation is in progress outside of the capability system. Also available as `pydle.CAPABILITY_NEGOTIATING`.
+         * `pydle.features.ircv3_1.cap.NEGOTIATED` - constant to return from `on_<capability>_available` to indicate capability has been negotiated and should be activated. Also available as `pydle.CAPABILITY_NEGOTIATED`.
+         * `pydle.features.ircv3_1.cap.FAILED` - constant to return from `on_<capability>_availalbe` to return capability has not been negotiated and should not be activated. Also available as `pydle.CAPABILITY_FAILED`.
       + `pydle.features.ircv3_1.sasl` - [Simple Authentication and Security Layer](http://ircv3.atheme.org/extensions/sasl-3.1) support - currently limited to the `PLAIN` mechanism.
+         * `pydle.features.ircv3_1.sasl.SASLSupport` - SASL support feature.
       + `pydle.features.ircv3_1.ircv3_1` - [Miscellaneous](http://ircv3.atheme.org/extensions/multi-prefix-3.1) [features](http://ircv3.atheme.org/extensions/account-notify-3.1) [ensuring](http://ircv3.atheme.org/extensions/away-notify-3.1) [support](http://ircv3.atheme.org/extensions/extended-join-3.1) for [IRCv3.1](http://ircv3.atheme.org/).
+         * `pydle.features.ircv3_1.ircv3_1.IRCv3_1Support` - IRCv3.1 support feature. Also available as `pydle.features.ircv3_1.IRCv3_1Support`.
    - `pydle.features.ircv3_2` - [IRCv3.2](http://ircv3.atheme.org) support (partial).
       + `pydle.features.ircv3_2.tags` - [Message Tagging](http://ircv3.atheme.org/specification/message-tags-3.2) support.
+         * `pydle.features.ircv3_2.tags.TaggedMessageSupport` - message tagging support feature.
       + `pydle.features.ircv3_2.monitor` - [Online status monitoring](http://ircv3.atheme.org/specification/monitor-3.2) support.
-      + `pydle.features.ircv3_2.ircv3_2` - [Miscellaneous](http://ircv3.atheme.org/extensions/userhost-in-names-3.2) features ensuring IRCv3.2 support.
+         * `pydle.features.ircv3_2.monitor.MonitoringSupport` - online status monitoring support feature.
+      + `pydle.features.ircv3_2.ircv3_2` - [Miscellaneous](http://ircv3.atheme.org/extensions/userhost-in-names-3.2) features ensuring [IRCv3.2](http://ircv3.atheme.org/) support.
+         * `pydle.features.ircv3_2.ircv3_2.IRCv3_2Support` - IRCv3.2 support feature. Also available as `pydle.features.ircv3_2.IRCv3_2Support`.
 
 Basic Usage
 -----------
