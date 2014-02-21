@@ -13,7 +13,7 @@ import errno
 from . import async
 from . import protocol
 
-__all__ = [ 'BUFFER_SIZE', 'TIMEOUT', 'NotConnected', 'NoMessageAvailable', 'Connection' ]
+__all__ = [ 'BUFFER_SIZE', 'Connection' ]
 
 
 DEFAULT_CA_PATHS = {
@@ -34,9 +34,6 @@ BUFFER_SIZE = 4096
 MESSAGE_THROTTLE_TRESHOLD = 3
 MESSAGE_THROTTLE_DELAY = 2
 
-
-class NotConnected(Exception):
-    pass
 
 class Connection:
     """ A TCP connection over the IRC protocol. """
