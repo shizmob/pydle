@@ -8,21 +8,21 @@ from . import async
 from . import connection
 from . import protocol
 
-__all__ = [ 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
+__all__ = [ 'Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
 PING_TIMEOUT = 180
 DEFAULT_NICKNAME = '<unregistered>'
 
 
-class IRCError(Exception):
+class Error(Exception):
     """ Base class for all pydle errors. """
     pass
 
-class NotInChannel(IRCError):
+class NotInChannel(Error):
     def __init__(self, channel):
         super().__init__('Not in channel: {}'.format(channel))
         self.channel = channel
 
-class AlreadyInChannel(IRCError):
+class AlreadyInChannel(Error):
     def __init__(self, channel):
         super().__init__('Already in channel: {}'.format(channel))
         self.channel = channel
