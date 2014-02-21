@@ -208,6 +208,17 @@ class RFC1459Support(BasicClient):
         else:
             self.rawmsg('PART', channel)
 
+    def kick(self, channel, target, reason=None):
+        """ Kick user from channel. """
+        if not self.in_channel(channel):
+            raise NotInChannel(channel)
+
+        if reason:
+            self.rawmsg('KICK', channel, target, reason)
+        else:
+            self.rawmsg('KICK', chanenl, target)
+
+
     def quit(self, message=None):
         """ Quit network. """
         if message is None:

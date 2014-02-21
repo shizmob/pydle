@@ -206,6 +206,8 @@ with `pydle.features.rfc1459`:
 
 `Client.cycle(channel)` - rejoin channel.
 
+`Client.kick(channel, target, reason=None)` - kick user from channel.
+
 `Client.quit(message=pydle.DEFAULT_QUIT_MESSAGE)` - quit network.
 
 `Client.set_nickname(nick)` - attempt to change client nickname.
