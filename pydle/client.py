@@ -60,6 +60,7 @@ class BasicClient:
         self._last_data_received = time.time()
         self._receive_buffer = b''
         self._pending = {}
+        self._handler_top_level = False
         self._ping_checker_handle = None
 
         # Misc.
@@ -374,7 +375,13 @@ class BasicClient:
         # Invoke dispatcher, if we have one.
         method = 'on_raw_' + cmd.lower()
         try:
-            handler = getattr(self, method, self.on_unknown)
+            # Set _top_level so __getattr__() can decide whether to return on_unknown or _ignored for unknown handlers.
+            # The reason for this is that features can always call super().on_raw_* safely and thus don't need to care for other features,
+            # while unknown messages for which no handlers exist at all are still logged.
+            self._handler_top_level = True
+            handler = getattr(self, method)
+            self._handler_top_level = False
+
             self.eventloop.schedule(handler, message)
         except:
             self.logger.exception('Failed to execute %s handler.', method)
@@ -386,6 +393,22 @@ class BasicClient:
     def _ignored(self, message):
         """ Ignore message. """
         pass
+
+    def __getattr__(self, attr):
+        """ Return on_unknown or _ignored for unknown handlers, depending on the invocation type. """
+        # Is this a raw handler?
+        if attr.startswith('on_raw_'):
+            # Are we in on_raw() trying to find any message handler?
+            if self._handler_top_level:
+                # In that case, return the method that logs and possibly acts on unknown messages.
+                return self.on_unknown
+            # Are we in an existing handler calling super()?
+            else:
+                # Just ignore it, then.
+                return self._ignored
+
+        # This isn't a handler, just raise an error.
+        raise AttributeError(attr)
 
 
 class ClientPool:
