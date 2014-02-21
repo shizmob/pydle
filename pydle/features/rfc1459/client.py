@@ -1,6 +1,7 @@
 ## rfc1459.py
 # Basic RFC1459 stuff.
 import datetime
+import itertools
 import copy
 
 from pydle.async import Future
@@ -448,7 +449,7 @@ class RFC1459Support(BasicClient):
         channels = channels.split(',')
         targets = targets.split(',')
 
-        for channel, target in zip(channels, targets):
+        for channel, target in itertools.product(channels, targets):
             target, targetmeta = self._parse_user(target)
             self._sync_user(target, targetmeta)
 

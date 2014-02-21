@@ -5,6 +5,7 @@ import itertools
 import collections
 import threading
 import datetime
+import types
 
 import tornado.concurrent
 import tornado.ioloop
@@ -37,8 +38,18 @@ def coroutine(func):
             except Exception as e:
                 return_future.set_exception(e)
 
-        # Handle initial value.
-        gen = func(*args, **kwargs)
+        try:
+            # Handle initial value.
+            gen = func(*args, **kwargs)
+        except Exception as e:
+            return_future.set_exception(e)
+            return return_future
+        else:
+            # If this isn't a generator, then wrap the result with a future.
+            if not isinstance(gen, types.GeneratorType):
+                return_future.set_result(gen)
+                return return_future
+
         try:
             result = next(gen)
             if isinstance(result, tuple):
@@ -58,12 +69,17 @@ def parallel(*futures):
     results = collections.OrderedDict(zip(futures, itertools.repeat(None)))
     futures = list(futures)
 
+    if not futures:
+        # If we don't have any futures, then we return an empty tuple.
+        result_future.set_result(())
+        return result_future
+
     def done(future):
         futures.remove(future)
         results[future] = future.result()
         # All out of futures. set the result.
         if not futures:
-            result_future.set_result(list(results.values()))
+            result_future.set_result(tuple(results.values()))
 
     for future in futures:
         future.add_done_callback(done)

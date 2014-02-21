@@ -38,7 +38,7 @@ class BasicClient:
     RECONNECT_ON_ERROR = True
     RECONNECT_MAX_ATTEMPTS = 3
     RECONNECT_DELAYED = True
-    RECONNECT_DELAYS = [0, 30, 120, 600]
+    RECONNECT_DELAYS = [0, 5, 10, 30, 120, 600]
 
     def __init__(self, nickname, fallback_nicknames=[], username=None, realname=None, **kwargs):
         """ Create a client. """
@@ -180,8 +180,8 @@ class BasicClient:
         }
 
     def _destroy_channel(self, channel):
-        # Copy list to prevent a runtime error when destroying the user.
-        for user in self.channels[channel]['users'][:]:
+        # Copy set to prevent a runtime error when destroying the user.
+        for user in set(self.channels[channel]['users']):
             self._destroy_user(user, channel)
         del self.channels[channel]
 
@@ -324,6 +324,8 @@ class BasicClient:
             self.join(channel)
 
     def on_disconnect(self, expected):
+        self._reset_attributes()
+
         if not expected:
             # Unexpected disconnect. Reconnect?
             if self.RECONNECT_ON_ERROR and (self.RECONNECT_MAX_ATTEMPTS is None or self._reconnect_attempts < self.RECONNECT_MAX_ATTEMPTS):
