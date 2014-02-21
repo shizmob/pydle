@@ -47,8 +47,8 @@ class RFC1459Support(BasicClient):
         self._attempt_nicknames = self._nicknames[:]
 
         # Info.
-        self._requests['whois'] = {}
-        self._requests['whowas'] = {}
+        self._pending['whois'] = {}
+        self._pending['whowas'] = {}
         self._whois_info = {}
         self._whowas_info = {}
 
@@ -286,7 +286,6 @@ class RFC1459Support(BasicClient):
         and yield from this function as follows:
           info = yield self.whois('Nick')
         """
-
         # Some IRCDs are wonky and send strange responses for spaces in nicknames.
         # We just check if there's a space in the nickname -- if there is,
         # then we immediately set the future's result to None and don't bother checking.
@@ -295,7 +294,7 @@ class RFC1459Support(BasicClient):
             result.set_result(None)
             return result
 
-        if nickname not in self._requests['whois']:
+        if nickname not in self._pending['whois']:
             self.rawmsg('WHOIS', nickname)
             self._whois_info[nickname] = {
                 'oper': False,
@@ -305,9 +304,9 @@ class RFC1459Support(BasicClient):
             }
 
             # Create a future for when the WHOIS requests succeeds.
-            self._requests['whois'][nickname] = Future()
+            self._pending['whois'][nickname] = Future()
 
-        return self._requests['whois'][nickname]
+        return self._pending['whois'][nickname]
 
     def whowas(self, nickname):
         """
@@ -316,14 +315,20 @@ class RFC1459Support(BasicClient):
         and yield from this function as follows:
           info = yield self.whois('Nick')
         """
-        if nickname not in _self.requests['whowas']:
+        # Same treatment as nicknames in whois.
+        if protocol.ARGUMENT_SEPARATOR.search(nickname) is not None:
+            result = Future()
+            result.set_result(None)
+            return result
+
+        if nickname not in self._pending['whowas']:
             self.rawmsg('WHOWAS', nickname)
             self._whowas_info[nickname] = {}
 
             # Create a future for when the WHOWAS requests succeeds.
-            self._requests['whowas'][nickname] = Future()
+            self._pending['whowas'][nickname] = Future()
 
-        return self._requests['whowas'][nickname]
+        return self._pending['whowas'][nickname]
 
 
     ## IRC helpers.
@@ -638,7 +643,7 @@ class RFC1459Support(BasicClient):
 
         if nickname in self.users:
             self._sync_user(nickname, info)
-        if nickname in self._requests['whois']:
+        if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
     def on_raw_311(self, message):
@@ -651,7 +656,7 @@ class RFC1459Support(BasicClient):
         }
 
         self._sync_user(nickname, info)
-        if nickname in self._requests['whois']:
+        if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
     def on_raw_312(self, message):
@@ -662,9 +667,9 @@ class RFC1459Support(BasicClient):
             'server_info': serverinfo
         }
 
-        if nickname in self._requests['whois']:
+        if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
-        if nickname in self._requests['whowas']:
+        if nickname in self._pending['whowas']:
             self._whowas_info[nickname].update(info)
 
     def on_raw_313(self, message):
@@ -674,7 +679,7 @@ class RFC1459Support(BasicClient):
             'oper': True
         }
 
-        if nickname in self._requests['whois']:
+        if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
     def on_raw_314(self, message):
@@ -686,7 +691,7 @@ class RFC1459Support(BasicClient):
             'realname': realname
         }
 
-        if nickname in self._requests['whowas']:
+        if nickname in self._pending['whowas']:
             self._whowas_info[nickname].update(info)
 
     on_raw_315 = BasicClient._ignored    # End of /WHO list.
@@ -698,7 +703,7 @@ class RFC1459Support(BasicClient):
             'idle': int(idle_time),
         }
 
-        if nickname in self._requests['whois']:
+        if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
     def on_raw_318(self, message):
@@ -706,8 +711,8 @@ class RFC1459Support(BasicClient):
         target, nickname =  message.params[:2]
 
         # Mark future as done.
-        if nickname in self._requests['whois']:
-            future = self._requests['whois'].pop(nickname)
+        if nickname in self._pending['whois']:
+            future = self._pending['whois'].pop(nickname)
             future.set_result(self._whois_info[nickname])
 
     def on_raw_319(self, message):
@@ -718,7 +723,7 @@ class RFC1459Support(BasicClient):
             'channels': channels
         }
 
-        if nickname in self._requests['whois']:
+        if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
     def on_raw_324(self, message):
@@ -817,8 +822,8 @@ class RFC1459Support(BasicClient):
         nickname = message.params[1]
 
         # Remove nickname from whois requests if it involves one of ours.
-        if nickname in self._requests['whois']:
-            future = self._requests['whois'].pop(nickname)
+        if nickname in self._pending['whois']:
+            future = self._pending['whois'].pop(nickname)
             future.set_result(None)
             del self._whois_info[nickname]
 

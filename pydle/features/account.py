@@ -43,7 +43,7 @@ class AccountSupport(rfc1459.RFC1459Support):
 
         if nickname in self.users:
             self._sync_user(nickname, info)
-        if nickname in self._requests['whois']:
+        if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
     def on_raw_330(self, message):
@@ -56,5 +56,5 @@ class AccountSupport(rfc1459.RFC1459Support):
 
         if nickname in self.users:
             self._sync_user(nickname, info)
-        if nickname in self._requests['whois']:
+        if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)

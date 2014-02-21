@@ -56,10 +56,10 @@ class BasicClient:
         self.channels = {}
         self.users = {}
 
-        # Buffers and locks.
+        # Low-level data stuff.
         self._last_data_received = time.time()
         self._receive_buffer = b''
-        self._requests = {}
+        self._pending = {}
         self._ping_checker_handle = None
 
         # Misc.
