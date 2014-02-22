@@ -414,49 +414,46 @@ class BasicClient:
 class ClientPool:
     """ A pool of clients. """
 
-    def __init__(self, clients=None):
+    def __init__(self, clients=None, eventloop=None):
+        if not eventloop:
+            self.eventloop = async.EventLoop()
+        else:
+            self.eventloop = eventloop
         if not clients:
-            clients = []
-
-        self.clients = set(clients)
-        self.client_cycle = itertools.cycle(self.clients)
-        self.connpool = connection.ConnectionPool(client.connection for client in self.clients)
+            self.clients = set()
+        else:
+            self.clients = set(clients)
 
     def add(self, client):
         """ Add client to pool. """
         self.clients.add(client)
-        self.client_cycle = itertools.cycle(self.clients)
-        self.connpool = connection.ConnectionPool(client.connection for client in self.clients)
 
     def remove(self, client):
         """ Remove client from pool. """
         self.clients.remove(client)
-        self.client_cycle = itertools.cycle(self.clients)
-        self.connpool = connection.ConnectionPool(client.connection for client in self.clients)
+
+    def __contains__(self, item):
+        return item in self.clients
 
 
-    ## High-level message stuff.
+    ## High-level.
 
-    def has_message(self):
-        return self.connpool.has_message()
+    def connect(self, client, *args, eventloop=None, **kwargs):
+        if client not in self:
+            self.add(client)
+        client.connect(*args, eventloop=self.eventloop, **kwargs)
 
-    def handle_message(self):
-        """
-        Handle first available message from any client in the pool.
-        Tries to be fair towards clients by cycling the start client tries to take a message from.
-        """
-        if not self.has_message():
-            raise connection.NoMessageAvailable('No message available.')
+    def disconnect(self, client, *args, **kwargs):
+        if client not in self:
+            return
+        client.disconnect(*args, **kwargs)
+        self.remove(client)
 
-        for client in self.client_cycle:
-            if client._has_message():
-                return client.poll_single()
+    def handle_forever(self):
+        for client in self.clients:
+            client.connection.setup_handlers()
 
-    def poll_forever(self):
-        """ Enter infinite handle loop. """
-        while True:
-            self.poll_single()
-            self.handle_message()
+        self.eventloop.run()
 
-    def poll_single(self):
-        return self.connpool.wait_for_message()
+        for client in self.clients:
+            client.connection.remove_handlers()

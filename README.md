@@ -103,8 +103,7 @@ No worries! Use `pydle.ClientPool` like such:
 pool = pydle.ClientPool()
 for i in range(10):
     client = MyOwnBot('MyBot' + str(i))
-    client.connect('irc.rizon.net', 6697, tls=True, tls_verify=False)
-    pool.add(client)
+    pool.connect(client, 'irc.rizon.net', 6697, tls=True, tls_verify=False)
 
 # This will make sure all clients are treated in a fair way priority-wise.
 pool.handle_forever()
@@ -349,11 +348,11 @@ You can also overload `Client.on_raw_<cmd>(message)`, where `cmd` is the raw IRC
 
 **pydle.ClientPool**
 
-`ClientPool(clients)` - instantiate a pool with `clients` as initial clients.
+`ClientPool()` - instantiate a new pool. It is very advised to have only one pool per thread, and to not have a single client participate in more than one pool.
 
-`ClientPool.add(client)` - add client to pool.
+`ClientPool.connect(client, *args, **kwargs)` - add client to pool and connect it. Parameters are passed to `client.connect()`, except for `eventloop`, which is replaced.
 
-`ClientPool.remove(client)` - remove client from pool.
+`ClientPool.disconnect(client)` - disconnect client and remove it from pool.
 
 `ClientPool.handle_forever()` - handle clients in pool forever.
 
