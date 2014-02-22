@@ -5,9 +5,13 @@ import itertools
 import copy
 
 from pydle.async import Future
-from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
+from pydle.client import BasicClient, NotInChannel, AlreadyInChannel, Error
 from . import parsing
 from . import protocol
+
+
+class ServerSideError(Error):
+    pass
 
 
 class RFC1459Support(BasicClient):
@@ -401,6 +405,11 @@ class RFC1459Support(BasicClient):
 
 
     ## Callback handlers.
+
+    def on_raw_error(self, message):
+        """ Server encountered an error and will now close the connection. """
+        error = ServerSideError(' '.join(message.params))
+        self.on_data_error(error)
 
     def on_raw_invite(self, message):
         """ INVITE command. """
