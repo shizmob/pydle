@@ -60,6 +60,7 @@ class Connection:
         self.send_queue = collections.deque()
         self.send_queue_lock = threading.RLock()
         self.unthrottled_sends = 0
+        self.throttle = True
         self.throttling = False
         self.last_sent = None
         self.last_sent_pos = 0
@@ -327,7 +328,7 @@ class Connection:
                     break
 
                 # Do we need to throttle messages?
-                if current - self.last_sent < MESSAGE_THROTTLE_DELAY:
+                if self.throttle and current - self.last_sent < MESSAGE_THROTTLE_DELAY:
                     if self.unthrottled_sends >= MESSAGE_THROTTLE_TRESHOLD:
                         # Enough unthrottled messages let through: introduce some delay.
                         self.throttling = True
