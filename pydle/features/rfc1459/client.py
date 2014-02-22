@@ -146,8 +146,11 @@ class RFC1459Support(BasicClient):
         """ Perform IRC connection registration. """
         if self.registered:
             return
-
         self._registration_attempts += 1
+
+        # Don't throttle during registration, most ircds don't care for flooding during registration,
+        # and it might speed it up significantly.
+        self.connection.throttle = False
 
         # Password first.
         if self.password:
@@ -155,14 +158,16 @@ class RFC1459Support(BasicClient):
 
         # Then nickname...
         self.set_nickname(self._attempt_nicknames.pop(0))
-
         # And now for the rest of the user information.
         self.rawmsg('USER', self.username, '0', '*', self.realname)
 
     def _registration_completed(self, message):
         """ We're connected and registered. Receive proper nickname and emit fake NICK message. """
         if not self.registered:
+            # Re-enable throttling.
             self.registered = True
+            self.connection.throttle = True
+
             target = message.params[0]
             fakemsg = self._create_message('NICK', target, source=self.nickname)
             self.on_raw_nick(fakemsg)
