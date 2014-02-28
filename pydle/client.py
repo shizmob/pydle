@@ -9,7 +9,7 @@ from . import connection
 from . import protocol
 
 __all__ = [ 'Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
-PING_TIMEOUT = 180
+PING_TIMEOUT = 720
 DEFAULT_NICKNAME = '<unregistered>'
 
 
@@ -358,7 +358,7 @@ class BasicClient:
 
     def on_data_error(self, exception):
         """ Handle error. """
-        self.logger.error('Encountered error on socket. Reconnecting.', exc_info=(type(exception), exception, None))
+        self.logger.error('Encountered error on socket.', exc_info=(type(exception), exception, None))
         self.disconnect(expected=False)
 
     def on_raw(self, message):
