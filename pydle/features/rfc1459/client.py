@@ -10,10 +10,6 @@ from . import parsing
 from . import protocol
 
 
-class ServerSideError(Error):
-    pass
-
-
 class RFC1459Support(BasicClient):
     """ Basic RFC1459 client. """
     DEFAULT_QUIT_MESSAGE = 'Quitting'
@@ -413,7 +409,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_error(self, message):
         """ Server encountered an error and will now close the connection. """
-        error = ServerSideError(' '.join(message.params))
+        error = protocol.ServerError(' '.join(message.params))
         self.on_data_error(error)
 
     def on_raw_invite(self, message):

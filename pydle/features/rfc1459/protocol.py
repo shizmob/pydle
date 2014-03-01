@@ -4,6 +4,10 @@ import re
 import collections
 
 
+class ServerError(Error):
+    pass
+
+
 # While this *technically* is supposed to be 143, I've yet to see a server that actually uses those.
 DEFAULT_PORT = 6667
 
