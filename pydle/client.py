@@ -412,7 +412,7 @@ class BasicClient:
 
 
 class ClientPool:
-    """ A pool of clients. """
+    """ A pool of clients that are ran and handled in parallel. """
 
     def __init__(self, clients=None, eventloop=None):
         if not eventloop:
@@ -439,17 +439,26 @@ class ClientPool:
     ## High-level.
 
     def connect(self, client, *args, eventloop=None, **kwargs):
+        """
+        Add client to pool and connect it using the given argument.
+        Refer to the connect() method of the added client for details on parameters.
+        """
         if client not in self:
             self.add(client)
         client.connect(*args, eventloop=self.eventloop, **kwargs)
 
     def disconnect(self, client, *args, **kwargs):
+        """
+        Disconnect client from pool and remove it.
+        Refer to the disconnect() method of the removed client for details on parameters.
+        """
         if client not in self:
             return
         client.disconnect(*args, **kwargs)
         self.remove(client)
 
     def handle_forever(self):
+        """ Main loop of the pool: handle clients forever, until the event loop is stopped. """
         for client in self.clients:
             client.connection.setup_handlers()
 
