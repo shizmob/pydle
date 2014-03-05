@@ -2,6 +2,7 @@
 # RFC1459 protocol constants.
 import re
 import collections
+from pydle.client import Error
 
 
 class ServerError(Error):
