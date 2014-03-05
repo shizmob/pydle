@@ -37,10 +37,13 @@ class IRCv3_2Support(monitor.MonitoringSupport, tags.TaggedMessageSupport, cap.C
         if 'chghost' not in self._capabilities or not self._capabilities['chghost']:
             return
 
-        nick = protocol.parse_user(message.source)[0]
+        nick, _ = self._parse_user(message.source)
         if nick not in self.users:
             return
 
         # Update user and host.
-        user, host = message.params
-        self._sync_user(nick, user, host)
+        metadata = {
+            'username': message.params[0],
+            'hostname': message.params[1]
+        }
+        self._sync_user(nick, metadata)
