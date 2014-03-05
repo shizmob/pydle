@@ -139,7 +139,7 @@ class BasicClient:
     def _reconnect_delay(self):
         """ Calculate reconnection delay. """
         if self.RECONNECT_ON_ERROR and self.RECONNECT_DELAYED:
-            if self._reconnect_attempts > len(self.RECONNECT_DELAYS):
+            if self._reconnect_attempts >= len(self.RECONNECT_DELAYS):
                 return self.RECONNECT_DELAYS[-1]
             else:
                 return self.RECONNECT_DELAYS[self._reconnect_attempts]
