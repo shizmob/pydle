@@ -71,9 +71,8 @@ class CTCPSupport(rfc1459.RFC1459Support):
             attr = 'on_ctcp_' + pydle.protocol.identifierify(type)
             if hasattr(self, attr):
                 getattr(self, attr)(nick, target, contents)
-            else:
-                # Invoke global handler.
-                self.on_ctcp(nick, target, type, contents)
+            # Invoke global handler.
+            self.on_ctcp(nick, target, type, contents)
         else:
             super().on_raw_privmsg(message)
 
@@ -90,9 +89,8 @@ class CTCPSupport(rfc1459.RFC1459Support):
             attr = 'on_ctcp_' + pydle.protocol.identifierify(type) + '_reply'
             if hasattr(self, attr):
                 getattr(self, attr)(user, target, response)
-            else:
-                # Invoke global handler.
-                self.on_ctcp_reply(user, target, type, response)
+            # Invoke global handler.
+            self.on_ctcp_reply(user, target, type, response)
         else:
             super().on_raw_notice(message)
 
