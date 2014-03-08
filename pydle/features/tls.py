@@ -12,7 +12,12 @@ DEFAULT_TLS_PORT = 6697
 
 
 class TLSSupport(rfc1459.RFC1459Support):
-    """ TLS and STARTTLS support. """
+    """
+    TLS support.
+
+    Pass tls_client_cert, tls_client_cert_key and optionally tls_client_cert_password to have pydle send a client certificate
+    upon TLS connections.
+    """
 
     ## Internal overrides.
 
@@ -23,6 +28,7 @@ class TLSSupport(rfc1459.RFC1459Support):
         self.tls_client_cert_password = tls_client_cert_password
 
     def connect(self, hostname=None, port=None, tls=False, **kwargs):
+        """ Connect to a server, optionally over TLS. See pydle.features.RFC1459Support.connect for misc parameters. """
         if not port:
             if tls:
                 port = DEFAULT_TLS_PORT

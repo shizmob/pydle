@@ -16,9 +16,19 @@ class CTCPSupport(rfc1459.RFC1459Support):
     ## Callbacks.
 
     def on_ctcp(self, by, target, what, contents):
+        """
+        Callback called when the user received a CTCP message.
+        Client subclasses can override on_ctcp_<type> to be called when receiving a message of that specific CTCP type,
+        in addition to this callback.
+        """
         pass
 
     def on_ctcp_reply(self, by, target, what, response):
+        """
+        Callback called when the user received a CTCP response.
+        Client subclasses can override on_ctcp_<type>_reply to be called when receiving a reply of that specific CTCP type,
+        in addition to this callback.
+        """
         pass
 
     def on_ctcp_version(self, by, target, contents):
@@ -31,15 +41,15 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
     ## IRC API.
 
-    def ctcp(self, target, query):
-        """ CTCP request from target. """
+    def ctcp(self, target, query, contents=None):
+        """ Send a CTCP request to a target. """
         if self.is_channel(target) and not self.in_channel(target):
             raise client.NotInChannel(target)
 
         self.message(target, construct_ctcp(query))
 
     def ctcp_reply(self, target, query, response):
-        """ CTCP reply to target. """
+        """ Send a CTCP reply to a target. """
         if self.is_channel(target) and not self.in_channel(target):
             raise client.NotInChannel(target)
 

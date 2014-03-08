@@ -168,6 +168,7 @@ class RFC1459Support(BasicClient):
             fakemsg = self._create_message('NICK', target, source=self.nickname)
             self.on_raw_nick(fakemsg)
 
+
     ## Message handling.
 
     def _has_message(self):
@@ -188,6 +189,10 @@ class RFC1459Support(BasicClient):
     ## IRC API.
 
     def set_nickname(self, nickname):
+        """
+        Set nickname to given nickname.
+        Users should only rely on the nickname actually being changed when receiving an on_nick_change callback.
+        """
         self.rawmsg('NICK', nickname)
 
     def join(self, channel, password=None):
@@ -263,18 +268,26 @@ class RFC1459Support(BasicClient):
                 self.rawmsg('NOTICE', target, chunk)
 
     def set_mode(self, target, *modes):
-        """ Set mode on target. """
+        """
+        Set mode on target.
+        Users should only rely on the mode actually being changed when receiving an on_{channel,user}_mode_change callback.
+        """
         if self.is_channel(target) and not self.in_channel(target):
             raise NotInChannel(target)
 
         self.rawmsg('MODE', target, *modes)
 
-    def set_topic(self, target, topic):
-        """ Set topic on channel. """
-        if not self.is_channel(target):
-            raise ValueError('Not a channel: {}'.format(target))
+    def set_topic(self, channel, topic):
+        """
+        Set topic on channel.
+        Users should only rely on the topic actually being changed when receiving an on_topic_change callback.
+        """
+        if not self.is_channel(channel):
+            raise ValueError('Not a channel: {}'.format(channel))
+        elif not self.in_channel(channel):
+            raise NotInChannel(channel)
 
-        self.rawmsg('TOPIC', target, topic)
+        self.rawmsg('TOPIC', channel, topic)
 
     def away(self, message):
         """ Mark self as away. """
@@ -287,9 +300,9 @@ class RFC1459Support(BasicClient):
     def whois(self, nickname):
         """
         Return information about user.
-        This is an asynchronous method: decorate the calling function with `pydle.coroutine`,
-        and yield from this function as follows:
-          info = yield self.whois('Nick')
+        This is an blocking asynchronous method: it has to be called from a coroutine, as follows:
+
+            info = yield self.whois('Nick')
         """
         # Some IRCDs are wonky and send strange responses for spaces in nicknames.
         # We just check if there's a space in the nickname -- if there is,
@@ -316,9 +329,9 @@ class RFC1459Support(BasicClient):
     def whowas(self, nickname):
         """
         Return information about offline user.
-        This is an asynchronous method: decorate the calling function with `pydle.coroutine`,
-        and yield from this function as follows:
-          info = yield self.whois('Nick')
+        This is an blocking asynchronous method: it has to be called from a coroutine, as follows:
+
+            info = yield self.whowas('Nick')
         """
         # Same treatment as nicknames in whois.
         if protocol.ARGUMENT_SEPARATOR.search(nickname) is not None:
@@ -342,7 +355,6 @@ class RFC1459Support(BasicClient):
         return parsing.normalize(input, case_mapping=self._case_mapping)
 
     def is_channel(self, chan):
-        """ Check if given argument is a channel name or not. """
         return any(chan.startswith(prefix) for prefix in self._channel_prefixes)
 
     def is_same_nick(self, left, right):
@@ -357,51 +369,67 @@ class RFC1459Support(BasicClient):
     ## Overloadable callbacks.
 
     def on_invite(self, channel, by):
+        """ Callback called when the client was invited into a channel by someone. """
         pass
 
     def on_join(self, channel, user):
+        """ Callback called when a user, possibly the client, has joined the channel. """
         pass
 
     def on_kill(self, target, by, reason):
+        """ Callback called when a user, possibly the client, was killed from the server. """
         pass
 
     def on_kick(self, channel, target, by, reason=None):
+        """ Callback called when a user, possibly the client, was kicked from a channel. """
         pass
 
     def on_mode_change(self, channel, modes, by):
+        """ Callback called when the mode on a channel was changed. """
         pass
 
     def on_user_mode_change(self, modes):
+        """ Callback called when a user mode change occurred for the client. """
         pass
 
     def on_message(self, target, by, message):
+        """ Callback called when the client received a message. """
         pass
 
     def on_channel_message(self, target, by, message):
+        """ Callback received when the client received a message in a channel. """
         pass
 
     def on_private_message(self, by, message):
+        """ Callback called when the client received a message in private. """
         pass
 
     def on_nick_change(self, old, new):
+        """ Callback called when a user, possibly the client, changed their nickname. """
         pass
 
     def on_notice(self, target, by, message):
+        """ Callback called when the client received a notice. """
         pass
 
     def on_channel_notice(self, target, by, message):
+        """ Callback called when the client received a notice in a channel. """
         pass
 
     def on_private_notice(self, by, message):
+        """ Callback called when the client received a notice in private. """
         pass
 
     def on_part(self, channel, user, message=None):
+        """ Callback called when a user, possibly the client, left a channel. """
         pass
 
     def on_topic_change(self, channel, message, by):
+        """ Callback called when the topic for a channel was changed. """
         pass
 
     def on_quit(self, user, message=None):
+        """ Callback called when a user, possibly the client, left the network. """
         pass
 
 

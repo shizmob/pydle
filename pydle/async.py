@@ -14,7 +14,9 @@ FUTURE_TIMEOUT = 30
 
 
 class Future(tornado.concurrent.TracebackFuture):
-    """ A future. """
+    """
+    A future. An object that represents a result that has yet to be created or returned.
+    """
 
 
 def coroutine(func):

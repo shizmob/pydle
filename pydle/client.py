@@ -231,6 +231,7 @@ class BasicClient:
         return True
 
     def in_channel(self, channel):
+        """ Check if we are currently in the given channel. """
         return channel in self.channels.keys()
 
     def is_same_nick(self, left, right):

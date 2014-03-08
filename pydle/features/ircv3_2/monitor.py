@@ -37,25 +37,30 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
     ## API.
 
     def monitor(self, target):
+        """ Start monitoring the online status of a user. Returns whether or not the server supports monitoring. """
         if 'monitor-notify' in self._capabilities and not self.is_monitoring(target):
             self.rawmsg('MONITOR', '+', target)
             self._monitoring.add(target)
 
     def unmonitor(self, target):
+        """ Stop monitoring the online status of a user. Returns whether or not the server supports monitoring. """
         if 'monitor-notify' in self._capabilities and self.is_monitoring(target):
             self.rawmsg('MONITOR', '-', target)
             self._monitoring.remove(target)
 
     def is_monitoring(self, target):
+        """ Return whether or not we are monitoring the target's online status. """
         return target in self._monitoring
 
 
     ## Callbacks.
 
     def on_user_online(self, nickname):
+        """ Callback called when a monitored user appears online. """
         pass
 
     def on_user_offline(self, nickname):
+        """ Callback called when a monitored users goes offline. """
         pass
 
 
