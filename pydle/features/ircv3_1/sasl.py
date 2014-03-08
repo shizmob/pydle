@@ -55,11 +55,11 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
             # We're done here.
             self.rawmsg('AUTHENTICATE', ABORT_MESSAGE)
-            self.capability_negotiated('sasl')
+            self._capability_negotiated('sasl')
 
     def _sasl_end(self):
         """ Finalize SASL authentication. """
-        self.capability_negotiated('sasl')
+        self._capability_negotiated('sasl')
 
     def _sasl_respond(self):
         """ Respond to SASL challenge with response. """

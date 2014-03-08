@@ -44,7 +44,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
 
     ## API.
 
-    def capability_negotiated(self, capab):
+    def _capability_negotiated(self, capab):
         """ Mark capability as negotiated, and end negotiation if we're done. """
         self._capabilities_negotiating.discard(capab)
 
