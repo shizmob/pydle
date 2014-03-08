@@ -5,7 +5,7 @@ import itertools
 import copy
 
 from pydle.async import Future
-from pydle.client import BasicClient, NotInChannel, AlreadyInChannel, Error
+from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
 from . import parsing
 from . import protocol
 
@@ -244,28 +244,27 @@ class RFC1459Support(BasicClient):
         self.part(channel)
         self.join(channel, password)
 
-    def message(self, target, message):
+    def message(self, _target, _message, *_args, **_kwargs):
         """ Message channel or user. """
+        message = _message.format(*_args, **_kwargs)
         hostmask = self._format_hostmask(self.nickname)
         # Leeway.
-        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=target)) - 25
+        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=_target)) - 25
 
         for line in message.replace('\r', '').split('\n'):
             for chunk in chunkify(line, chunklen):
-                self.rawmsg('PRIVMSG', target, chunk)
+                self.rawmsg('PRIVMSG', _target, chunk)
 
-    def notice(self, target, message):
+    def notice(self, _target, _message, *_args, **_kwargs):
         """ Notice channel or user. """
-        if self.is_channel(target) and not self.in_channel(target):
-            raise NotInChannel(target)
-
+        message = _message.format(*_args, **_kwargs)
         hostmask = self._format_hostmask(self.nickname)
         # Leeway.
-        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} NOTICE {target} :'.format(hostmask=hostmask, target=target)) - 25
+        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} NOTICE {target} :'.format(hostmask=hostmask, target=_target)) - 25
 
         for line in message.replace('\r', '').split('\n'):
             for chunk in chunkify(line, chunklen):
-                self.rawmsg('NOTICE', target, chunk)
+                self.rawmsg('NOTICE', _target, chunk)
 
     def set_mode(self, target, *modes):
         """
