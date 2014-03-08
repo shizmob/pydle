@@ -5,4 +5,3 @@ __pycache__
 *.swo
 
 /docs/_build
-/docs/api
