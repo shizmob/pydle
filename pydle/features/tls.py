@@ -58,6 +58,17 @@ class TLSSupport(rfc1459.RFC1459Support):
         self.connection.on('read', self.on_data)
         self.connection.on('error', self.on_data_error)
 
+    ## API.
+
+    def whois(self, nickname):
+        future = super().whois(nickname)
+
+        # Add field that determines if the target user is connected over TLS.
+        if nickname in self._whois_info['whois']:
+            self._whois_info[nickname].setdefault('secure', False)
+
+        return future
+
 
     ## Message callbacks.
 
@@ -77,6 +88,16 @@ class TLSSupport(rfc1459.RFC1459Support):
         """ Got the OK from the server to start a TLS connection. Let's roll. """
         self.connection.tls = True
         self.connection.setup_tls()
+
+    def on_raw_671(self, message):
+        """ WHOIS: user is connected securely. """
+        target, nickname = message.params[:2]
+        info = {
+            'secure': True
+        }
+
+        if nickname in self._pending['whois']:
+            self._whois_info[nickname].update(info)
 
     def on_raw_691(self, message):
         """ Error setting up TLS server-side. """
