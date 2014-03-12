@@ -219,9 +219,12 @@ class BasicClient:
         """ Parse user and return nickname, metadata tuple. """
         raise NotImplementedError()
 
-    def _format_hostmask(self, nickname):
+    def _format_user_mask(self, nickname):
         user = self.users.get(nickname, {"username": "*", "hostname": "*"})
-        return '{n}!{u}@{h}'.format(n=nickname, u=user['username'] or '*', h=user['hostname'] or '*')
+        return self._format_host_mask(user['nickname'], user['username'] or '*', user['hostname'] or '*')
+
+    def _format_host_mask(self, nick, user, host):
+        return '{n}!{u}@{h}'.format(n=nick, u=user, h=host)
 
 
     ## IRC helpers.

@@ -3,6 +3,7 @@
 import datetime
 import itertools
 import copy
+import ipaddress
 
 from pydle.async import Future
 from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
@@ -125,6 +126,56 @@ class RFC1459Support(BasicClient):
             current = self.channels[channel]['modes']
         return parsing.parse_modes(modes, current, behaviour=self._channel_modes_behaviour)
 
+    def _format_host_range(self, host, range, allow_everything=False):
+        # IPv4?
+        try:
+            addr = ipaddress.IPv4Network(host, strict=False)
+            max = 4 if allow_everything else 3
+
+            # Round up subnet to nearest octet.
+            subnet = addr.prefixlen + (8 - addr.prefixlen % 8)
+            # Remove range mask.
+            subnet -= min(range, max) * 8
+
+            rangeaddr = addr.supernet(new_prefix=subnet).exploded.split('/', 1)[0]
+            return rangeaddr.replace('0', '*')
+        except ValueError:
+            pass
+
+        # IPv6?
+        try:
+            addr = ipaddress.IPv6Network(host, strict=False)
+            max = 4 if allow_everything else 3
+
+            # Round up subnet to nearest 32-et.
+            subnet = addr.prefixlen + (32 - addr.prefixlen % 32)
+            # Remove range mask.
+            subnet -= min(range, max) * 32
+
+            rangeaddr = addr.supernet(new_prefix=subnet).exploded.split('/', 1)[0]
+            return rangeaddr.replace(':0000', ':*')
+        except ValueError:
+            pass
+
+        # Host?
+        if '.' in host:
+            # Split pieces.
+            pieces = host.split('.')
+            max = len(pieces)
+            if not allow_everything:
+                max -= 1
+
+            # Figure out how many to mask.
+            to_mask = min(range, max)
+            # Mask pieces.
+            pieces[:to_mask] = '*' * to_mask
+            return '.'.join(pieces)
+
+        # Wat.
+        if allow_everything and range >= 4:
+            return '*'
+        else:
+            return host
 
     ## Connection.
 
@@ -226,6 +277,37 @@ class RFC1459Support(BasicClient):
         else:
             self.rawmsg('KICK', chanenl, target)
 
+    def ban(self, channel, target, range=0):
+        """
+        Ban user from channel. Target can be either a user or a host.
+        This command will not kick: use kickban() for that.
+        range indicates the
+        """
+        if target in self.users:
+            host = self.users[target]['hostname']
+        else:
+            host = target
+
+        host = self._format_host_range(host, range)
+        mask = self._format_host_mask('*', '*', host)
+        self.rawmsg('MODE', channel, '+b', mask)
+
+    def unban(self, channel, target, range=0):
+        if target in self.users:
+            host = self.users[target]['hostname']
+        else:
+            host = target
+
+        host = self._format_host_range(host, range)
+        mask = self._format_host_mask('*', '*', host)
+        self.rawmsg('MODE', channel, '-b', mask)
+
+    def kickban(self, channel, target, reason=None, range=0):
+        """
+        Kick and ban user from channel.
+        """
+        self.ban(channel, target, range)
+        self.kick(channel, target, reason)
 
     def quit(self, message=None):
         """ Quit network. """
@@ -247,7 +329,7 @@ class RFC1459Support(BasicClient):
     def message(self, _target, _message, *_args, **_kwargs):
         """ Message channel or user. """
         message = _message.format(*_args, **_kwargs)
-        hostmask = self._format_hostmask(self.nickname)
+        hostmask = self._format_user_mask(self.nickname)
         # Leeway.
         chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=_target)) - 25
 
@@ -258,7 +340,7 @@ class RFC1459Support(BasicClient):
     def notice(self, _target, _message, *_args, **_kwargs):
         """ Notice channel or user. """
         message = _message.format(*_args, **_kwargs)
-        hostmask = self._format_hostmask(self.nickname)
+        hostmask = self._format_user_mask(self.nickname)
         # Leeway.
         chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} NOTICE {target} :'.format(hostmask=hostmask, target=_target)) - 25
 
