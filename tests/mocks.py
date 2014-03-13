@@ -62,6 +62,17 @@ class MockClient(pydle.client.BasicClient):
     def rawmsg(self, *args, **kwargs):
         self.connection._mock_server.receive(*args, **kwargs)
 
+    def _create_message(self, *args, **kwargs):
+        return MockMessage(*args, **kwargs)
+
+    def _has_message(self):
+        return b'\r\n' in self._receive_buffer
+
+    def _parse_message(self):
+        message, _, data = self._receive_buffer.partition(b'\r\n')
+        self._receive_buffer = data
+        return MockMessage.parse(message + b'\r\n', encoding=self.encoding)
+
 
 class MockConnection(pydle.connection.Connection):
     """ A mock connection between a client and a server. """
@@ -192,14 +203,3 @@ class MockMessage(pydle.protocol.Message):
 
     def construct(self):
         return json.dumps({ 'command': self.command, 'params': self.params, 'source': self.source, 'kw': self.kw }) + '\r\n'
-
-def mock_create_message(*args, **kwargs):
-    return MockMessage(*args, **kwargs)
-
-def mock_has_message(self):
-    return b'\r\n' in self._receive_buffer
-
-def mock_parse_message(self):
-    message, _, data = self._receive_buffer.partition(b'\r\n')
-    self._receive_buffer = data
-    return MockMessage.parse(message + b'\r\n', encoding=self.encoding)
