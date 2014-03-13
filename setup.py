@@ -15,7 +15,9 @@ setup(
     requires=['tornado'],
     extras_require={
         'SASL': 'pure-sasl >=0.1.6',                       # for pydle.features.sasl
-        'Generating documentation': 'sphinx_rtd_theme'     # the Sphinx theme we use
+        'Generating documentation': 'sphinx_rtd_theme',    # the Sphinx theme we use
+        'Running tests': 'pytest',                         # collect and run tests
+        'Getting test case coverage': 'pytest-cov'         # get test case coverage
     },
     entry_points={
         'console_scripts': [

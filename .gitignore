@@ -5,3 +5,6 @@ __pycache__
 *.swo
 
 /docs/_build
+/.coverage
+/.tox
+/*.egg-info
