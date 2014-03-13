@@ -2,7 +2,8 @@ import time
 import pydle
 
 import pytest
-from .fixtures import with_client, Mock, MockEventLoop
+from .fixtures import with_client
+from .mocks import Mock, MockEventLoop
 
 
 class Passed:

@@ -2,8 +2,18 @@ import threading
 import json
 import pydle
 
+try:
+    from unittest.mock import Mock
+except:
+    from mock import Mock
+
 
 class MockServer:
+    """
+    A mock server that will receive data and messages from the client,
+    and can send its own data and messages.
+    """
+
     def __init__(self):
         self.connection = None
         self.recvbuffer = ''
@@ -36,6 +46,8 @@ class MockServer:
 
 
 class MockClient(pydle.client.BasicClient):
+    """ A client that subtitutes its own connection for a mock connection to MockServer. """
+
     def __init__(self, *args, mock_server=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._mock_server = mock_server
@@ -52,6 +64,8 @@ class MockClient(pydle.client.BasicClient):
 
 
 class MockConnection(pydle.connection.Connection):
+    """ A mock connection between a client and a server. """
+
     def __init__(self, *args, mock_client=None, mock_server=None, **kwargs):
         super().__init__(*args, hostname='mock://local', port=1337, **kwargs)
         self._mock_connected = False
@@ -78,6 +92,8 @@ class MockConnection(pydle.connection.Connection):
 
 
 class MockEventLoop:
+    """ A mock event loop for use in testing. """
+
     def __init__(self, *args, **kwargs):
         self._mock_timers = {}
         self._mock_periodical_id = 0

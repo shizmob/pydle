@@ -1,10 +1,5 @@
-try:
-    from unittest.mock import Mock
-except ImportError:
-    from mock import Mock
-
 import pydle
-from .mocks import MockServer, MockClient, MockConnection, MockEventLoop, MockMessage, mock_create_message, mock_has_message, mock_parse_message
+from .mocks import MockServer, MockClient, MockEventLoop, mock_create_message, mock_has_message, mock_parse_message
 
 
 def with_client(*features, connected=True, messages=True):

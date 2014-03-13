@@ -1,5 +1,6 @@
 import pydle
-from .fixtures import with_client, Mock
+from .fixtures import with_client
+from .mocks import Mock
 
 
 @with_client()

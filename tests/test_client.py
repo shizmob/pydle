@@ -1,8 +1,10 @@
 import time
+import pydle
 
 import pytest
-import pydle
-from .fixtures import with_client, Mock
+from .fixtures import with_client
+from .mocks import Mock
+
 
 @with_client()
 def test_client_same_nick(server, client):
