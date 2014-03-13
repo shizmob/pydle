@@ -1,0 +1,26 @@
+import pydle
+from .fixtures import with_client
+from .mocks import MockClient, MockServer, MockConnection, MockEventLoop
+
+
+@with_client(connected=False)
+def test_fixtures_with_client(server, client):
+    assert isinstance(server, MockServer)
+    assert isinstance(client, MockClient)
+    assert client.__class__.__mro__[1] is MockClient, 'MockClient should be first in method resolution order'
+
+    assert not client.connected
+
+@with_client(pydle.features.RFC1459Support, connected=False)
+def test_fixtures_with_client_features(server, client):
+    assert isinstance(client, MockClient)
+    assert client.__class__.__mro__[1] is MockClient, 'MockClient should be first in method resolution order'
+    assert isinstance(client, pydle.features.RFC1459Support)
+
+@with_client()
+def test_fixtures_with_client_connected(server, client):
+    assert client.connected
+    assert isinstance(client.eventloop, MockEventLoop)
+    assert isinstance(client.connection, MockConnection)
+    assert isinstance(client.connection.eventloop, MockEventLoop)
+    assert client.eventloop is client.connection.eventloop
