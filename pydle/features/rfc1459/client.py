@@ -281,7 +281,8 @@ class RFC1459Support(BasicClient):
         """
         Ban user from channel. Target can be either a user or a host.
         This command will not kick: use kickban() for that.
-        range indicates the
+        range indicates the IP/host range to ban: 0 means ban only the IP/host,
+        1+ means ban that many 'degrees' (up to 3 for IP addresses) of the host for range bans.
         """
         if target in self.users:
             host = self.users[target]['hostname']
@@ -293,6 +294,10 @@ class RFC1459Support(BasicClient):
         self.rawmsg('MODE', channel, '+b', mask)
 
     def unban(self, channel, target, range=0):
+        """
+        Unban user from channel. Target can be either a user or a host.
+        See ban documentation for the range parameter.
+        """
         if target in self.users:
             host = self.users[target]['hostname']
         else:
