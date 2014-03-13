@@ -328,5 +328,3 @@ class EventLoop:
         """ Stop the event loop. """
         if self.running:
             self.io_loop.stop()
-
-
