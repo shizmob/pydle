@@ -1,6 +1,7 @@
 ## client.py
 # Basic IRC client implementation.
 import time
+import datetime
 import itertools
 import logging
 
@@ -326,8 +327,7 @@ class BasicClient:
                     self.logger.error('Unexpected disconnect. Attempting to reconnect.')
 
                 # Wait and reconnect.
-                time.sleep(delay)
-                self.connect(reconnect=True)
+                self.eventloop.schedule_in(delay, self.connect, reconnect=True)
             else:
                 self.logger.error('Unexpected disconnect. Giving up.')
 
