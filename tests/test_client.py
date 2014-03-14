@@ -36,6 +36,20 @@ def test_client_reconnect_delay(server, client):
     assert client.connected
 
 @with_client()
+def test_client_reconnect_delay_calculation(server, client):
+    client.RECONNECT_DELAYED = False
+    assert client._reconnect_delay() == 0
+
+    client.RECONNECT_DELAYED = True
+    for expected_delay in client.RECONNECT_DELAYS:
+        delay = client._reconnect_delay()
+        assert delay == expected_delay
+
+        client._reconnect_attempts += 1
+
+    assert client._reconnect_delay() == client.RECONNECT_DELAYS[-1]
+
+@with_client()
 def test_client_disconnect_on_connect(server, client):
     client.disconnect = Mock()
 
