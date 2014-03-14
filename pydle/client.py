@@ -168,6 +168,10 @@ class BasicClient:
 
 
     def _create_user(self, nickname):
+        # Servers are NOT users.
+        if '.' in nickname:
+            return
+
         self.users[nickname] = {
             'nickname': nickname,
             'username': None,
@@ -183,6 +187,8 @@ class BasicClient:
         # Create user in database.
         if not nick in self.users:
             self._create_user(nick)
+            if nick not in self.users:
+                return
 
         self.users[nick].update(metadata)
 
@@ -193,6 +199,8 @@ class BasicClient:
             del self.users[user]
         else:
             self._create_user(new)
+            if new not in self.users:
+                return
 
         for ch in self.channels.values():
             # Rename user in channel list.
