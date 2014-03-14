@@ -5,6 +5,8 @@ import pytest
 from .fixtures import with_client
 from .mocks import Mock
 
+pydle.client.PING_TIMEOUT = 10
+
 
 @with_client()
 def test_client_same_nick(server, client):
