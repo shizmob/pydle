@@ -1,4 +1,5 @@
 import threading
+import datetime
 import json
 import pydle
 
@@ -49,8 +50,17 @@ class MockClient(pydle.client.BasicClient):
     """ A client that subtitutes its own connection for a mock connection to MockServer. """
 
     def __init__(self, *args, mock_server=None, **kwargs):
-        super().__init__(*args, **kwargs)
         self._mock_server = mock_server
+        self._mock_logger = Mock()
+        super().__init__(*args, **kwargs)
+
+    @property
+    def logger(self):
+        return self._mock_logger
+
+    @logger.setter
+    def logger(self, val):
+        pass
 
     def _connect(self, *args, **kwargs):
         self.connection = MockConnection(mock_client=self, mock_server=self._mock_server, eventloop=self.eventloop)
@@ -135,6 +145,9 @@ class MockEventLoop:
         f(*args, **kwargs)
 
     def schedule_in(self, _delay, _f, *_args, **_kw):
+        if isinstance(_delay, datetime.timedelta):
+            _delay = _delay.total_seconds()
+
         timer = threading.Timer(_delay, _f, _args, _kw)
         timer.start()
 
@@ -144,8 +157,10 @@ class MockEventLoop:
         return id
 
     def schedule_periodically(self, _delay, _f, *_args, **_kw):
-        id = self._mock_periodical_id
+        if isinstance(_delay, datetime.timedelta):
+            _delay = _delay.total_seconds()
 
+        id = self._mock_periodical_id
         timer = threading.Timer(_delay, self._do_schedule_periodically, (_f, _delay, id, _args, _kw))
         timer.start()
 

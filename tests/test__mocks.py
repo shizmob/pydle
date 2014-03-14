@@ -1,9 +1,10 @@
 import time
+import datetime
 import pydle
 
 import pytest
 from .fixtures import with_client
-from .mocks import Mock, MockEventLoop
+from .mocks import Mock, MockEventLoop, MockConnection
 
 
 class Passed:
@@ -19,6 +20,8 @@ class Passed:
     def reset(self):
         self._passed = False
 
+
+## Client.
 
 @with_client(connected=False)
 def test_mock_client_connect(server, client):
@@ -48,6 +51,22 @@ def test_mock_client_receive(server, client):
     assert message.params == ('test',)
 
 
+## Connection.
+
+def test_mock_connection_connect():
+    serv = Mock()
+    conn = MockConnection(mock_server=serv)
+
+    conn.connect()
+    assert conn.connected
+    assert serv.connection is conn
+
+    conn.disconnect()
+    assert not conn.connected
+
+
+## Event loop.
+
 def test_mock_eventloop_schedule():
     ev = MockEventLoop()
     passed = Passed()
@@ -67,6 +86,15 @@ def test_mock_eventloop_schedule_in():
     assert passed
 
     ev.stop()
+
+@pytest.mark.slow
+def test_mock_eventloop_schedule_in_timedelta():
+    ev = MockEventLoop()
+    passed = Passed()
+
+    ev.schedule_in(datetime.timedelta(seconds=1), lambda: passed.set())
+    time.sleep(1.1)
+    assert passed
 
 @pytest.mark.slow
 def test_mock_eventloop_schedule_periodically():
