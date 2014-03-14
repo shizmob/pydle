@@ -2,7 +2,7 @@ import pydle
 from .mocks import MockServer, MockClient, MockEventLoop
 
 
-def with_client(*features, connected=True):
+def with_client(*features, connected=True, **options):
     if not features:
         features = (pydle.client.BasicClient,)
     if features not in with_client.classes:
@@ -11,7 +11,7 @@ def with_client(*features, connected=True):
     def inner(f):
         def run():
             server = MockServer()
-            client = with_client.classes[features]('TestcaseRunner', mock_server=server)
+            client = with_client.classes[features]('TestcaseRunner', mock_server=server, **options)
             if connected:
                 client.connect('mock://local', 1337, eventloop=MockEventLoop())
 

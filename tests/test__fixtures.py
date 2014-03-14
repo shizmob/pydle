@@ -17,6 +17,10 @@ def test_fixtures_with_client_features(server, client):
     assert client.__class__.__mro__[1] is MockClient, 'MockClient should be first in method resolution order'
     assert isinstance(client, pydle.features.RFC1459Support)
 
+@with_client(username='test_runner')
+def test_fixtures_with_client_options(server, client):
+    assert client.username == 'test_runner'
+
 @with_client()
 def test_fixtures_with_client_connected(server, client):
     assert client.connected
