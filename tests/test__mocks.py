@@ -61,6 +61,11 @@ def test_mock_connection_connect():
     assert conn.connected
     assert serv.connection is conn
 
+def test_mock_connection_disconnect():
+    serv = Mock()
+    conn = MockConnection(mock_server=serv)
+
+    conn.connect()
     conn.disconnect()
     assert not conn.connected
 
