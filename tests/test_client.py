@@ -31,7 +31,9 @@ def test_client_reconnect_delay(server, client):
     client._reconnect_delay = Mock(return_value=1)
     client.disconnect(expected=False)
 
+    assert client._reconnect_delay.called
     assert not client.connected
+
     time.sleep(1.1)
     assert client.connected
 
@@ -71,6 +73,7 @@ def test_client_timeout(server, client):
     time.sleep(pydle.client.PING_TIMEOUT + 1)
 
     assert client.on_data_error.called
+    assert isinstance(client.on_data_error.call_args[0][0], TimeoutError)
 
 
 ## Messages.
