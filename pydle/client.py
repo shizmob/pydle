@@ -306,10 +306,6 @@ class BasicClient:
         # Reset reconnect attempts.
         self._reconnect_attempts = 0
 
-        # Auto-join channels.
-        for channel in self._autojoin_channels:
-            self.join(channel)
-
     def on_disconnect(self, expected):
         if not expected:
             # Unexpected disconnect. Reconnect?

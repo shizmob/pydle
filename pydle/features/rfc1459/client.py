@@ -454,6 +454,11 @@ class RFC1459Support(BasicClient):
 
     ## Overloadable callbacks.
 
+    def on_connect(self):
+        # Auto-join channels.
+        for channel in self._autojoin_channels:
+            self.join(channel)
+
     def on_invite(self, channel, by):
         """ Callback called when the client was invited into a channel by someone. """
         pass
