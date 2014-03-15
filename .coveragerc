@@ -1,3 +1,8 @@
 [run]
 branch = True
 source = pydle
+
+[report]
+exclude_lines =
+    raise NotImplementedError
+    pass
