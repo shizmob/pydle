@@ -9,6 +9,18 @@ def test_client_same_channel(server, client):
     assert not client.is_same_channel('#lobby', 'jilles')
 
 @with_client()
+def test_client_in_channel(server, client):
+    client._create_channel('#lobby')
+    assert client.in_channel('#lobby')
+
+@with_client()
+def test_client_is_channel(server, client):
+    # Test always true...
+    assert client.is_channel('#lobby')
+    assert client.is_channel('WiZ')
+    assert client.is_channel('irc.fbi.gov')
+
+@with_client()
 def test_channel_creation(server, client):
     client._create_channel('#pydle')
     assert '#pydle' in client.channels
