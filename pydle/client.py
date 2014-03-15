@@ -181,12 +181,8 @@ class BasicClient:
         }
 
     def _sync_user(self, nick, metadata):
-        # Servers are NOT users.
-        if '.' in nick:
-            return
-
         # Create user in database.
-        if not nick in self.users:
+        if nick not in self.users:
             self._create_user(nick)
             if nick not in self.users:
                 return
