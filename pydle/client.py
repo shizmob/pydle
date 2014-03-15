@@ -226,7 +226,7 @@ class BasicClient:
         raise NotImplementedError()
 
     def _format_user_mask(self, nickname):
-        user = self.users.get(nickname, {"username": "*", "hostname": "*"})
+        user = self.users.get(nickname, { "username": "*", "hostname": "*" })
         return self._format_host_mask(user['nickname'], user['username'] or '*', user['hostname'] or '*')
 
     def _format_host_mask(self, nick, user, host):
