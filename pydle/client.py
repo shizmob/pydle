@@ -104,7 +104,8 @@ class BasicClient:
         # Schedule pinger.
         self._ping_checker_handle = self.eventloop.schedule_periodically(PING_TIMEOUT / 2, self._check_ping_timeout)
         # Set logger name.
-        self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
+        if self.server_tag:
+            self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
 
     def disconnect(self, expected=True):
         """ Disconnect from server. """
