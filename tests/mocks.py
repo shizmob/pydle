@@ -62,8 +62,8 @@ class MockClient(pydle.client.BasicClient):
     def logger(self, val):
         pass
 
-    def _connect(self, *args, **kwargs):
-        self.connection = MockConnection(mock_client=self, mock_server=self._mock_server, eventloop=self.eventloop)
+    def _connect(self, hostname, port, *args, **kwargs):
+        self.connection = MockConnection(hostname, port, mock_client=self, mock_server=self._mock_server, eventloop=self.eventloop)
         self.connection.connect()
 
     def raw(self, data):
@@ -88,7 +88,7 @@ class MockConnection(pydle.connection.Connection):
     """ A mock connection between a client and a server. """
 
     def __init__(self, *args, mock_client=None, mock_server=None, **kwargs):
-        super().__init__(*args, hostname='mock://local', port=1337, **kwargs)
+        super().__init__(*args, **kwargs)
         self._mock_connected = False
         self._mock_server = mock_server
         self._mock_client = mock_client
