@@ -1,6 +1,8 @@
 [run]
 branch = True
 source = pydle
+omit =
+    pydle/utils/*
 
 [report]
 exclude_lines =
