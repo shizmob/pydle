@@ -2,7 +2,7 @@ import time
 import datetime
 import pydle
 
-import pytest
+from pytest import mark
 from .fixtures import with_client
 from .mocks import Mock, MockEventLoop, MockConnection
 
@@ -23,6 +23,7 @@ class Passed:
 
 ## Client.
 
+@mark.meta
 @with_client(connected=False)
 def test_mock_client_connect(server, client):
     assert not client.connected
@@ -31,6 +32,7 @@ def test_mock_client_connect(server, client):
     client.disconnect()
     assert not client.connected
 
+@mark.meta
 @with_client()
 def test_mock_client_send(server, client):
     client.raw('benis')
@@ -38,6 +40,7 @@ def test_mock_client_send(server, client):
     client.rawmsg('INSTALL', 'Gentoo')
     assert server.received('INSTALL', 'Gentoo')
 
+@mark.meta
 @with_client(pydle.features.RFC1459Support)
 def test_mock_client_receive(server, client):
     client.on_raw = Mock()
@@ -53,6 +56,7 @@ def test_mock_client_receive(server, client):
 
 ## Connection.
 
+@mark.meta
 def test_mock_connection_connect():
     serv = Mock()
     conn = MockConnection(mock_server=serv)
@@ -61,6 +65,7 @@ def test_mock_connection_connect():
     assert conn.connected
     assert serv.connection is conn
 
+@mark.meta
 def test_mock_connection_disconnect():
     serv = Mock()
     conn = MockConnection(mock_server=serv)
@@ -72,6 +77,7 @@ def test_mock_connection_disconnect():
 
 ## Event loop.
 
+@mark.meta
 def test_mock_eventloop_schedule():
     ev = MockEventLoop()
     passed = Passed()
@@ -81,7 +87,8 @@ def test_mock_eventloop_schedule():
 
     ev.stop()
 
-@pytest.mark.slow
+@mark.meta
+@mark.slow
 def test_mock_eventloop_schedule_in():
     ev = MockEventLoop()
     passed = Passed()
@@ -92,7 +99,8 @@ def test_mock_eventloop_schedule_in():
 
     ev.stop()
 
-@pytest.mark.slow
+@mark.meta
+@mark.slow
 def test_mock_eventloop_schedule_in_timedelta():
     ev = MockEventLoop()
     passed = Passed()
@@ -101,7 +109,8 @@ def test_mock_eventloop_schedule_in_timedelta():
     time.sleep(1.1)
     assert passed
 
-@pytest.mark.slow
+@mark.meta
+@mark.slow
 def test_mock_eventloop_schedule_periodically():
     ev = MockEventLoop()
     passed = Passed()
@@ -116,7 +125,8 @@ def test_mock_eventloop_schedule_periodically():
 
     ev.stop()
 
-@pytest.mark.slow
+@mark.meta
+@mark.slow
 def test_mock_eventloop_unschedule_in():
     ev = MockEventLoop()
     passed = Passed()
@@ -127,7 +137,8 @@ def test_mock_eventloop_unschedule_in():
     time.sleep(1.1)
     assert not passed
 
-@pytest.mark.slow
+@mark.meta
+@mark.slow
 def test_mock_eventloop_unschedule_periodically():
     ev = MockEventLoop()
     passed = Passed()
@@ -138,7 +149,8 @@ def test_mock_eventloop_unschedule_periodically():
     time.sleep(1.1)
     assert not passed
 
-@pytest.mark.slow
+@mark.meta
+@mark.slow
 def test_mock_eventloop_unschedule_periodically_after():
     ev = MockEventLoop()
     passed = Passed()
