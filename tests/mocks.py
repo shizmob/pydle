@@ -65,6 +65,7 @@ class MockClient(pydle.client.BasicClient):
     def _connect(self, hostname, port, *args, **kwargs):
         self.connection = MockConnection(hostname, port, mock_client=self, mock_server=self._mock_server, eventloop=self.eventloop)
         self.connection.connect()
+        self.on_connect()
 
     def raw(self, data):
         self.connection._mock_server.receivedata(data)

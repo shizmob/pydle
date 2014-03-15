@@ -27,8 +27,12 @@ class Passed:
 @with_client(connected=False)
 def test_mock_client_connect(server, client):
     assert not client.connected
+    client.on_connect = Mock()
     client.connect('mock://local', 1337, eventloop=MockEventLoop())
+
     assert client.connected
+    assert client.on_connect.called
+
     client.disconnect()
     assert not client.connected
 
