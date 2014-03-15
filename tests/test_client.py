@@ -3,7 +3,7 @@ import pydle
 
 from pytest import raises, mark
 from .fixtures import with_client
-from .mocks import Mock
+from .mocks import Mock, MockEventLoop
 
 pydle.client.PING_TIMEOUT = 10
 
@@ -74,6 +74,26 @@ def test_client_timeout(server, client):
 
     assert client.on_data_error.called
     assert isinstance(client.on_data_error.call_args[0][0], TimeoutError)
+
+@with_client(connected=False)
+def test_client_server_tag(server, client):
+    ev = MockEventLoop()
+    assert client.server_tag is None
+
+    client.connect('mock.local', 1337, eventloop=ev)
+    assert client.server_tag == 'mock'
+    client.disconnect()
+
+    client.connect('irc.mock.local', 1337, eventloop=ev)
+    assert client.server_tag == 'mock'
+    client.disconnect()
+
+    client.connect('mock', 1337, eventloop=ev)
+    assert client.server_tag == 'mock'
+    client.disconnect()
+
+    client.connect('127.0.0.1', 1337, eventloop=ev)
+    assert client.server_tag == '127.0.0.1'
 
 
 ## Messages.
