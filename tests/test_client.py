@@ -27,13 +27,27 @@ def test_client_reconnect(server, client):
 
 @mark.slow
 @with_client()
-def test_client_reconnect_delay(server, client):
+def test_client_unexpected_disconnect_reconnect(server, client):
+    client._reconnect_delay = Mock(return_value=0)
+    client.disconnect(expected=False)
+    assert client._reconnect_delay.called
+
+    time.sleep(0.1)
+    assert client.connected
+
+@with_client()
+def test_client_unexpected_reconnect_give_up(server, client):
+    client.RECONNECT_ON_ERROR = False
+    client.disconnect(expected=False)
+    assert not client.connected
+
+@mark.slow
+@with_client()
+def test_client_unexpected_disconnect_reconnect_delay(server, client):
     client._reconnect_delay = Mock(return_value=1)
     client.disconnect(expected=False)
 
-    assert client._reconnect_delay.called
     assert not client.connected
-
     time.sleep(1.1)
     assert client.connected
 
@@ -80,7 +94,7 @@ def test_client_server_tag(server, client):
     ev = MockEventLoop()
     assert client.server_tag is None
 
-    client.connect('mock.local', 1337, eventloop=ev)
+    client.connect('Mock.local', 1337, eventloop=ev)
     assert client.server_tag == 'mock'
     client.disconnect()
 
@@ -94,6 +108,10 @@ def test_client_server_tag(server, client):
 
     client.connect('127.0.0.1', 1337, eventloop=ev)
     assert client.server_tag == '127.0.0.1'
+
+    client.network = 'MockNet'
+    assert client.server_tag == 'mocknet'
+    client.disconnect()
 
 
 ## Messages.
