@@ -63,7 +63,7 @@ def test_mock_client_receive(server, client):
 @mark.meta
 def test_mock_connection_connect():
     serv = Mock()
-    conn = MockConnection(mock_server=serv)
+    conn = MockConnection('mock.local', port=1337, mock_server=serv)
 
     conn.connect()
     assert conn.connected
@@ -72,7 +72,7 @@ def test_mock_connection_connect():
 @mark.meta
 def test_mock_connection_disconnect():
     serv = Mock()
-    conn = MockConnection(mock_server=serv)
+    conn = MockConnection('mock.local', port=1337, mock_server=serv)
 
     conn.connect()
     conn.disconnect()
