@@ -64,7 +64,7 @@ class TLSSupport(rfc1459.RFC1459Support):
         future = super().whois(nickname)
 
         # Add field that determines if the target user is connected over TLS.
-        if nickname in self._whois_info['whois']:
+        if nickname in self._whois_info:
             self._whois_info[nickname].setdefault('secure', False)
 
         return future
@@ -96,7 +96,7 @@ class TLSSupport(rfc1459.RFC1459Support):
             'secure': True
         }
 
-        if nickname in self._pending['whois']:
+        if nickname in self._whois_info:
             self._whois_info[nickname].update(info)
 
     def on_raw_691(self, message):
