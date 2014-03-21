@@ -7,6 +7,10 @@ class AccountSupport(rfc1459.RFC1459Support):
     ## Internal.
 
     def _create_user(self, nickname):
+        # Servers aren't users here, either!
+        if "." in nickname:
+            return
+
         super()._create_user(nickname)
         self.users[nickname].update({
             'account': None,

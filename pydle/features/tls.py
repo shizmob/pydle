@@ -96,7 +96,7 @@ class TLSSupport(rfc1459.RFC1459Support):
             'secure': True
         }
 
-        if nickname in self._pending['whois']:
+        if nickname in self._whois_info:
             self._whois_info[nickname].update(info)
 
     def on_raw_691(self, message):
