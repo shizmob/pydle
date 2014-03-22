@@ -78,10 +78,11 @@ class RFC1459Support(BasicClient):
 
     def _create_user(self, nickname):
         super()._create_user(nickname)
-        self.users[nickname].update({
-            'away': False,
-            'away_message': None,
-        })
+        if nickname in self.users:
+            self.users[nickname].update({
+                'away': False,
+                'away_message': None,
+            })
 
     def _rename_user(self, user, new):
         super()._rename_user(user, new)
@@ -106,14 +107,17 @@ class RFC1459Support(BasicClient):
                     ch['modes'][status].remove(nickname)
 
     def _parse_user(self, data):
-        nickname, username, host = parsing.parse_user(data)
+        if data:
+            nickname, username, host = parsing.parse_user(data)
 
-        metadata = {}
-        metadata['nickname'] = nickname
-        if username:
-            metadata['username'] = username
-        if host:
-            metadata['hostname'] = host
+            metadata = {}
+            metadata['nickname'] = nickname
+            if username:
+                metadata['username'] = username
+            if host:
+                metadata['hostname'] = host
+        else:
+            return None, {}
         return nickname, metadata
 
     def _parse_user_modes(self, user, modes, current=None):

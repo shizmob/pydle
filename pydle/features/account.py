@@ -7,15 +7,12 @@ class AccountSupport(rfc1459.RFC1459Support):
     ## Internal.
 
     def _create_user(self, nickname):
-        # Servers aren't users here, either!
-        if "." in nickname:
-            return
-
         super()._create_user(nickname)
-        self.users[nickname].update({
-            'account': None,
-            'identified': False
-        })
+        if nickname in self.users:
+            self.users[nickname].update({
+                'account': None,
+                'identified': False
+            })
 
     def _rename_user(self, user, new):
         super()._rename_user(user, new)

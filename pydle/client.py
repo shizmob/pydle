@@ -171,7 +171,7 @@ class BasicClient:
 
     def _create_user(self, nickname):
         # Servers are NOT users.
-        if '.' in nickname:
+        if not nickname or '.' in nickname:
             return
 
         self.users[nickname] = {
