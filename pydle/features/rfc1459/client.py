@@ -335,27 +335,25 @@ class RFC1459Support(BasicClient):
         self.part(channel)
         self.join(channel, password)
 
-    def message(self, _target, _message, *_args, **_kwargs):
+    def message(self, target, message):
         """ Message channel or user. """
-        message = _message.format(*_args, **_kwargs)
         hostmask = self._format_user_mask(self.nickname)
         # Leeway.
-        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=_target)) - 25
+        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=target)) - 25
 
         for line in message.replace('\r', '').split('\n'):
             for chunk in chunkify(line, chunklen):
-                self.rawmsg('PRIVMSG', _target, chunk)
+                self.rawmsg('PRIVMSG', target, chunk)
 
-    def notice(self, _target, _message, *_args, **_kwargs):
+    def notice(self, target, message):
         """ Notice channel or user. """
-        message = _message.format(*_args, **_kwargs)
         hostmask = self._format_user_mask(self.nickname)
         # Leeway.
-        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} NOTICE {target} :'.format(hostmask=hostmask, target=_target)) - 25
+        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} NOTICE {target} :'.format(hostmask=hostmask, target=target)) - 25
 
         for line in message.replace('\r', '').split('\n'):
             for chunk in chunkify(line, chunklen):
-                self.rawmsg('NOTICE', _target, chunk)
+                self.rawmsg('NOTICE', target, chunk)
 
     def set_mode(self, target, *modes):
         """
