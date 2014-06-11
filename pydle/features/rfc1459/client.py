@@ -279,7 +279,7 @@ class RFC1459Support(BasicClient):
         if reason:
             self.rawmsg('KICK', channel, target, reason)
         else:
-            self.rawmsg('KICK', chanenl, target)
+            self.rawmsg('KICK', channel, target)
 
     def ban(self, channel, target, range=0):
         """
