@@ -13,8 +13,8 @@ Features
   - [CTCP](http://www.irchelp.org/irchelp/rfc/ctcpspec.html)
   - (coming soon) [DCC](http://www.irchelp.org/irchelp/rfc/dccspec.html) and extensions
   - [ISUPPORT/PROTOCTL](http://tools.ietf.org/html/draft-hardy-irc-isupport-00)
-  - [IRCv3.1](http://ircv3.atheme.org/)
-  - (partial, in progress) [IRCv3.2](http://ircv3.atheme.org)
+  - [IRCv3.1](http://ircv3.org/)
+  - (partial, in progress) [IRCv3.2](http://ircv3.org)
 * Callback-based: IRC is an asynchronous protocol and so should a library that implements it be. Callbacks are used to process events from the server.
 * Modularised and extensible: Features on top of RFC1459 are implemented as seperate modules for a user to pick and choose, and write their own. Broad features are written to be as extensible as possible.
 * Liberally licensed: The 3-clause BSD license ensures you can use it everywhere.
@@ -51,26 +51,26 @@ Structure
       + `pydle.features.account.AccountSupport` - account support feature.
    - `pydle.features.ctcp` - [Client-to-Client Protocol](http://www.irchelp.org/irchelp/rfc/ctcpspec.html) support.
       + `pydle.features.ctcp.CTCPSupport` - CTCP support feature.
-   - `pydle.features.tls` - [Transport Layer Security](https://tools.ietf.org/html/rfc5246.html) and [STARTTLS](https://ircv3.atheme.org/extensions/tls-3.1) support.
+   - `pydle.features.tls` - [Transport Layer Security](https://tools.ietf.org/html/rfc5246.html) and [STARTTLS](http://ircv3.org/extensions/tls-3.1) support.
       + `pydle.features.tls.TLSSupport` - TLS support feature.
    - `pydle.features.isupport` - [ISUPPORT/PROTOCTL](http://tools.ietf.org/html/draft-hardy-irc-isupport-00) support.
       + `pydle.features.isupport.ISUPPORTSupport` - ISUPPORT support feature.
-   - `pydle.features.ircv3_1` - [IRCv3.1](http://ircv3.atheme.org) support.
-      + `pydle.features.ircv3_1.cap` - [CAP](http://ircv3.atheme.org/specification/capability-negotiation-3.1) capability negotiation support.
+   - `pydle.features.ircv3_1` - [IRCv3.1](http://ircv3.org) support.
+      + `pydle.features.ircv3_1.cap` - [CAP](http://ircv3.org/specification/capability-negotiation-3.1) capability negotiation support.
          * `pydle.features.ircv3_1.cap.CapabilityNegotiationSupport` - CAP support feature.
          * `pydle.features.ircv3_1.cap.NEGOTIATING` - constant to return from `on_<capability>_available` to indicate negotiation is in progress outside of the capability system. Also available as `pydle.CAPABILITY_NEGOTIATING`.
          * `pydle.features.ircv3_1.cap.NEGOTIATED` - constant to return from `on_<capability>_available` to indicate capability has been negotiated and should be activated. Also available as `pydle.CAPABILITY_NEGOTIATED`.
          * `pydle.features.ircv3_1.cap.FAILED` - constant to return from `on_<capability>_availalbe` to return capability has not been negotiated and should not be activated. Also available as `pydle.CAPABILITY_FAILED`.
-      + `pydle.features.ircv3_1.sasl` - [Simple Authentication and Security Layer](http://ircv3.atheme.org/extensions/sasl-3.1) support - currently limited to the `PLAIN` mechanism.
+      + `pydle.features.ircv3_1.sasl` - [Simple Authentication and Security Layer](http://ircv3.org/extensions/sasl-3.1) support - currently limited to the `PLAIN` mechanism.
          * `pydle.features.ircv3_1.sasl.SASLSupport` - SASL support feature.
-      + `pydle.features.ircv3_1.ircv3_1` - [Miscellaneous](http://ircv3.atheme.org/extensions/multi-prefix-3.1) [features](http://ircv3.atheme.org/extensions/account-notify-3.1) [ensuring](http://ircv3.atheme.org/extensions/away-notify-3.1) [support](http://ircv3.atheme.org/extensions/extended-join-3.1) for [IRCv3.1](http://ircv3.atheme.org/).
+      + `pydle.features.ircv3_1.ircv3_1` - [Miscellaneous](http://ircv3.org/extensions/multi-prefix-3.1) [features](http://ircv3.org/extensions/account-notify-3.1) [ensuring](http://ircv3.org/extensions/away-notify-3.1) [support](http://ircv3.org/extensions/extended-join-3.1) for [IRCv3.1](http://ircv3.org/).
          * `pydle.features.ircv3_1.ircv3_1.IRCv3_1Support` - IRCv3.1 support feature. Also available as `pydle.features.ircv3_1.IRCv3_1Support`.
-   - `pydle.features.ircv3_2` - [IRCv3.2](http://ircv3.atheme.org) support (partial).
-      + `pydle.features.ircv3_2.tags` - [Message Tagging](http://ircv3.atheme.org/specification/message-tags-3.2) support.
+   - `pydle.features.ircv3_2` - [IRCv3.2](http://ircv3.org) support (partial).
+      + `pydle.features.ircv3_2.tags` - [Message Tagging](http://ircv3.org/specification/message-tags-3.2) support.
          * `pydle.features.ircv3_2.tags.TaggedMessageSupport` - message tagging support feature.
-      + `pydle.features.ircv3_2.monitor` - [Online status monitoring](http://ircv3.atheme.org/specification/monitor-3.2) support.
+      + `pydle.features.ircv3_2.monitor` - [Online status monitoring](http://ircv3.org/specification/monitor-3.2) support.
          * `pydle.features.ircv3_2.monitor.MonitoringSupport` - online status monitoring support feature.
-      + `pydle.features.ircv3_2.ircv3_2` - [Miscellaneous](http://ircv3.atheme.org/extensions/userhost-in-names-3.2) features ensuring [IRCv3.2](http://ircv3.atheme.org/) support.
+      + `pydle.features.ircv3_2.ircv3_2` - [Miscellaneous](http://ircv3.org/extensions/userhost-in-names-3.2) features ensuring [IRCv3.2](http://ircv3.org/) support.
          * `pydle.features.ircv3_2.ircv3_2.IRCv3_2Support` - IRCv3.2 support feature. Also available as `pydle.features.ircv3_2.IRCv3_2Support`.
 
 Basic Usage
