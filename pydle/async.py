@@ -1,5 +1,6 @@
 ## async.py
 # Light wrapper around whatever async library pydle uses.
+import os
 import functools
 import itertools
 import collections
@@ -7,8 +8,24 @@ import threading
 import datetime
 import types
 
-import tornado.concurrent
-import tornado.ioloop
+try:
+    import tornado.concurrent
+    import tornado.ioloop
+except ImportError:
+    if os.environ.get('READTHEDOCS', None) == 'True':
+        # Shim some objects for RTD.
+        class tornado:
+            class concurrent:
+                class TracebackFuture:
+                    pass
+
+            class ioloop:
+                class IOLoop:
+                    READ = 1
+                    WRITE = 2
+                    ERROR = 3
+    else:
+        raise
 
 FUTURE_TIMEOUT = 30
 
