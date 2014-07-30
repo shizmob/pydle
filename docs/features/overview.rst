@@ -135,14 +135,14 @@ other features like the IRCv3.1 support feature, or the SASL authentication feat
 
 This feature adds three generic hooks for feature authors whose features makes use of capability negotiation:
 
- * `pydle.Client.on_capability_<cap>_available()`: Called when the server indicates capability `cap` is available. Should return
+ * ``pydle.Client.on_capability_<cap>_available()``: Called when the server indicates capability `cap` is available. Should return
     a boolean: whether or not to request the capability.
- * `pydle.Client.on_capability_<cap>_enabled()`: Called when the server has acknowledged the request of capability `cap`, and it
+ * ``pydle.Client.on_capability_<cap>_enabled()``: Called when the server has acknowledged the request of capability `cap`, and it
     has been enabled. Should return one of three values: `pydle.CAPABILITY_NEGOTIATING` when the capability will be further negotiated,
     `pydle.CAPABILITY_NEGOTIATED` when the capability has been negotiated successfully, or `pydle.CAPABILITY_FAILED` when negotiation
     of the capability has failed. If the function returned `pydle.CAPABILITY_NEGOTIATING`, it has to call
     `pydle.Client.capability_negotiated(cap, success=True)` when negotiating is finished.
- * `pydle.Client.on_capability_<cap>_disabled()`: Called when a previously-enabled capability `cap` has been disabled.
+ * ``pydle.Client.on_capability_<cap>_disabled()``: Called when a previously-enabled capability `cap` has been disabled.
 
 .. _`capability negotiation`: http://ircv3.org/specification/capability-negotiation-3.1
 
@@ -155,9 +155,9 @@ Support for user authentication using `SASL`_.
 This feature enables users to identify to their network account using the SASL protocol and practices. Three extra arguments are added
 to the `pydle.Client` constructor:
 
- * `sasl_username`: The SASL username.
- * `sasl_password`: The SASL password.
- * `sasl_identity`: The identity to use. Default, and most common, is `''`.
+ * ``sasl_username``: The SASL username.
+ * ``sasl_password``: The SASL password.
+ * ``sasl_identity``: The identity to use. Default, and most common, is ``''``.
 
 These arguments are also set as attributes.
 
