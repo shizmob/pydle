@@ -90,7 +90,7 @@ class Client(MyBase):
 
 **Q: How do I...?**
 
-Stop! Read the documentation first. If you're still in need of support, join us on IRC! We hang at `#kochira` on `irc.freenode.net`. If someone is around, they'll most likely gladly help you.
+Stop! Read the [documentation](http://pydle.readthedocs.org) first. If you're still in need of support, join us on IRC! We hang at `#kochira` on `irc.freenode.net`. If someone is around, they'll most likely gladly help you.
 
 License
 -------
