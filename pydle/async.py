@@ -8,24 +8,8 @@ import threading
 import datetime
 import types
 
-try:
-    import tornado.concurrent
-    import tornado.ioloop
-except ImportError:
-    if os.environ.get('READTHEDOCS', None) == 'True':
-        # Shim some objects for RTD.
-        class tornado:
-            class concurrent:
-                class TracebackFuture:
-                    pass
-
-            class ioloop:
-                class IOLoop:
-                    READ = 1
-                    WRITE = 2
-                    ERROR = 3
-    else:
-        raise
+import tornado.concurrent
+import tornado.ioloop
 
 FUTURE_TIMEOUT = 30
 
