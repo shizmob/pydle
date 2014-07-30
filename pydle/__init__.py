@@ -5,8 +5,8 @@ from .client import Error, NotInChannel, AlreadyInChannel, BasicClient, ClientPo
 from .features.ircv3_1.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as CAPABILITY_FAILED, NEGOTIATED as CAPABILITY_NEGOTIATED
 
 __name__ = 'pydle'
-__version__ = '0.7.1'
-__version_info__ = (0, 7, 1)
+__version__ = '0.8.0'
+__version_info__ = (0, 8, 0)
 __license__ = 'BSD'
 
 
