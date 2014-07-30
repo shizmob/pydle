@@ -117,10 +117,10 @@ major features of IRCv3.1, the capability negotiation framework and SASL authent
 by only including their features.
 
 .. _`IRCv3 Working Group`: http://ircv3.org
-   _`IRCv3.1 specification`: http://ircv3.org
-   _`SASL authentication`: http://ircv3.org/extensions/sasl-3.1
-   _`indicating when a user identified to their account`: http://ircv3.org/extensions/account-notify-3.1
-   _`indicating when a user went away from their PC`: http://ircv3.org/extensions/away-notify-3.1
+.. _`IRCv3.1 specification`: http://ircv3.org
+.. _`SASL authentication`: http://ircv3.org/extensions/sasl-3.1
+.. _`indicating when a user identified to their account`: http://ircv3.org/extensions/account-notify-3.1
+.. _`indicating when a user went away from their PC`: http://ircv3.org/extensions/away-notify-3.1
 
 Capability Negotiation Support
 ------------------------------
@@ -164,7 +164,7 @@ These arguments are also set as attributes.
 Currently, pydle's SASL support requires on the Python `pure-sasl`_ package and is limited to support for the `PLAIN` mechanism.
 
 .. _`SASL`: https://tools.ietf.org/html/rfc4422
-   _`pure-sasl`: https://github.com/thobbs/pure-sasl
+.. _`pure-sasl`: https://github.com/thobbs/pure-sasl
 
 IRCv3.2
 =======
@@ -184,11 +184,11 @@ pydle currently supports the following IRCv3.2 extensions:
  * `Message tags`_ to add metadata to messages.
 
 .. _`IRCv3 Working Group`: http://ircv3.org
-   _`IRCv3.2 specification`: http://ircv3.org
-   _`CHGHOST`: http://ircv3.org/extensions/chghost-3.2
-   _`MONITOR`: http://ircv3.org/specification/monitor-3.2
-   _`ident and host`: http://ircv3.org/extensions/userhost-in-names-3.2
-   _`Message tags`: http://ircv3.org/specification/message-tags-3.2
+.. _`IRCv3.2 specification`: http://ircv3.org
+.. _`CHGHOST`: http://ircv3.org/extensions/chghost-3.2
+.. _`MONITOR`: http://ircv3.org/specification/monitor-3.2
+.. _`ident and host`: http://ircv3.org/extensions/userhost-in-names-3.2
+.. _`Message tags`: http://ircv3.org/specification/message-tags-3.2
 
 As with the IRCv3.1 features, using this feature enables all of pydle's IRCv3.2 support. A user can also opt to only use individual
 large IRCv3.2 features by using the features below.
