@@ -1,8 +1,15 @@
-from . import async, connection, protocol, client, features
+import os
 
-from .async import coroutine, Future
-from .client import Error, NotInChannel, AlreadyInChannel, BasicClient, ClientPool
-from .features.ircv3_1.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as CAPABILITY_FAILED, NEGOTIATED as CAPABILITY_NEGOTIATED
+try:
+    from . import async, connection, protocol, client, features
+
+    from .async import coroutine, Future
+    from .client import Error, NotInChannel, AlreadyInChannel, BasicClient, ClientPool
+    from .features.ircv3_1.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as CAPABILITY_FAILED, NEGOTIATED as CAPABILITY_NEGOTIATED
+except ImportError:
+    if os.environ.get('READTHEDOCS', None) != 'True':
+        # Allow this to fail when building documentation.
+        raise
 
 __name__ = 'pydle'
 __version__ = '0.8.0'
