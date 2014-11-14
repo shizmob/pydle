@@ -29,10 +29,12 @@ def coroutine(func):
         def handle_future(future):
             # Chained futures!
             try:
-                if future.exception() is not None:
-                    result = gen.throw(future.exception())
+                try:
+                    value = future.result()
+                except BaseException as e:
+                    result = gen.throw(e)
                 else:
-                    result = gen.send(future.result())
+                    result = gen.send(value)
                 if isinstance(result, tuple):
                     result = parallel(*result)
                 result.add_done_callback(handle_future)
