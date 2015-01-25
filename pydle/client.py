@@ -45,6 +45,7 @@ class BasicClient:
         self.username = username or nickname.lower()
         self.realname = realname or nickname
         self.eventloop = None
+        self.own_eventloop = True
         self._reset_connection_attributes()
         self._reset_attributes()
 
@@ -95,6 +96,7 @@ class BasicClient:
             self.eventloop = eventloop
         elif not self.eventloop:
             self.eventloop = async.EventLoop()
+        self.own_eventloop = not eventloop
 
         # Reset attributes and connect.
         if not reconnect:
@@ -120,6 +122,10 @@ class BasicClient:
 
             # Callback.
             self.on_disconnect(expected)
+
+            # Shut down event loop.
+            if expected and self.own_eventloop:
+                self.connection.stop()
 
             # Reset any attributes.
             self._reset_attributes()

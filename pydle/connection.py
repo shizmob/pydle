@@ -223,6 +223,10 @@ class Connection:
         self.eventloop.run()
         self.remove_handlers()
 
+    def stop(self):
+        """ Stop event loop. """
+        self.eventloop.schedule(lambda: self.eventloop.stop())
+
 
     ## Handler setup and teardown.
 
