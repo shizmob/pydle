@@ -13,10 +13,10 @@ class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
     def on_raw_join(self, message):
         """ Override JOIN to send WHOX. """
         super().on_raw_join(message)
-        nick, metadata = self._parse_user(message.source)
+        user = self._parse_and_sync_user(message.source)
         channels = message.params[0].split(',')
 
-        if self.is_same_nick(self.nickname, nick):
+        if self.is_same_nick(self.nickname, user.nickname):
             # We joined.
             if 'WHOX' in self._isupport and self._isupport['WHOX']:
                 # Get more relevant channel info thanks to WHOX.
@@ -33,14 +33,8 @@ class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
             return
 
         # Great. Extract relevant information.
-        metadata = {
-            'nickname': message.params[4],
-            'username': message.params[2],
-            'realname': message.params[6],
-            'hostname': message.params[3],
-        }
-        if message.params[5] != NO_ACCOUNT:
-            metadata['identified'] = True
-            metadata['account'] = message.params[5]
-
-        self._sync_user(metadata['nickname'], metadata)
+        user = self._get_user(message.params[4])
+        user.username = message.params[2]
+        user.realname = message.params[6]
+        user.hostname = message.params[3]
+        user.account = message.params[5] if message.params[5] != NO_ACCOUNT else None

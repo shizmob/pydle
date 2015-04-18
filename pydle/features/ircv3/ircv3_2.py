@@ -42,8 +42,5 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
             return
 
         # Update user and host.
-        metadata = {
-            'username': message.params[0],
-            'hostname': message.params[1]
-        }
-        self._sync_user(nick, metadata)
+        user = self._get_user(nick)
+        user.username, user.hostname = message.params[:2]

@@ -4,16 +4,103 @@ import datetime
 import itertools
 import copy
 import ipaddress
+import warnings
 
+from pydle import models
 from pydle.async import Future
 from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
 from . import parsing
 from . import protocol
 
 
+class RFC1459User(models.User):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.away_message = None
+
+    @property
+    def away(self):
+        return self.away_message is not None
+
+    def message(self, message):
+        self.client.message(self.nickname, message)
+
+
+class RFC1459Channel(models.Channel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.modes = {}
+        self.topic = None
+        self.topic_by = None
+        self.topic_set = None
+        self.created = None
+        self.password = None
+        self.banlist = None
+        self.public = True
+
+    def message(self, message):
+        self.client.message(self.name, message)
+
+
+class WHOISInfo:
+    def __init__(self):
+        self.user = None
+        self.oper = False
+        self.idle = 0
+        self.away_message = None
+        self.server = None
+        self.server_info = None
+        self.channels = set()
+
+    @property
+    def away(self):
+        return self.away_message is not None
+
+    @property
+    def nickname(self):
+        return self.user.nickname
+
+    @property
+    def username(self):
+        return self.user.username
+
+    @property
+    def realname(self):
+        return self.user.realname
+
+    @property
+    def hostname(self):
+        return self.user.hostname
+
+    def __getitem__(self, k):
+        warnings.warn('Use of `whoisinfo["attr"]` is deprecated. Please use `whoisinfo.attr`.', DeprecationWarning)
+        return getattr(self, k)
+
+    def __setitem__(self, k, v):
+        warnings.warn('Use of `whoisinfo["attr"]` is deprecated. Please use `whoisinfo.attr`.', DeprecationWarning)
+        setattr(self, k, v)
+
+
+class WHOWASInfo:
+    def __init__(self):
+        self.server = None
+        self.server_info = None
+
+    def __getitem__(self, k):
+        warnings.warn('Use of `whowasinfo["attr"]` is deprecated. Please use `whowasinfo.attr`.', DeprecationWarning)
+        return getattr(self, k)
+
+    def __setitem__(self, k, v):
+        warnings.warn('Use of `whowasinfo["attr"]` is deprecated. Please use `whowasinfo.attr`.', DeprecationWarning)
+        setattr(self, k, v)
+
+
 class RFC1459Support(BasicClient):
     """ Basic RFC1459 client. """
     DEFAULT_QUIT_MESSAGE = 'Quitting'
+
+    USER_MODEL = RFC1459User
+    CHANNEL_MODEL = RFC1459Channel
 
     ## Internals.
 
@@ -48,8 +135,8 @@ class RFC1459Support(BasicClient):
         self._attempt_nicknames = self._nicknames[:]
 
         # Info.
-        self._pending['whois'] = {}
-        self._pending['whowas'] = {}
+        self._pending_whois = {}
+        self._pending_whowas = {}
         self._whois_info = {}
         self._whowas_info = {}
 
@@ -63,36 +150,15 @@ class RFC1459Support(BasicClient):
         super()._reset_connection_attributes()
         self.password = None
 
-    def _create_channel(self, channel):
-        super()._create_channel(channel)
-        self.channels[channel].update({
-            'modes': {},
-            'topic': None,
-            'topic_by': None,
-            'topic_set': None,
-            'created': None,
-            'password': None,
-            'banlist': None,
-            'public': True
-        })
-
-    def _create_user(self, nickname):
-        super()._create_user(nickname)
-        if nickname in self.users:
-            self.users[nickname].update({
-                'away': False,
-                'away_message': None,
-            })
-
     def _rename_user(self, user, new):
         super()._rename_user(user, new)
 
         # Rename in mode lists, too.
         for ch in self.channels.values():
             for mode in self._nickname_prefixes.values():
-                if mode in ch['modes'] and user in ch['modes'][mode]:
-                    ch['modes'][mode].remove(user)
-                    ch['modes'][mode].append(new)
+                if mode in ch.modes and user in ch.modes[mode]:
+                    ch.modes[mode].remove(user)
+                    ch.modes[mode].append(new)
 
     def _destroy_user(self, user, channel):
         if channel:
@@ -103,32 +169,38 @@ class RFC1459Support(BasicClient):
         # Remove user from status list too.
         for ch in channels:
             for status in self._nickname_prefixes.values():
-                if status in ch['modes'] and nickname in ch['modes'][status]:
-                    ch['modes'][status].remove(nickname)
+                if status in ch.modes and nickname in ch.modes[status]:
+                    ch.modes[status].remove(nickname)
 
     def _parse_user(self, data):
-        if data:
-            nickname, username, host = parsing.parse_user(data)
-
-            metadata = {}
-            metadata['nickname'] = nickname
-            if username:
-                metadata['username'] = username
-            if host:
-                metadata['hostname'] = host
-        else:
-            return None, {}
-        return nickname, metadata
+        if data is None:
+            return None
+        return parsing.parse_user(data)
 
     def _parse_user_modes(self, user, modes, current=None):
         if current is None:
-            current = self.users[user]['modes']
+            current = self.users[user].modes
         return parsing.parse_modes(modes, current, behaviour=self._user_modes_behaviour)
 
     def _parse_channel_modes(self, channel, modes, current=None):
         if current is None:
-            current = self.channels[channel]['modes']
+            current = self.channels[channel].modes
         return parsing.parse_modes(modes, current, behaviour=self._channel_modes_behaviour)
+
+    def _parse_and_process_user(self, hostmask):
+        if hostmask is None:
+            return None
+
+        nickname, username, hostname = self._parse_user(hostmask)
+
+        # Servers are NOT users, but we're willing to return something sensible for it.
+        if "." in nickname:
+            return models.Server(nickname)
+
+        user = self._get_user(nickname)
+        user.username = username
+        user.hostname = hostname
+        return user
 
     def _format_host_range(self, host, range, allow_everything=False):
         # IPv4?
@@ -220,7 +292,7 @@ class RFC1459Support(BasicClient):
             self.connection.throttle = True
 
             target = message.params[0]
-            fakemsg = self._create_message('NICK', target, source=self.nickname)
+            fakemsg = self._create_message('NICK', target, source=self.user.nickname)
             self.on_raw_nick(fakemsg)
 
 
@@ -289,7 +361,7 @@ class RFC1459Support(BasicClient):
         1+ means ban that many 'degrees' (up to 3 for IP addresses) of the host for range bans.
         """
         if target in self.users:
-            host = self.users[target]['hostname']
+            host = self.users[target].hostname
         else:
             host = target
 
@@ -303,7 +375,7 @@ class RFC1459Support(BasicClient):
         See ban documentation for the range parameter.
         """
         if target in self.users:
-            host = self.users[target]['hostname']
+            host = self.users[target].hostname
         else:
             host = target
 
@@ -331,15 +403,14 @@ class RFC1459Support(BasicClient):
         if not self.in_channel(channel):
             raise NotInChannel(channel)
 
-        password = self.channels[channel]['password']
+        password = self.channels[channel].password
         self.part(channel)
         self.join(channel, password)
 
     def message(self, target, message):
         """ Message channel or user. """
-        hostmask = self._format_user_mask(self.nickname)
         # Leeway.
-        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=target)) - 25
+        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=self.user.hostmask, target=target)) - 25
 
         for line in message.replace('\r', '').split('\n'):
             for chunk in chunkify(line, chunklen):
@@ -347,9 +418,8 @@ class RFC1459Support(BasicClient):
 
     def notice(self, target, message):
         """ Notice channel or user. """
-        hostmask = self._format_user_mask(self.nickname)
         # Leeway.
-        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} NOTICE {target} :'.format(hostmask=hostmask, target=target)) - 25
+        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} NOTICE {target} :'.format(hostmask=self.user.hostmask, target=target)) - 25
 
         for line in message.replace('\r', '').split('\n'):
             for chunk in chunkify(line, chunklen):
@@ -400,19 +470,14 @@ class RFC1459Support(BasicClient):
             result.set_result(None)
             return result
 
-        if nickname not in self._pending['whois']:
+        if nickname not in self._pending_whois:
             self.rawmsg('WHOIS', nickname)
-            self._whois_info[nickname] = {
-                'oper': False,
-                'idle': 0,
-                'away': False,
-                'away_message': None
-            }
+            self._whois_info[nickname] = WHOISInfo()
 
             # Create a future for when the WHOIS requests succeeds.
-            self._pending['whois'][nickname] = Future()
+            self._pending_whois[nickname] = Future()
 
-        return self._pending['whois'][nickname]
+        return self._pending_whois[nickname]
 
     def whowas(self, nickname):
         """
@@ -427,14 +492,14 @@ class RFC1459Support(BasicClient):
             result.set_result(None)
             return result
 
-        if nickname not in self._pending['whowas']:
+        if nickname not in self._pending_whowas:
             self.rawmsg('WHOWAS', nickname)
-            self._whowas_info[nickname] = {}
+            self._whowas_info[nickname] = WHOWASInfo()
 
             # Create a future for when the WHOWAS requests succeeds.
-            self._pending['whowas'][nickname] = Future()
+            self._pending_whowas[nickname] = Future()
 
-        return self._pending['whowas'][nickname]
+        return self._pending_whowas[nickname]
 
 
     ## IRC helpers.
@@ -497,7 +562,7 @@ class RFC1459Support(BasicClient):
         """ Callback called when the client received a message in private. """
         pass
 
-    def on_nick_change(self, old, new):
+    def on_nick_change(self, user, original_nick):
         """ Callback called when a user, possibly the client, changed their nickname. """
         pass
 
@@ -535,22 +600,20 @@ class RFC1459Support(BasicClient):
 
     def on_raw_invite(self, message):
         """ INVITE command. """
-        nick, metadata = self._parse_user(message.source)
-        self._sync_user(nick, metadata)
+        user = self._parse_and_process_user(message.source)
 
         target, channel = message.params
-        target, metadata = self._parse_user(target)
+        target, _, _ = self._parse_user(target)
 
-        if self.is_same_nick(self.nickname, target):
-            self.on_invite(channel, nick)
+        if self.is_same_nick(self.user.nickname, target):
+            self.on_invite(self._get_channel(channel), user)
 
     def on_raw_join(self, message):
         """ JOIN command. """
-        nick, metadata = self._parse_user(message.source)
-        self._sync_user(nick, metadata)
+        user = self._parse_and_process_user(message.source)
 
         channels = message.params[0].split(',')
-        if self.is_same_nick(self.nickname, nick):
+        if self.is_same_nick(self.user.nickname, user.nickname):
             # Add to our channel list, we joined here.
             for channel in channels:
                 if not self.in_channel(channel):
@@ -562,15 +625,14 @@ class RFC1459Support(BasicClient):
             # Add user to channel user list.
             for channel in channels:
                 if self.in_channel(channel):
-                    self.channels[channel]['users'].add(nick)
+                    self.channels[channel].users.add(user.nickname)
 
         for channel in channels:
-            self.on_join(channel, nick)
+            self.on_join(self.channels[channel], user)
 
     def on_raw_kick(self, message):
         """ KICK command. """
-        kicker, kickermeta = self._parse_user(message.source)
-        self._sync_user(kicker, kickermeta)
+        kicker = self._parse_and_process_user(message.source)
 
         if len(message.params) > 2:
             channels, targets, reason = message.params
@@ -581,108 +643,103 @@ class RFC1459Support(BasicClient):
         channels = channels.split(',')
         targets = targets.split(',')
 
-        for channel, target in itertools.product(channels, targets):
-            target, targetmeta = self._parse_user(target)
-            self._sync_user(target, targetmeta)
+        for channel, target_user in itertools.product(channels, targets):
+            target = self._parse_and_process_user(target_user)
 
-            if self.is_same_nick(target, self.nickname):
+            if self.is_same_nick(target.nickname, self.user.nickname):
                 self._destroy_channel(channel)
             else:
                 # Update nick list on channel.
                 if self.in_channel(channel):
-                    self._destroy_user(target, channel)
+                    self._destroy_user(target.nickname, channel)
 
-            self.on_kick(channel, target, kicker, reason)
+            self.on_kick(self._get_channel(channel), target, kicker, reason)
 
     def on_raw_kill(self, message):
         """ KILL command. """
-        by, bymeta = self._parse_user(message.source)
-        target, targetmeta = self._parse_user(message.params[0])
+        by = self._parse_and_process_user(message.source)
+        target = self._parse_and_process_user(message.params[0])
         reason = message.params[1]
 
-        self._sync_user(target, targetmeta)
-        if by in self.users:
-            self._sync_user(by, bymeta)
-
         self.on_kill(target, by, reason)
-        if self.is_same_nick(self.nickname, target):
+        if self.is_same_nick(self.user.nickname, target):
             self.disconnect(expected=False)
         else:
             self._destroy_user(target)
 
     def on_raw_mode(self, message):
         """ MODE command. """
-        nick, metadata = self._parse_user(message.source)
+        user = self._parse_and_process_user(message.source)
         target, modes = message.params[0], message.params[1:]
 
-        self._sync_user(nick, metadata)
         if self.is_channel(target):
             if self.in_channel(target):
                 # Parse modes.
-                self.channels[target]['modes'] = self._parse_channel_modes(target, modes)
+                channel = self.channels[target]
+                channel.modes = self._parse_channel_modes(target, modes)
 
-                self.on_mode_change(target, modes, nick)
+                self.on_mode_change(channel, modes, user)
         else:
-            target, targetmeta = self._parse_user(target)
-            self._sync_user(target, targetmeta)
+            self._parse_and_process_user(target)
 
             # Update own modes.
-            if self.is_same_nick(self.nickname, nick):
-                self._mode = self._parse_user_modes(nick, modes, current=self._mode)
+            if self.is_same_nick(self.user.nickname, user.nickname):
+                self._mode = self._parse_user_modes(user.nickname, modes, current=self._mode)
 
             self.on_user_mode_change(modes)
 
     def on_raw_nick(self, message):
         """ NICK command. """
-        nick, metadata = self._parse_user(message.source)
+        user = self._parse_and_process_user(message.source)
+        original = user.nickname
+
         new = message.params[0]
 
-        self._sync_user(nick, metadata)
         # Acknowledgement of nickname change: set it internally, too.
         # Alternatively, we were force nick-changed. Nothing much we can do about it.
-        if self.is_same_nick(self.nickname, nick):
-            self.nickname = new
+        if self.is_same_nick(self.user.nickname, user.nickname):
+            self.user.nickname = new
 
         # Go through all user lists and replace.
-        self._rename_user(nick, new)
+        self._rename_user(user.nickname, new)
 
         # Call handler.
-        self.on_nick_change(nick, new)
+        self.on_nick_change(user, original)
 
     def on_raw_notice(self, message):
         """ NOTICE command. """
-        nick, metadata = self._parse_user(message.source)
+        user = self._parse_and_process_user(message.source)
         target, message = message.params
 
-        self._sync_user(nick, metadata)
-
-        self.on_notice(target, nick, message)
         if self.is_channel(target):
-            self.on_channel_notice(target, nick, message)
+            channel = self._get_channel(target)
+            self.on_notice(channel, user, message)
+            self.on_channel_notice(channel, user, message)
         else:
-            self.on_private_notice(nick, message)
+            self.on_notice(self.user, user, message)
+            self.on_private_notice(user, message)
 
     def on_raw_part(self, message):
         """ PART command. """
-        nick, metadata = self._parse_user(message.source)
+        user = self._parse_and_process_user(message.source)
         channels = message.params[0].split(',')
         if len(message.params) > 1:
             reason = message.params[1]
         else:
             reason = None
 
-        self._sync_user(nick, metadata)
-        if self.is_same_nick(self.nickname, nick):
+        if self.is_same_nick(self.user.nickname, user.nickname):
             # We left the channel. Remove from channel list. :(
             for channel in channels:
                 if self.in_channel(channel):
+                    old_channel = self.channels[channel]
                     self._destroy_channel(channel)
-                    self.on_part(channel, nick, reason)
+                    self.on_part(old_channel, user, reason)
         else:
             # Someone else left. Remove them.
             for channel in channels:
-                self._destroy_user(nick, channel)
-                self.on_part(channel, nick, reason)
+                self._destroy_user(user.nickname, channel)
+                self.on_part(self.channels[channel], user, reason)
 
     def on_raw_ping(self, message):
         """ PING command. """
@@ -691,49 +748,47 @@ class RFC1459Support(BasicClient):
 
     def on_raw_privmsg(self, message):
         """ PRIVMSG command. """
-        nick, metadata = self._parse_user(message.source)
+        user = self._parse_and_process_user(message.source)
         target, message = message.params
 
-        self._sync_user(nick, metadata)
-
-        self.on_message(target, nick, message)
         if self.is_channel(target):
-            self.on_channel_message(target, nick, message)
+            channel = self._get_channel(target)
+            self.on_message(channel, user, message)
+            self.on_channel_message(channel, user, message)
         else:
-            self.on_private_message(nick, message)
+            self.on_message(self.user, user, message)
+            self.on_private_message(user, message)
 
     def on_raw_quit(self, message):
         """ QUIT command. """
-        nick, metadata = self._parse_user(message.source)
+        user = self._parse_and_process_user(message.source)
 
-        self._sync_user(nick, metadata)
         if message.params:
             reason = message.params[0]
         else:
             reason = None
 
-        self.on_quit(nick, reason)
+        self.on_quit(user, reason)
         # Remove user from database.
-        if not self.is_same_nick(self.nickname, nick):
-            self._destroy_user(nick)
+        if not self.is_same_nick(self.user.nickname, user.nickname):
+            self._destroy_user(user.nickname)
         # Else, we quit.
         elif self.connected:
             self.disconnect(expected=True)
 
     def on_raw_topic(self, message):
         """ TOPIC command. """
-        setter, settermeta = self._parse_user(message.source)
+        setter = self._parse_and_process_user(message.source)
         target, topic = message.params
-
-        self._sync_user(setter, settermeta)
 
         # Update topic in our own channel list.
         if self.in_channel(target):
-            self.channels[target]['topic'] = topic
-            self.channels[target]['topic_by'] = setter
-            self.channels[target]['topic_set'] = datetime.datetime.now()
+            channel = self.channels[target]
+            channel.topic = topic
+            channel.topic_by = setter.nickname
+            channel.topic_set = datetime.datetime.now()
 
-        self.on_topic_change(target, topic, setter)
+        self.on_topic_change(channel, topic, setter)
 
 
     ## Numeric responses.
@@ -767,95 +822,83 @@ class RFC1459Support(BasicClient):
     def on_raw_301(self, message):
         """ User is away. """
         nickname, message = message.params[0]
-        info = {
-            'away': True,
-            'away_message': message
-        }
 
         if nickname in self.users:
-            self._sync_user(nickname, info)
-        if nickname in self._pending['whois']:
-            self._whois_info[nickname].update(info)
+            user = self.users[nickname]
+            user.away_message = message
+        if nickname in self._pending_whois:
+            whois_info = self._whois_info[nickname]
+            whois_info.away_message = message
 
     def on_raw_311(self, message):
         """ WHOIS user info. """
         target, nickname, username, hostname, _, realname = message.params
-        info = {
-            'username': username,
-            'hostname': hostname,
-            'realname': realname
-        }
 
-        self._sync_user(nickname, info)
-        if nickname in self._pending['whois']:
-            self._whois_info[nickname].update(info)
+        user = self._get_user(nickname)
+        user.username = username
+        user.hostname = hostname
+        user.realname = realname
+
+        if nickname in self._pending_whois:
+            whois_info = self._whois_info[nickname]
+            whois_info.user = user
 
     def on_raw_312(self, message):
         """ WHOIS server info. """
         target, nickname, server, serverinfo = message.params
-        info = {
-            'server': server,
-            'server_info': serverinfo
-        }
 
-        if nickname in self._pending['whois']:
-            self._whois_info[nickname].update(info)
-        if nickname in self._pending['whowas']:
-            self._whowas_info[nickname].update(info)
+        if nickname in self._pending_whois:
+            whois_info = self._whois_info[nickname]
+            whois_info.server = server
+            whois_info.server_info = serverinfo
+        if nickname in self._pending_whowas:
+            whowas_info = self._whowas_info[nickname]
+            whowas_info.server = server
+            whowas_info.server_info = serverinfo
 
     def on_raw_313(self, message):
         """ WHOIS operator info. """
         target, nickname = message.params[:2]
-        info = {
-            'oper': True
-        }
 
-        if nickname in self._pending['whois']:
-            self._whois_info[nickname].update(info)
+        if nickname in self._pending_whois:
+            whois_info = self._whois_info[nickname]
+            whois_info.oper = True
 
     def on_raw_314(self, message):
         """ WHOWAS user info. """
         target, nickname, username, hostname, _, realname = message.params
-        info = {
-            'username': username,
-            'hostname': hostname,
-            'realname': realname
-        }
 
-        if nickname in self._pending['whowas']:
-            self._whowas_info[nickname].update(info)
+        if nickname in self._pending_whowas:
+            whowas_info = self._whowas_info[nickname]
+            whowas_info.username = username
+            whowas_info.hostname = hostname
+            whowas_info.realname = realname
 
     on_raw_315 = BasicClient._ignored    # End of /WHO list.
 
     def on_raw_317(self, message):
         """ WHOIS idle time. """
         target, nickname, idle_time = message.params[:3]
-        info = {
-            'idle': int(idle_time),
-        }
 
-        if nickname in self._pending['whois']:
-            self._whois_info[nickname].update(info)
+        if nickname in self._pending_whois:
+            self._whois_info[nickname].idle = int(idle_time)
 
     def on_raw_318(self, message):
         """ End of /WHOIS list. """
         target, nickname =  message.params[:2]
 
         # Mark future as done.
-        if nickname in self._pending['whois']:
-            future = self._pending['whois'].pop(nickname)
+        if nickname in self._pending_whois:
+            future = self._pending_whois.pop(nickname)
             future.set_result(self._whois_info[nickname])
 
     def on_raw_319(self, message):
         """ WHOIS active channels. """
         target, nickname, channels = message.params[:3]
         channels = { channel.lstrip() for channel in channels.strip().split(' ') }
-        info = {
-            'channels': channels
-        }
 
-        if nickname in self._pending['whois']:
-            self._whois_info[nickname].update(info)
+        if nickname in self._pending_whois:
+            self._whois_info[nickname].channels = channels
 
     def on_raw_324(self, message):
         """ Channel mode. """
@@ -864,7 +907,7 @@ class RFC1459Support(BasicClient):
         if not self.in_channel(channel):
             return
 
-        self.channels[channel]['modes'] = self._parse_channel_modes(channel, modes)
+        self.channels[channel].modes = self._parse_channel_modes(channel, modes)
 
     def on_raw_329(self, message):
         """ Channel creation time. """
@@ -872,7 +915,7 @@ class RFC1459Support(BasicClient):
         if not self.in_channel(channel):
             return
 
-        self.channels[channel]['created'] = datetime.datetime.fromtimestamp(int(timestamp))
+        self.channels[channel].created = datetime.datetime.fromtimestamp(int(timestamp))
 
     def on_raw_332(self, message):
         """ Current topic on channel join. """
@@ -880,7 +923,7 @@ class RFC1459Support(BasicClient):
         if not self.in_channel(channel):
             return
 
-        self.channels[channel]['topic'] = topic
+        self.channels[channel].topic = topic
 
     def on_raw_333(self, message):
         """ Topic setter and time on channel join. """
@@ -889,8 +932,8 @@ class RFC1459Support(BasicClient):
             return
 
         # No need to sync user since this is most likely outdated info.
-        self.channels[channel]['topic_by'] = self._parse_user(setter)[0]
-        self.channels[channel]['topic_set'] = datetime.datetime.fromtimestamp(int(timestamp))
+        self.channels[channel].topic_by = self._parse_user(setter)[0]
+        self.channels[channel].topic_set = datetime.datetime.fromtimestamp(int(timestamp))
 
     def on_raw_353(self, message):
         """ Response to /NAMES. """
@@ -900,9 +943,9 @@ class RFC1459Support(BasicClient):
 
         # Set channel visibility.
         if visibility == protocol.PUBLIC_CHANNEL_SIGIL:
-            self.channels[channel]['public'] = True
+            self.channels[channel].public = True
         elif visibility in (protocol.PRIVATE_CHANNEL_SIGIL, protocol.SECRET_CHANNEL_SIGIL):
-            self.channels[channel]['public'] = False
+            self.channels[channel].public = False
 
         # Update channel user list.
         for entry in names.split():
@@ -910,8 +953,7 @@ class RFC1459Support(BasicClient):
             # Make entry safe for _parse_user().
             safe_entry = entry.lstrip(''.join(self._nickname_prefixes.keys()))
             # Parse entry and update database.
-            nick, metadata = self._parse_user(safe_entry)
-            self._sync_user(nick, metadata)
+            user = self._parse_and_process_user(safe_entry)
 
             # Get prefixes.
             prefixes = set(entry.replace(safe_entry, ''))
@@ -923,12 +965,12 @@ class RFC1459Support(BasicClient):
                     statuses.append(status)
 
             # Add user to user list.
-            self.channels[channel]['users'].add(nick)
+            self.channels[channel].users.add(user.nickname)
             # And to channel modes..
             for status in statuses:
-                if status not in self.channels[channel]['modes']:
-                    self.channels[channel]['modes'][status] = []
-                self.channels[channel]['modes'][status].append(nick)
+                if status not in self.channels[channel].modes:
+                    self.channels[channel].modes[status] = []
+                self.channels[channel].modes[status].append(user.nickname)
 
     on_raw_366 = BasicClient._ignored # End of /NAMES list.
 
@@ -953,8 +995,8 @@ class RFC1459Support(BasicClient):
         nickname = message.params[1]
 
         # Remove nickname from whois requests if it involves one of ours.
-        if nickname in self._pending['whois']:
-            future = self._pending['whois'].pop(nickname)
+        if nickname in self._pending_whois:
+            future = self._pending_whois.pop(nickname)
             future.set_result(None)
             del self._whois_info[nickname]
 

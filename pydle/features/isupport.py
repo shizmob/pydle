@@ -3,6 +3,8 @@
 # See: http://tools.ietf.org/html/draft-hardy-irc-isupport-00
 import collections
 import pydle.protocol
+
+from pydle import models
 from pydle.features import rfc1459
 
 __all__ = [ 'ISUPPORTSupport' ]
@@ -13,8 +15,21 @@ BAN_EXCEPT_MODE = 'e'
 INVITE_EXCEPT_MODE = 'I'
 
 
+class ISUPPORTChannel(models.Channel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if 'EXCEPTS' in self.client._isupport:
+            self.except_list = None
+
+        if 'INVEX' in self.client._isupport:
+            self.invite_except_list = None
+
+
 class ISUPPORTSupport(rfc1459.RFC1459Support):
     """ ISUPPORT support. """
+
+    Channel = ISUPPORTChannel
 
     ## Internal overrides.
 
@@ -23,15 +38,6 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         self._isupport = {}
         self._extban_types = []
         self._extban_prefix = None
-
-    def _create_channel(self, channel):
-        """ Create channel with optional ban and invite exception lists. """
-        super()._create_channel(channel)
-        if 'EXCEPTS' in self._isupport:
-            self.channels[channel]['exceptlist'] = None
-        if 'INVEX' in self._isupport:
-            self.channels[channel]['inviteexceptlist'] = None
-
 
     ## Command handlers.
 

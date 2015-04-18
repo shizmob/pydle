@@ -24,7 +24,7 @@ def test_client_is_channel(server, client):
 def test_channel_creation(server, client):
     client._create_channel('#pydle')
     assert '#pydle' in client.channels
-    assert client.channels['#pydle']['users'] == set()
+    assert client.channels['#pydle'].users == set()
 
 @with_client()
 def test_channel_destruction(server, client):
@@ -36,7 +36,7 @@ def test_channel_destruction(server, client):
 def test_channel_user_destruction(server, client):
     client._create_channel('#pydle')
     client._create_user('WiZ')
-    client.channels['#pydle']['users'].add('WiZ')
+    client.channels['#pydle'].users.add('WiZ')
 
     client._destroy_channel('#pydle')
     assert '#pydle' not in client.channels

@@ -7,6 +7,7 @@ import logging
 
 from . import async
 from . import connection
+from . import models
 from . import protocol
 
 __all__ = [ 'Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
@@ -29,7 +30,29 @@ class AlreadyInChannel(Error):
         self.channel = channel
 
 
-class BasicClient:
+class ClientType(type):
+    def _compose(c, name, field):
+        # We traverse the class's method resolution order to create the user and channel model classes.
+        # There is an assumption that the model classes for users and channels follow the same inheritance hierarchy as the client class, and we can avoid calling featurize().
+        seen = set()
+        bases = []
+
+        for mro_cls in c.mro():
+            inner = getattr(mro_cls, field, None)
+            if inner is not None and inner not in seen:
+                bases.append(inner)
+                seen.add(inner)
+
+        return type('{name}[{bases}]'.format(name=name, bases=', '.join(base.__name__ for base in bases)), tuple(bases), {})
+
+    def __new__(cls, name, bases, attrs):
+        c = super().__new__(cls, name, bases, attrs)
+        c.User = cls._compose(c, 'User', 'USER_MODEL')
+        c.Channel = cls._compose(c, 'Channel', 'CHANNEL_MODEL')
+        return c
+
+
+class BasicClient(metaclass=ClientType):
     """
     Base IRC client class.
     This class on its own is not complete: in order to be able to run properly, _has_message, _parse_message and _create_message have to be overloaded.
@@ -39,11 +62,13 @@ class BasicClient:
     RECONNECT_DELAYED = True
     RECONNECT_DELAYS = [0, 5, 10, 30, 120, 600]
 
+    USER_MODEL = models.User
+    CHANNEL_MODEL = models.Channel
+
     def __init__(self, nickname, fallback_nicknames=[], username=None, realname=None, **kwargs):
         """ Create a client. """
         self._nicknames = [nickname] + fallback_nicknames
-        self.username = username or nickname.lower()
-        self.realname = realname or nickname
+        self.user = self.User(self, nickname, realname or nickname, username or nickname.lower())
         self.eventloop = None
         self.own_eventloop = True
         self._reset_connection_attributes()
@@ -51,6 +76,18 @@ class BasicClient:
 
         if kwargs:
             self.logger.warning('Unused arguments: %s', ', '.join(kwargs.keys()))
+
+    @property
+    def nickname(self):
+        return self.user.nickname
+
+    @property
+    def username(self):
+        return self.user.username
+
+    @property
+    def realname(self):
+        return self.user.realname
 
     def _reset_attributes(self):
         """ Reset attributes. """
@@ -61,7 +98,6 @@ class BasicClient:
         # Low-level data stuff.
         self._last_data_received = time.time()
         self._receive_buffer = b''
-        self._pending = {}
         self._handler_top_level = False
         self._ping_checker_handle = None
 
@@ -69,7 +105,7 @@ class BasicClient:
         self.logger = logging.getLogger(__name__)
 
         # Public connection attributes.
-        self.nickname = DEFAULT_NICKNAME
+        self.user.nickname = DEFAULT_NICKNAME
         self.network = None
 
     def _reset_connection_attributes(self):
@@ -167,42 +203,34 @@ class BasicClient:
     ## Internal database management.
 
     def _create_channel(self, channel):
-        self.channels[channel] = {
-            'users': set(),
-        }
+        self.channels[channel] = self.Channel(self, channel)
 
     def _destroy_channel(self, channel):
         # Copy set to prevent a runtime error when destroying the user.
-        for user in set(self.channels[channel]['users']):
+        for user in set(self.channels[channel].users):
             self._destroy_user(user, channel)
         del self.channels[channel]
 
 
     def _create_user(self, nickname):
-        # Servers are NOT users.
-        if not nickname or '.' in nickname:
-            return
+        self.users[nickname] = self.User(self, nickname)
 
-        self.users[nickname] = {
-            'nickname': nickname,
-            'username': None,
-            'realname': None,
-            'hostname': None
-        }
+    def _get_user(self, nickname):
+        if nickname not in self.users:
+            self._create_user(nickname)
 
-    def _sync_user(self, nick, metadata):
-        # Create user in database.
-        if nick not in self.users:
-            self._create_user(nick)
-            if nick not in self.users:
-                return
+        return self.users[nickname]
 
-        self.users[nick].update(metadata)
+    def _get_channel(self, name):
+        if name not in self.channels:
+            self._create_channel(name)
+
+        return self.channels[name]
 
     def _rename_user(self, user, new):
         if user in self.users:
             self.users[new] = self.users[user]
-            self.users[new]['nickname'] = new
+            self.users[new].nickname = new
             del self.users[user]
         else:
             self._create_user(new)
@@ -211,9 +239,9 @@ class BasicClient:
 
         for ch in self.channels.values():
             # Rename user in channel list.
-            if user in ch['users']:
-                ch['users'].discard(user)
-                ch['users'].add(new)
+            if user in ch.users:
+                ch.users.discard(user)
+                ch.users.add(new)
 
     def _destroy_user(self, nickname, channel=None):
         if channel:
@@ -223,11 +251,11 @@ class BasicClient:
 
         for ch in channels:
             # Remove from nicklist.
-            ch['users'].discard(nickname)
+            ch.users.discard(nickname)
 
         # If we're not in any common channels with the user anymore, we have no reliable way to keep their info up-to-date.
         # Remove the user.
-        if not channel or not any(nickname in ch['users'] for ch in self.channels.values()):
+        if not channel or not any(nickname in ch.users for ch in self.channels.values()):
             del self.users[nickname]
 
     def _parse_user(self, data):
@@ -235,11 +263,11 @@ class BasicClient:
         raise NotImplementedError()
 
     def _format_user_mask(self, nickname):
-        user = self.users.get(nickname, { "nickname": nickname, "username": "*", "hostname": "*" })
-        return self._format_host_mask(user['nickname'], user['username'] or '*', user['hostname'] or '*')
-
-    def _format_host_mask(self, nick, user, host):
-        return '{n}!{u}@{h}'.format(n=nick, u=user, h=host)
+        if nickname in self.users:
+            user = self.users[nickname]
+        else:
+            user = self.User(self, nickname)
+        return user.hostmask
 
 
     ## IRC helpers.

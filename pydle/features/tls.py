@@ -65,7 +65,7 @@ class TLSSupport(rfc1459.RFC1459Support):
 
         # Add field that determines if the target user is connected over TLS.
         if nickname in self._whois_info:
-            self._whois_info[nickname].setdefault('secure', False)
+            self._whois_info[nickname].secure = False
 
         return future
 
@@ -92,12 +92,9 @@ class TLSSupport(rfc1459.RFC1459Support):
     def on_raw_671(self, message):
         """ WHOIS: user is connected securely. """
         target, nickname = message.params[:2]
-        info = {
-            'secure': True
-        }
 
         if nickname in self._whois_info:
-            self._whois_info[nickname].update(info)
+            self._whois_info[nickname].secure = True
 
     def on_raw_691(self, message):
         """ Error setting up TLS server-side. """

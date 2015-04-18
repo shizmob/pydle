@@ -21,16 +21,16 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
 
         for ch in channels:
             # Remove from nicklist.
-            ch['users'].discard(nickname)
+            ch.users.discard(nickname)
 
             # Remove from statuses.
             for status in self._nickname_prefixes.values():
-                if status in ch['modes'] and nickname in ch['modes'][status]:
-                    ch['modes'][status].remove(nickname)
+                if status in ch.modes and nickname in ch.modes[status]:
+                    ch.modes[status].remove(nickname)
 
         # If we're not in any common channels with the user anymore, we have no reliable way to keep their info up-to-date.
         # Remove the user.
-        if (monitor_override or not self.is_monitoring(nickname)) and (not channel or not any(nickname in ch['users'] for ch in self.channels.values())):
+        if (monitor_override or not self.is_monitoring(nickname)) and (not channel or not any(nickname in ch.users for ch in self.channels.values())):
             del self.users[nickname]
 
 
