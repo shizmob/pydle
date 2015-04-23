@@ -1,9 +1,8 @@
-from setuptools import setup, find_packages
-import pydle
+from setuptools import setup
 
 setup(
-    name=pydle.__name__,
-    version=pydle.__version__,
+    name='pydle',
+    version='0.8.0',
     packages=[
         'pydle',
         'pydle.features',
@@ -12,7 +11,7 @@ setup(
         'pydle.features.ircv3_2',
         'pydle.utils'
     ],
-    requires=['tornado'],
+    install_requires=['tornado'],
     extras_require={
         'sasl': 'pure-sasl >=0.1.6',   # for pydle.features.sasl
         'docs': 'sphinx_rtd_theme',    # the Sphinx theme we use
@@ -32,7 +31,7 @@ setup(
     url='https://github.com/Shizmob/pydle',
     keywords='irc library python3 compact flexible',
     description='A compact, flexible and standards-abiding IRC library for Python 3.',
-    license=pydle.__license__,
+    license='BSD',
 
     zip_safe=True,
     test_suite='tests'
