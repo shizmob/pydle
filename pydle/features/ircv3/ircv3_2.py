@@ -3,11 +3,12 @@
 from . import ircv3_1
 from . import tags
 from . import monitor
+from . import metadata
 
 __all__ = [ 'IRCv3_2Support' ]
 
 
-class IRCv3_2Support(monitor.MonitoringSupport, tags.TaggedMessageSupport, ircv3_1.IRCv3_1Support):
+class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.TaggedMessageSupport, ircv3_1.IRCv3_1Support):
     """ Support for some of IRCv3.2's extensions. Currently supported: chghost, userhost-in-names. """
 
     ## IRC callbacks.
