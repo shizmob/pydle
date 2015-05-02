@@ -114,21 +114,24 @@ class BasicClient:
         if self.connected:
             # Unschedule ping checker.
             self.eventloop.unschedule(self._ping_checker_handle)
+            # Schedule disconnect.
+            self.eventloop.schedule(self._disconnect, expected)
 
-            # Shutdown connection.
-            self.connection.off('read', self.on_data)
-            self.connection.off('error', self.on_data_error)
-            self.connection.disconnect()
+    def _disconnect(self, expected):
+        # Shutdown connection.
+        self.connection.off('read', self.on_data)
+        self.connection.off('error', self.on_data_error)
+        self.connection.disconnect()
 
-            # Callback.
-            self.on_disconnect(expected)
+        # Callback.
+        self.on_disconnect(expected)
 
-            # Shut down event loop.
-            if expected and self.own_eventloop:
-                self.connection.stop()
+        # Shut down event loop.
+        if expected and self.own_eventloop:
+            self.connection.stop()
 
-            # Reset any attributes.
-            self._reset_attributes()
+        # Reset any attributes.
+        self._reset_attributes()
 
     def _connect(self, hostname, port, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING, source_address=None):
         """ Connect to IRC host. """
