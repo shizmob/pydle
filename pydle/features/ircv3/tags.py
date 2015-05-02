@@ -35,10 +35,10 @@ class TaggedMessage(rfc1459.RFC1459Message):
             valid = False
 
         # Strip message separator.
-        if message.endswith(pydle.protocol.LINE_SEPARATOR):
-            message = message[:-len(pydle.protocol.LINE_SEPARATOR)]
+        if message.endswith(rfc1459.protocol.LINE_SEPARATOR):
+            message = message[:-len(rfc1459.protocol.LINE_SEPARATOR)]
         elif message.endswith(pydle.protocol.MINIMAL_LINE_SEPARATOR):
-            message = message[:-len(pydle.protocol.MINIMAL_LINE_SEPARATOR)]
+            message = message[:-len(rfc1459.protocol.MINIMAL_LINE_SEPARATOR)]
         raw = message
 
         # Parse tags.
@@ -87,7 +87,7 @@ class TaggedMessageSupport(rfc1459.RFC1459Support):
         return TaggedMessage(tags=tags, **message._kw)
 
     def _parse_message(self):
-        sep = rfc1459.parsing.MINIMAL_LINE_SEPARATOR.encode(self.encoding)
+        sep = rfc1459.protocol.MINIMAL_LINE_SEPARATOR.encode(self.encoding)
         message, _, data = self._receive_buffer.partition(sep)
         self._receive_buffer = data
 
