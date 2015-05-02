@@ -98,6 +98,12 @@ extension. This allows pydle's internal user database to be more accurate and up
 
 .. _`WHOX`: http://hg.quakenet.org/snircd/file/tip/doc/readme.who
 
+IRCv3
+=====
+*API:* :class:`pydle.features.IRCv3Support`
+
+A shortcut for IRCv3.1 and IRCv3.2 support; see below.
+
 IRCv3.1
 =======
 *API:* :class:`pydle.features.IRCv3_1Support`
@@ -124,7 +130,7 @@ by only including their features.
 
 Capability Negotiation Support
 ------------------------------
-*API:* :class:`pydle.features.ircv3_1.CapabilityNegotiationSupport`
+*API:* :class:`pydle.features.ircv3.CapabilityNegotiationSupport`
 
 Support for `capability negotiation` for IRC protocol extensions.
 
@@ -135,8 +141,9 @@ other features like the IRCv3.1 support feature, or the SASL authentication feat
 
 This feature adds three generic hooks for feature authors whose features makes use of capability negotiation:
 
- * ``pydle.Client.on_capability_<cap>_available()``: Called when the server indicates capability `cap` is available. Should return
-    a boolean: whether or not to request the capability.
+ * ``pydle.Client.on_capability_<cap>_available(value)``: Called when the server indicates capability `cap` is available.
+    Is passed a value as given by the IRC server, or `None` if no value was given Should return either a boolean indicating whether
+    or not to request the capability, or a string indicating to request the capability with the returned value.
  * ``pydle.Client.on_capability_<cap>_enabled()``: Called when the server has acknowledged the request of capability `cap`, and it
     has been enabled. Should return one of three values: `pydle.CAPABILITY_NEGOTIATING` when the capability will be further negotiated,
     `pydle.CAPABILITY_NEGOTIATED` when the capability has been negotiated successfully, or `pydle.CAPABILITY_FAILED` when negotiation
@@ -148,7 +155,7 @@ This feature adds three generic hooks for feature authors whose features makes u
 
 User Authentication Support (SASL)
 ----------------------------------
-*API:* :class:`pydle.features.ircv3_1.SASLSupport`
+*API:* :class:`pydle.features.ircv3.SASLSupport`
 
 Support for user authentication using `SASL`_.
 
@@ -178,24 +185,28 @@ experimental.
 
 pydle currently supports the following IRCv3.2 extensions:
 
+ * IRCv3.2 `improved capability negotiation`_.
  * Indication of changed ident/host using `CHGHOST`_.
  * Indication of `ident and host` in RFC1459's /NAMES command response.
  * Monitoring of a user's online status using `MONITOR`_.
  * `Message tags`_ to add metadata to messages.
+ * Arbitrary key/value storage using `METADATA`_.
 
-.. _`IRCv3 Working Group`: http://ircv3.org
-.. _`IRCv3.2 specification`: http://ircv3.org
-.. _`CHGHOST`: http://ircv3.org/extensions/chghost-3.2
-.. _`MONITOR`: http://ircv3.org/specification/monitor-3.2
-.. _`ident and host`: http://ircv3.org/extensions/userhost-in-names-3.2
-.. _`Message tags`: http://ircv3.org/specification/message-tags-3.2
+.. _`IRCv3 Working Group`: http://ircv3.net
+.. _`IRCv3.2 specification`: http://ircv3.net
+.. _`improved capability negotiation`: http://ircv3.net/specs/core/capability-negotiation-3.2.html
+.. _`CHGHOST`: http://ircv3.net/specs/extensions/chghost-3.2.html
+.. _`MONITOR`: http://ircv3.net/specs/core/monitor-3.2.html
+.. _`ident and host`: http://ircv3.net/specs/extensions/userhost-in-names-3.2.html
+.. _`Message tags`: http://ircv3.net/specs/core/message-tags-3.2.html
+.. _`METADATA`: http://ircv3.net/specs/core/metadata-3.2.html
 
 As with the IRCv3.1 features, using this feature enables all of pydle's IRCv3.2 support. A user can also opt to only use individual
 large IRCv3.2 features by using the features below.
 
 Online Status Monitoring
 ------------------------
-*API:* :class:`pydle.features.ircv3_2.MonitoringSupport`
+*API:* :class:`pydle.features.ircv3.MonitoringSupport`
 
 Support for monitoring a user's online status.
 
@@ -207,9 +218,17 @@ If a monitored user comes online, `pydle.Client.on_user_online(nickname)` will b
 
 Tagged Messages
 ---------------
-*API:* :class:`pydle.features.ircv3_2.TaggedMessageSupport`
+*API:* :class:`pydle.features.ircv3.TaggedMessageSupport`
 
 Support for message metadata using tags.
 
 This feature allows pydle to parse message metadata that is transmitted using 'tags'. Currently, this has no impact on any APIs
 or hooks for client developers.
+
+Metadata
+--------
+*API:* :class:`pydle.features.ircv3.MetadataSupport`
+
+Support for user and channel metadata.
+
+This allows you to set and unset arbitrary key-value information on yourself and on channels, as well as retrieve such values from other users and channels.
