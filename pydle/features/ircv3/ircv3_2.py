@@ -1,14 +1,13 @@
 ## ircv3_2.py
 # IRCv3.2 support (in progress).
-from pydle.features import isupport
-from pydle.features.ircv3_1 import cap
+from . import ircv3_1
 from . import tags
 from . import monitor
 
 __all__ = [ 'IRCv3_2Support' ]
 
 
-class IRCv3_2Support(monitor.MonitoringSupport, tags.TaggedMessageSupport, cap.CapabilityNegotiationSupport, isupport.ISUPPORTSupport):
+class IRCv3_2Support(monitor.MonitoringSupport, tags.TaggedMessageSupport, ircv3_1.IRCv3_1Support):
     """ Support for some of IRCv3.2's extensions. Currently supported: chghost, userhost-in-names. """
 
     ## IRC callbacks.
