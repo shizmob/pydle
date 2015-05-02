@@ -1,15 +1,15 @@
 ## ircv3_1.py
 # IRCv3.1 full spec support.
 from pydle.features import account, tls
+from . import cap
 from . import sasl
-
 
 __all__ = [ 'IRCv3_1Support' ]
 
 
 NO_ACCOUNT = '*'
 
-class IRCv3_1Support(sasl.SASLSupport, account.AccountSupport, tls.TLSSupport):
+class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account.AccountSupport, tls.TLSSupport):
     """ Support for IRCv3.1's base and optional extensions. """
 
     ## IRC callbacks.
