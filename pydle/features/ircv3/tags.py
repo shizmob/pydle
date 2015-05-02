@@ -82,26 +82,14 @@ class TaggedMessage(rfc1459.RFC1459Message):
 
 
 class TaggedMessageSupport(rfc1459.RFC1459Support):
-    def _reset_attributes(self):
-        super()._reset_attributes()
-        self._message_tags_enabled = False
-
-    def _enable_message_tags(self):
-        self._message_tags_enabled = True
-
     def _create_message(self, command, *params, tags={}, **kwargs):
         message = super()._create_message(command, *params, **kwargs)
-        if self._message_tags_enabled:
-            return TaggedMessage(tags=tags, **message._kw)
-        else:
-            return message
+        return TaggedMessage(tags=tags, **message._kw)
 
     def _parse_message(self):
-        if self._message_tags_enabled:
-            sep = rfc1459.parsing.MINIMAL_LINE_SEPARATOR.encode(self.encoding)
-            message, _, data = self._receive_buffer.partition(sep)
-            self._receive_buffer = data
+        sep = rfc1459.parsing.MINIMAL_LINE_SEPARATOR.encode(self.encoding)
+        message, _, data = self._receive_buffer.partition(sep)
+        self._receive_buffer = data
 
-            return TaggedMessage.parse(message + sep, encoding=self.encoding)
-        else:
-            return super()._parse_message()
+        return TaggedMessage.parse(message + sep, encoding=self.encoding)
+
