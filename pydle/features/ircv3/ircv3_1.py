@@ -14,23 +14,23 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
 
     ## IRC callbacks.
 
-    def on_capability_account_notify_available(self):
+    def on_capability_account_notify_available(self, value):
         """ Take note of user account changes. """
         return True
 
-    def on_capability_away_notify_available(self):
+    def on_capability_away_notify_available(self, value):
         """ Take note of AWAY messages. """
         return True
 
-    def on_capability_extended_join_available(self):
+    def on_capability_extended_join_available(self, value):
         """ Take note of user account and realname on JOIN. """
         return True
 
-    def on_capability_multi_prefix_available(self):
+    def on_capability_multi_prefix_available(self, value):
         """ Thanks to how underlying client code works we already support multiple prefixes. """
         return True
 
-    def on_capability_tls_available(self):
+    def on_capability_tls_available(self, value):
         """ We never need to request this explicitly. """
         return False
 

@@ -13,17 +13,17 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
 
     ## IRC callbacks.
 
-    def on_capability_chghost_available(self):
+    def on_capability_chghost_available(self, value):
         """ Server reply to indicate a user we are in a common channel with changed user and/or host. """
         return True
 
-    def on_capability_userhost_in_names_available(self):
+    def on_capability_userhost_in_names_available(self, value):
         """ Show full user!nick@host in NAMES list. We already parse it like that. """
         return True
 
-    def on_capability_uhnames_available(self):
+    def on_capability_uhnames_available(self, value):
         """ Possibly outdated alias for userhost-in-names. """
-        return self.on_capability_userhost_in_names_available()
+        return self.on_capability_userhost_in_names_available(value)
 
     def on_isupport_uhnames(self, value):
         """ Let the server know that we support UHNAMES using the old ISUPPORT method, for legacy support. """

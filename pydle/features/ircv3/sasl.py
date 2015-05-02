@@ -34,6 +34,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         self._sasl_aborted = False
         self._sasl_challenge = b''
         self._sasl_timer = None
+        self._sasl_mechanisms = None
 
 
     ## SASL functionality.
@@ -41,7 +42,14 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     def _sasl_start(self):
         """ Initiate SASL authentication. """
         # The rest will be handled in on_raw_authenticate()/_sasl_respond().
-        self.rawmsg('AUTHENTICATE', 'PLAIN')
+        if not self._sasl_mechanisms or 'PLAIN' in self._sasl_mechanisms:
+            self.rawmsg('AUTHENTICATE', 'PLAIN')
+            # Set a timeout handler.
+            self._sasl_timer = self.eventloop.schedule_in(self.SASL_TIMEOUT, self._sasl_abort)
+        else:
+            # Such a cruel faith...
+            self._sasl_end()
+
 
     def _sasl_abort(self, timeout=False):
         """ Abort SASL authentication. """
@@ -83,8 +91,11 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
     ## Capability callbacks.
 
-    def on_capability_sasl_available(self):
+    def on_capability_sasl_available(self, value):
         """ Check whether or not SASL is available. """
+        if value:
+            self._sasl_mechanisms = value.split(',')
+
         if self.sasl_username and self.sasl_password:
             if puresasl:
                 return True
@@ -93,12 +104,8 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
     def on_capability_sasl_enabled(self):
         """ Start SASL authentication. """
-        # Set a timeout handler.
-        self._sasl_timer = self.eventloop.schedule_in(self.SASL_TIMEOUT, self._sasl_abort)
-
         # Initialize SASL.
         self._sasl_start()
-
         # Tell caller we need more time, and to not end capability negotiation just yet.
         return cap.NEGOTIATING
 

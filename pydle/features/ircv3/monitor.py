@@ -72,7 +72,7 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
 
     ## Message handlers.
 
-    def on_capability_monitor_notify_available(self):
+    def on_capability_monitor_notify_available(self, value):
         return True
 
     def on_raw_730(self, message):

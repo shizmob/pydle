@@ -49,7 +49,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
     ## Message handlers.
 
-    def on_capability_metadata_notify_available(self):
+    def on_capability_metadata_notify_available(self, value):
         return True
 
     def on_raw_metadata(self, message):
