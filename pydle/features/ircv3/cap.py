@@ -33,7 +33,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
            return
 
         # Ask server to list capabilities.
-        self.rawmsg('CAP', 'LS')
+        self.rawmsg('CAP', 'LS', '302')
 
         # Register as usual.
         super()._register()
