@@ -46,7 +46,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         if self.is_channel(target) and not self.in_channel(target):
             raise client.NotInChannel(target)
 
-        self.message(target, construct_ctcp(query))
+        self.message(target, construct_ctcp(query, contents))
 
     def ctcp_reply(self, target, query, response):
         """ Send a CTCP reply to a target. """
