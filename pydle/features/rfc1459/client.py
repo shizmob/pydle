@@ -1001,7 +1001,10 @@ class RFC1459Support(BasicClient):
 ## Helpers.
 
 def chunkify(message, chunksize):
-    while message:
-        chunk = message[:chunksize]
-        message = message[chunksize:]
-        yield chunk
+    if not message:
+        yield message
+    else:
+        while message:
+            chunk = message[:chunksize]
+            message = message[chunksize:]
+            yield chunk
