@@ -343,7 +343,8 @@ class RFC1459Support(BasicClient):
 
         for line in message.replace('\r', '').split('\n'):
             for chunk in chunkify(line, chunklen):
-                self.rawmsg('PRIVMSG', target, chunk)
+                # Some IRC servers respond with "412 Bot :No text to send" on empty messages.
+                self.rawmsg('PRIVMSG', target, chunk or ' ')
 
     def notice(self, target, message):
         """ Notice channel or user. """
