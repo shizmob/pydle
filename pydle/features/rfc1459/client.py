@@ -89,10 +89,10 @@ class RFC1459Support(BasicClient):
 
         # Rename in mode lists, too.
         for ch in self.channels.values():
-            for mode in self._nickname_prefixes.values():
-                if mode in ch['modes'] and user in ch['modes'][mode]:
-                    ch['modes'][mode].remove(user)
-                    ch['modes'][mode].append(new)
+            for status in self._nickname_prefixes.values():
+                if status in ch['modes'] and user in ch['modes'][status]:
+                    ch['modes'][status].remove(user)
+                    ch['modes'][status].append(new)
 
     def _destroy_user(self, user, channel=None):
         if channel:
@@ -103,8 +103,8 @@ class RFC1459Support(BasicClient):
         # Remove user from status list too.
         for ch in channels:
             for status in self._nickname_prefixes.values():
-                if status in ch['modes'] and nickname in ch['modes'][status]:
-                    ch['modes'][status].remove(nickname)
+                if status in ch['modes'] and user in ch['modes'][status]:
+                    ch['modes'][status].remove(user)
 
     def _parse_user(self, data):
         if data:
