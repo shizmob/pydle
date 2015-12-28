@@ -94,7 +94,7 @@ class RFC1459Support(BasicClient):
                     ch['modes'][mode].remove(user)
                     ch['modes'][mode].append(new)
 
-    def _destroy_user(self, user, channel):
+    def _destroy_user(self, user, channel=None):
         if channel:
             channels = [ self.channels[channel] ]
         else:
