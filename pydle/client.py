@@ -4,6 +4,7 @@ import time
 import datetime
 import itertools
 import logging
+import copy
 
 from . import async
 from . import connection
@@ -201,7 +202,7 @@ class BasicClient:
 
     def _rename_user(self, user, new):
         if user in self.users:
-            self.users[new] = self.users[user]
+            self.users[new] = copy.copy(self.users[user])
             self.users[new]['nickname'] = new
             del self.users[user]
         else:
