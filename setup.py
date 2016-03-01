@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='pydle',
-    version='0.8.0',
+    version='0.8.1',
     packages=[
         'pydle',
         'pydle.features',
