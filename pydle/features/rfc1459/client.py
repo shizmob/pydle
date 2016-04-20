@@ -767,7 +767,7 @@ class RFC1459Support(BasicClient):
 
     def on_raw_301(self, message):
         """ User is away. """
-        nickname, message = message.params[0]
+        target, nickname, message = message.params
         info = {
             'away': True,
             'away_message': message
