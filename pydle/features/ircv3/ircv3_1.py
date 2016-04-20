@@ -12,6 +12,18 @@ NO_ACCOUNT = '*'
 class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account.AccountSupport, tls.TLSSupport):
     """ Support for IRCv3.1's base and optional extensions. """
 
+    def _rename_user(self, user, new):
+        # If the server supports account-notify, we will be told about the registration status changing.
+        # As such, we can skip the song and dance pydle.features.account does.
+        if self._capabilities.get('account-notify', False):
+            account = self.users.get(user, {}).get('account', None)
+            identified = self.users.get(user, {}).get('identified', False)
+
+        super()._rename_user(user, new)
+
+        if self._capabilities.get('account-notify', False):
+            self._sync_user(new, {'account': account, 'identified': identified})
+
     ## IRC callbacks.
 
     def on_capability_account_notify_available(self, value):
@@ -39,7 +51,7 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
 
     def on_raw_account(self, message):
         """ Changes in the associated account for a nickname. """
-        if 'account-notify' not in self._capabilities or not self._capabilities['account-notify']:
+        if not self._capabilities.get('account-notify', False):
             return
 
         nick, metadata = self._parse_user(message.source)
