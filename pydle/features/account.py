@@ -16,8 +16,9 @@ class AccountSupport(rfc1459.RFC1459Support):
 
     def _rename_user(self, user, new):
         super()._rename_user(user, new)
-        # Unset account info.
+        # Unset account info to be certain until we get a new response.
         self._sync_user(new, { 'account': None, 'identified': False })
+        self.whois(new)
 
 
     ## IRC API.
