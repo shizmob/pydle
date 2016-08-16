@@ -138,7 +138,7 @@ class BasicClient:
         # Create connection if we can't reuse it.
         if not reconnect or not self.connection:
             self._autojoin_channels = channels
-            self.connection = connection.Connection(hostname, port, source_adress=source_address, eventloop=self.eventloop)
+            self.connection = connection.Connection(hostname, port, source_address=source_address, eventloop=self.eventloop)
             self.encoding = encoding
 
         # Connect.
