@@ -10,7 +10,7 @@ from . import connection
 from . import protocol
 
 __all__ = [ 'Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
-PING_TIMEOUT = 720
+PING_TIMEOUT = 180
 DEFAULT_NICKNAME = '<unregistered>'
 
 
@@ -59,7 +59,6 @@ class BasicClient:
         self.users = {}
 
         # Low-level data stuff.
-        self._last_data_received = time.time()
         self._receive_buffer = b''
         self._pending = {}
         self._handler_top_level = False
@@ -103,8 +102,6 @@ class BasicClient:
             self._reset_connection_attributes()
         self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
 
-        # Schedule pinger.
-        self._ping_checker_handle = self.eventloop.schedule_periodically(PING_TIMEOUT / 2, self._check_ping_timeout)
         # Set logger name.
         if self.server_tag:
             self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
@@ -157,11 +154,10 @@ class BasicClient:
         else:
             return 0
 
-    def _check_ping_timeout(self):
-        """ Check if we have received anything from the server in a while. """
-        if time.time() - self._last_data_received >= PING_TIMEOUT:
-            error = TimeoutError('Ping timeout: no data received from server in {timeout} seconds.'.format(timeout=PING_TIMEOUT))
-            self.on_data_error(error)
+    def _perform_ping_timeout(self):
+        """ Handle timeout gracefully. """
+        error = TimeoutError('Ping timeout: no data received from server in {timeout} seconds.'.format(timeout=PING_TIMEOUT))
+        self.on_data_error(error)
 
 
     ## Internal database management.
@@ -364,7 +360,10 @@ class BasicClient:
     def on_data(self, data):
         """ Handle received data. """
         self._receive_buffer += data
-        self._last_data_received = time.time()
+        
+        # Schedule new timeout event.
+        self.eventloop.unschedule(self._ping_checker_handle)
+        self._ping_checker_handle = self.eventloop.schedule_in(PING_TIMEOUT, self._perform_ping_timeout)
 
         while self._has_message():
             message = self._parse_message()
