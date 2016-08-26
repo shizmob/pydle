@@ -162,7 +162,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
             self._capabilities_requested.discard(capab)
 
         # If we have no capabilities left to process, end it.
-        if not self._capabilities_requested and not self._capabilities_negoatiating:
+        if not self._capabilities_requested and not self._capabilities_negotiating:
             self.rawmsg('CAP', 'END')
 
 
