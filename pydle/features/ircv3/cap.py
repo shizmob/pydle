@@ -42,7 +42,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
     def _capability_normalize(self, cap):
         cap = cap.lstrip(PREFIXES).lower()
         if CAPABILITY_VALUE_DIVIDER in cap:
-            cap, _, value = cap[1:].partition(CAPABILITY_VALUE_DIVIDER)
+            cap, _, value = cap.partition(CAPABILITY_VALUE_DIVIDER)
         else:
             value = None
 

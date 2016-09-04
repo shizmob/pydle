@@ -42,7 +42,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     def _sasl_start(self):
         """ Initiate SASL authentication. """
         # The rest will be handled in on_raw_authenticate()/_sasl_respond().
-        if not self._sasl_mechanisms or 'PLAIN' in self._sasl_mechanisms:
+        if not self._sasl_mechanisms or 'plain' in self._sasl_mechanisms:
             self.rawmsg('AUTHENTICATE', 'PLAIN')
             # Set a timeout handler.
             self._sasl_timer = self.eventloop.schedule_in(self.SASL_TIMEOUT, self._sasl_abort)
