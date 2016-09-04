@@ -12,6 +12,9 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
     """ Support for some of IRCv3.2's extensions. Currently supported: chghost, userhost-in-names. """
 
     ## IRC callbacks.
+    def on_capability_invite_notify_available(self, value):
+        """ Take note of channel invites. """
+        return True
 
     def on_capability_chghost_available(self, value):
         """ Server reply to indicate a user we are in a common channel with changed user and/or host. """
