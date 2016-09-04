@@ -164,7 +164,15 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
         # If we have no capabilities left to process, end it.
         if not self._capabilities_requested and not self._capabilities_negotiating:
             self.rawmsg('CAP', 'END')
+    
+    def on_raw_cap_del(self, params):
+        for capab in params[0].split():
+            capab, _ = self._capability_normalize(capab)
+            self._capabilities[capab] = False
+            self._capabilities_requested.discard(capab)
 
+    def on_raw_cap_new(self, params):
+        self.on_raw_cap_ls(params)
 
     def on_raw_410(self, message):
         """ Unknown CAP subcommand or CAP error. Force-end negotiations. """
