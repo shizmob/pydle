@@ -116,8 +116,10 @@ class BasicClient:
 
     def _disconnect(self, expected):
         # Shutdown connection.
-        self.connection.off('read', self.on_data)
-        self.connection.off('error', self.on_data_error)
+        if self.connection.handles('read', self.on_data):
+            self.connection.off('read', self.on_data)
+        if self.connection.handles('error', self.on_data_error):
+            self.connection.off('error', self.on_data_error)
         self.connection.disconnect()
 
         # Callback.

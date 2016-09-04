@@ -294,6 +294,12 @@ class Connection:
             raise ValueError('Given method must be one of: {}'.format(', '.join(self.handlers)))
         self.handlers[method].remove(callback)
 
+    def handles(self, method, callback):
+        """ Determine whether or not event is currently handled by callback. """
+        if method not in self.handlers:
+            raise ValueError('Given method must be one of: {}'.format(', '.join(self.handlers)))
+        return callback in self.handlers[method]
+
     def send(self, data):
         """ Add data to send queue. """
         with self.send_queue_lock:
