@@ -166,6 +166,10 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
             self.rawmsg('CAP', 'END')
     
     def on_raw_cap_del(self, params):
+        for capab in params[0].split():
+            attr = 'on_capability_{}_disabled'.format(pydle.protocol.identifierify(capab))
+            if self._capabilities.get(capab, False) and hasattr(self, attr):
+                getattr(self, attr)()
         self.on_raw_cap_nak(params)
 
     def on_raw_cap_new(self, params):
