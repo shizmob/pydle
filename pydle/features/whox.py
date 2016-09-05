@@ -24,6 +24,11 @@ class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
         else:
             # Find account name of person.
             pass
+    
+    def _create_user(self, nickname):
+        super()._create_user(nickname)
+        if self.registered and 'WHOX' not in self._isupport:
+            self.whois(nickname)
 
     def on_raw_354(self, message):
         """ WHOX results have arrived. """
