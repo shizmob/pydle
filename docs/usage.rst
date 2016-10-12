@@ -207,4 +207,6 @@ just make your blocking method return a :class:`pydle.Future` instance (without 
 and any coroutine yielding it will halt execution until the returned future is resolved, using either
 :meth:`pydle.Future.set_result` or :meth:`pydle.Future.set_exception`, while pydle can still handle everything else.
 
+You can create a :class:`pydle.Future` instance that belongs to the client by calling :meth:`pydle.async.EventLoop.create_future`.
+
 .. _coroutines: https://en.wikipedia.org/wiki/Coroutine

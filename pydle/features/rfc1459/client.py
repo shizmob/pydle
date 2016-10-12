@@ -5,7 +5,6 @@ import itertools
 import copy
 import ipaddress
 
-from pydle.async import Future
 from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
 from . import parsing
 from . import protocol
@@ -397,7 +396,7 @@ class RFC1459Support(BasicClient):
         # We just check if there's a space in the nickname -- if there is,
         # then we immediately set the future's result to None and don't bother checking.
         if protocol.ARGUMENT_SEPARATOR.search(nickname) is not None:
-            result = Future()
+            result = self.eventloop.create_future()
             result.set_result(None)
             return result
 
@@ -411,7 +410,7 @@ class RFC1459Support(BasicClient):
             }
 
             # Create a future for when the WHOIS requests succeeds.
-            self._pending['whois'][nickname] = Future()
+            self._pending['whois'][nickname] = self.eventloop.create_future()
 
         return self._pending['whois'][nickname]
 
@@ -424,7 +423,7 @@ class RFC1459Support(BasicClient):
         """
         # Same treatment as nicknames in whois.
         if protocol.ARGUMENT_SEPARATOR.search(nickname) is not None:
-            result = Future()
+            result = self.eventloop.create_future()
             result.set_result(None)
             return result
 
@@ -433,7 +432,7 @@ class RFC1459Support(BasicClient):
             self._whowas_info[nickname] = {}
 
             # Create a future for when the WHOWAS requests succeeds.
-            self._pending['whowas'][nickname] = Future()
+            self._pending['whowas'][nickname] = self.eventloop.create_future()
 
         return self._pending['whowas'][nickname]
 

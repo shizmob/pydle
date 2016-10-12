@@ -61,6 +61,9 @@ class EventLoop:
         del self.handling[fd]
 
 
+    def create_future(self):
+        return Future(loop=self.io_loop)
+
     def on_read(self, fd, callback):
         """
         Add a callback for when the given file descriptor is available for reading.

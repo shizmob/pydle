@@ -1,4 +1,3 @@
-from pydle.async import Future
 from . import cap
 
 VISIBLITY_ALL = '*'
@@ -29,7 +28,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
             self._metadata_queue.append(target)
             self._metadata_info[target] = {}
-            self._pending['metadata'][target] = Future()
+            self._pending['metadata'][target] = self.eventloop.create_future()
 
         return self._pending['metadata'][target]
 
