@@ -10,7 +10,6 @@ setup(
         'pydle.features.ircv3',
         'pydle.utils'
     ],
-    install_requires=['tornado'],
     extras_require={
         'sasl': 'pure-sasl >=0.1.6',   # for pydle.features.sasl
         'docs': 'sphinx_rtd_theme',    # the Sphinx theme we use

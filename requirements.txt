@@ -1,2 +1,1 @@
-tornado
 -e git+https://github.com/thobbs/pure-sasl#egg=pure-sasl

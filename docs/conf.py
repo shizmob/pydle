@@ -35,8 +35,7 @@ extensions = [
 
 # Documentation links for projects we link to.
 intersphinx_mapping = {
-    'python': ('http://docs.python.org/3', None),
-    'tornado': ('http://www.tornadoweb.org/en/stable', None),
+    'python': ('http://docs.python.org/3', None)
 }
 
 

@@ -55,7 +55,7 @@ class Connection:
         self.socket = None
         self.socket_lock = threading.RLock()
         self.eventloop = eventloop or async.EventLoop()
-        self.handlers = { 'read': [], 'write': [], 'error': [] }
+        self.handlers = {'read': [], 'write': [], 'error': []}
 
         self.send_queue = collections.deque()
         self.send_queue_lock = threading.RLock()
@@ -238,7 +238,6 @@ class Connection:
         self.remove_handlers()
         with self.socket_lock:
             self.eventloop.on_read(self.socket.fileno(), self._on_read)
-            self.eventloop.on_error(self.socket.fileno(), self._on_error)
 
         self.update_write_handler()
 
@@ -252,8 +251,6 @@ class Connection:
                 self.eventloop.off_read(self.socket.fileno(), self._on_read)
             if self.eventloop.handles_write(self.socket.fileno(), self._on_write):
                 self.eventloop.off_write(self.socket.fileno(), self._on_write)
-            if self.eventloop.handles_error(self.socket.fileno(), self._on_error):
-                self.eventloop.off_error(self.socket.fileno(), self._on_error)
 
     def update_write_handler(self):
         """
