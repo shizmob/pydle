@@ -22,7 +22,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         Return user metadata information.
         This is a blocking asynchronous method: it has to be called from a coroutine, as follows:
 
-            metadata = yield self.get_metadata('#foo')
+            metadata = yield from self.get_metadata('#foo')
         """
         if target not in self._pending['metadata']:
             self.rawmsg('METADATA', target, 'LIST')
@@ -30,6 +30,8 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
             self._metadata_queue.append(target)
             self._metadata_info[target] = {}
             self._pending['metadata'][target] = Future()
+
+        return self._pending['metadata'][target]
 
     def set_metadata(self, target, key, value):
         self.rawmsg('METADATA', target, 'SET', key, value)

@@ -391,7 +391,7 @@ class RFC1459Support(BasicClient):
         Return information about user.
         This is an blocking asynchronous method: it has to be called from a coroutine, as follows:
 
-            info = yield self.whois('Nick')
+            info = yield from self.whois('Nick')
         """
         # Some IRCDs are wonky and send strange responses for spaces in nicknames.
         # We just check if there's a space in the nickname -- if there is,
@@ -420,7 +420,7 @@ class RFC1459Support(BasicClient):
         Return information about offline user.
         This is an blocking asynchronous method: it has to be called from a coroutine, as follows:
 
-            info = yield self.whowas('Nick')
+            info = yield from self.whowas('Nick')
         """
         # Same treatment as nicknames in whois.
         if protocol.ARGUMENT_SEPARATOR.search(nickname) is not None:
