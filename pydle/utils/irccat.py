@@ -2,32 +2,50 @@
 ## irccat.py
 # Simple threaded irccat implementation, using pydle.
 import sys
+import os
 import threading
 import logging
+import asyncio
+from asyncio.streams import FlowControlMixin
 
-from .. import Client, __version__
+from .. import async, Client, __version__
 from . import _args
 
 
 class IRCCat(Client):
     """ irccat. Takes raw messages on stdin, dumps raw messages to stdout. Life has never been easier. """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.async_stdin = None
 
+    @async.coroutine
     def _send(self, data):
         sys.stdout.write(data)
-        super()._send(data)
+        yield from super()._send(data)
 
-    def process_stdin_forever(self):
+    @async.coroutine
+    def process_stdin(self):
         """ Yes. """
+        loop = self.eventloop.loop
+
+        self.async_stdin = asyncio.StreamReader()
+        reader_protocol = asyncio.StreamReaderProtocol(self.async_stdin)
+        yield from loop.connect_read_pipe(lambda: reader_protocol, sys.stdin)
+
         while True:
-            line = sys.stdin.readline()
+            line = yield from self.async_stdin.readline()
             if not line:
                 break
-            self.raw(line)
+            yield from self.raw(line.decode('utf-8'))
 
+        yield from self.quit('EOF')
+
+    @async.coroutine
     def on_raw(self, message):
         print(message._raw)
-        super().on_raw(message)
+        yield from super().on_raw(message)
 
+    @async.coroutine
     def on_ctcp_version(self, source, target, contents):
         self.ctcp_reply(source, 'VERSION', 'pydle-irccat v{}'.format(__version__))
 
@@ -37,21 +55,11 @@ def main():
     logging.basicConfig(format='!! %(levelname)s: %(message)s')
 
     # Create client.
-    irccat = _args.client_from_args('irccat', default_nick='irccat', description='Process raw IRC messages from stdin, dump received IRC messages to stdout.', cls=IRCCat)
+    irccat, connect = _args.client_from_args('irccat', default_nick='irccat', description='Process raw IRC messages from stdin, dump received IRC messages to stdout.', cls=IRCCat)
 
-    thread = None
-    if irccat.connected:
-        # Let's rock.
-        thread = threading.Thread(target=irccat.handle_forever)
-        thread.start()
+    irccat.eventloop.schedule_async(connect())
+    irccat.eventloop.run_with(irccat.process_stdin())
 
-        # Process input in main thread.
-        irccat.process_stdin_forever()
-
-    # Other thread is done. Let's disconnect.
-    irccat.quit('EOF on standard input')
-    if thread:
-        thread.join()
 
 if __name__ == '__main__':
     main()

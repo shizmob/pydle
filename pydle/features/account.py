@@ -1,5 +1,6 @@
 ## account.py
 # Account system support.
+from pydle import async
 from pydle.features import rfc1459
 
 class AccountSupport(rfc1459.RFC1459Support):
@@ -36,6 +37,7 @@ class AccountSupport(rfc1459.RFC1459Support):
 
     ## Message handlers.
 
+    @async.coroutine
     def on_raw_307(self, message):
         """ WHOIS: User has identified for this nickname. (Anope) """
         target, nickname = message.params[:2]
@@ -48,6 +50,7 @@ class AccountSupport(rfc1459.RFC1459Support):
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
+    @async.coroutine
     def on_raw_330(self, message):
         """ WHOIS account name (Atheme). """
         target, nickname, account = message.params[:3]

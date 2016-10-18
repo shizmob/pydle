@@ -39,13 +39,16 @@ class BasicClient:
     RECONNECT_DELAYED = True
     RECONNECT_DELAYS = [0, 5, 10, 30, 120, 600]
 
-    def __init__(self, nickname, fallback_nicknames=[], username=None, realname=None, **kwargs):
+    def __init__(self, nickname, fallback_nicknames=[], username=None, realname=None, eventloop=None, **kwargs):
         """ Create a client. """
         self._nicknames = [nickname] + fallback_nicknames
         self.username = username or nickname.lower()
         self.realname = realname or nickname
-        self.eventloop = None
-        self.own_eventloop = True
+        if eventloop:
+            self.eventloop = eventloop
+        else:
+            self.eventloop = async.EventLoop()
+        self.own_eventloop = not eventloop
         self._reset_connection_attributes()
         self._reset_attributes()
 
@@ -81,7 +84,16 @@ class BasicClient:
 
     ## Connection.
 
-    def connect(self, hostname=None, port=None, reconnect=False, eventloop=None, **kwargs):
+    def run(self, *args, **kwargs):
+        """ Connect and run bot in event loop. """
+        self.eventloop.schedule_async(self.connect(*args, **kwargs))
+        try:
+            self.eventloop.run()
+        finally:
+            self.eventloop.stop()
+
+    @async.coroutine
+    def connect(self, hostname=None, port=None, reconnect=False, **kwargs):
         """ Connect to IRC server. """
         if (not hostname or not port) and not reconnect:
             raise ValueError('Have to specify hostname and port if not reconnecting.')
@@ -90,40 +102,33 @@ class BasicClient:
         if self.connected:
             self.disconnect(expected=True)
 
-        # Set event loop.
-        if eventloop:
-            self.eventloop = eventloop
-        elif not self.eventloop:
-            self.eventloop = async.EventLoop()
-        self.own_eventloop = not eventloop
-
         # Reset attributes and connect.
         if not reconnect:
             self._reset_connection_attributes()
-        self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
+        yield from self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
 
         # Set logger name.
         if self.server_tag:
             self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
 
+        self.eventloop.schedule_async(self.handle_forever())
+
     def disconnect(self, expected=True):
         """ Disconnect from server. """
         if self.connected:
             # Unschedule ping checker.
-            self.eventloop.unschedule(self._ping_checker_handle)
+            if self._ping_checker_handle:
+                self.eventloop.unschedule(self._ping_checker_handle)
             # Schedule disconnect.
-            self.eventloop.schedule(self._disconnect, expected)
+            self.eventloop.schedule_async(self._disconnect(expected))
 
+    @async.coroutine
     def _disconnect(self, expected):
         # Shutdown connection.
-        if self.connection.handles('read', self.on_data):
-            self.connection.off('read', self.on_data)
-        if self.connection.handles('error', self.on_data_error):
-            self.connection.off('error', self.on_data_error)
-        self.connection.disconnect()
+        yield from self.connection.disconnect()
 
         # Callback.
-        self.on_disconnect(expected)
+        yield from self.on_disconnect(expected)
 
         # Shut down event loop.
         if expected and self.own_eventloop:
@@ -132,6 +137,7 @@ class BasicClient:
         # Reset any attributes.
         self._reset_attributes()
 
+    @async.coroutine
     def _connect(self, hostname, port, reconnect=False, channels=[], encoding=protocol.DEFAULT_ENCODING, source_address=None):
         """ Connect to IRC host. """
         # Create connection if we can't reuse it.
@@ -141,10 +147,7 @@ class BasicClient:
             self.encoding = encoding
 
         # Connect.
-        self.connection.connect()
-        # Add handlers.
-        self.connection.on('read', self.on_data)
-        self.connection.on('error', self.on_data_error)
+        yield from self.connection.connect()
 
     def _reconnect_delay(self):
         """ Calculate reconnection delay. """
@@ -156,10 +159,11 @@ class BasicClient:
         else:
             return 0
 
+    @async.coroutine
     def _perform_ping_timeout(self):
         """ Handle timeout gracefully. """
         error = TimeoutError('Ping timeout: no data received from server in {timeout} seconds.'.format(timeout=PING_TIMEOUT))
-        self.on_data_error(error)
+        yield from self.on_data_error(error)
 
 
     ## Internal database management.
@@ -296,23 +300,27 @@ class BasicClient:
 
     ## IRC API.
 
+    @async.coroutine
     def raw(self, message):
         """ Send raw command. """
-        self._send(message)
+        yield from self._send(message)
 
+    @async.coroutine
     def rawmsg(self, command, *args, **kwargs):
         """ Send raw message. """
         message = str(self._create_message(command, *args, **kwargs))
-        self._send(message)
+        yield from self._send(message)
 
 
     ## Overloadable callbacks.
 
+    @async.coroutine
     def on_connect(self):
         """ Callback called when the client has connected successfully. """
         # Reset reconnect attempts.
         self._reconnect_attempts = 0
 
+    @async.coroutine
     def on_disconnect(self, expected):
         if not expected:
             # Unexpected disconnect. Reconnect?
@@ -327,7 +335,7 @@ class BasicClient:
                     self.logger.error('Unexpected disconnect. Attempting to reconnect.')
 
                 # Wait and reconnect.
-                self.eventloop.schedule_in(delay, self.connect, reconnect=True)
+                self.eventloop.schedule_async_in(delay, self.connect, reconnect=True)
             else:
                 self.logger.error('Unexpected disconnect. Giving up.')
 
@@ -344,38 +352,46 @@ class BasicClient:
     def _parse_message(self):
         raise NotImplementedError()
 
+    @async.coroutine
     def _send(self, input):
         if not isinstance(input, (bytes, str)):
             input = str(input)
         if isinstance(input, str):
             input = input.encode(self.encoding)
 
-        self.connection.send(input)
+        yield from self.connection.send(input)
 
+    @async.coroutine
     def handle_forever(self):
         """ Handle data forever. """
-        self.connection.run_forever()
+        while True:
+            data = yield from self.connection.recv()
+            yield from self.on_data(data)
 
 
     ## Raw message handlers.
 
+    @async.coroutine
     def on_data(self, data):
         """ Handle received data. """
         self._receive_buffer += data
-        
+
         # Schedule new timeout event.
-        self.eventloop.unschedule(self._ping_checker_handle)
-        self._ping_checker_handle = self.eventloop.schedule_in(PING_TIMEOUT, self._perform_ping_timeout)
+        if self._ping_checker_handle:
+            self.eventloop.unschedule(self._ping_checker_handle)
+        self._ping_checker_handle = self.eventloop.schedule_async_in(PING_TIMEOUT, self._perform_ping_timeout)
 
         while self._has_message():
             message = self._parse_message()
-            self.on_raw(message)
+            self.eventloop.schedule_async(self.on_raw(message))
 
+    @async.coroutine
     def on_data_error(self, exception):
         """ Handle error. """
         self.logger.error('Encountered error on socket.', exc_info=(type(exception), exception, None))
         self.disconnect(expected=False)
 
+    @async.coroutine
     def on_raw(self, message):
         """ Handle a single message. """
         self.logger.debug('<< [%s] %s %s', message.source or '', message.command, message.params)
@@ -397,14 +413,16 @@ class BasicClient:
             handler = getattr(self, method)
             self._handler_top_level = False
 
-            self.eventloop.schedule(handler, message)
+            yield from handler(message)
         except:
             self.logger.exception('Failed to execute %s handler.', method)
 
+    @async.coroutine
     def on_unknown(self, message):
         """ Unknown command. """
         self.logger.warning('Unknown command: [%s] %s %s', message.source, message.command, message.params)
 
+    @async.coroutine
     def _ignored(self, message):
         """ Ignore message. """
         pass
@@ -430,22 +448,20 @@ class ClientPool:
     """ A pool of clients that are ran and handled in parallel. """
 
     def __init__(self, clients=None, eventloop=None):
-        if not eventloop:
-            self.eventloop = async.EventLoop()
-        else:
-            self.eventloop = eventloop
-        if not clients:
-            self.clients = set()
-        else:
-            self.clients = set(clients)
+        self.eventloop = eventloop or async.EventLoop()
+        self.clients = set(clients or [])
+        self.connect_args = {}
 
-    def add(self, client):
+    def connect(self, client, *args, **kwargs):
         """ Add client to pool. """
         self.clients.add(client)
+        self.connect_args[client] = (args, kwargs)
 
-    def remove(self, client):
+    def disconnect(self, client):
         """ Remove client from pool. """
         self.clients.remove(client)
+        del self.connect_args[client]
+        client.disconnect()
 
     def __contains__(self, item):
         return item in self.clients
@@ -453,31 +469,13 @@ class ClientPool:
 
     ## High-level.
 
-    def connect(self, client, *args, eventloop=None, **kwargs):
-        """
-        Add client to pool and connect it using the given argument.
-        Refer to the connect() method of the added client for details on parameters.
-        """
-        if client not in self:
-            self.add(client)
-        client.connect(*args, eventloop=self.eventloop, **kwargs)
-
-    def disconnect(self, client, *args, **kwargs):
-        """
-        Disconnect client from pool and remove it.
-        Refer to the disconnect() method of the removed client for details on parameters.
-        """
-        if client not in self:
-            return
-        client.disconnect(*args, **kwargs)
-        self.remove(client)
-
     def handle_forever(self):
         """ Main loop of the pool: handle clients forever, until the event loop is stopped. """
-        for client in self.clients:
-            client.connection.setup_handlers()
+        for c in self.clients:
+            args, kwargs = self.connect_args[c]
+            self.eventloop.schedule_async(c.connect(*args, **kwargs))
 
-        self.eventloop.run()
+        self.eventoop.run()
 
-        for client in self.clients:
-            client.connection.remove_handlers()
+        for c in self.clients:
+            c.disconnect()

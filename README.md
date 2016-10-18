@@ -31,15 +31,14 @@ import pydle
 
 # Simple echo bot.
 class MyOwnBot(pydle.Client):
-    def on_connect(self):
-         self.join('#bottest')
+    async def on_connect(self):
+         await self.join('#bottest')
 
-    def on_message(self, source, target, message):
-         self.message(target, message)
+    async def on_message(self, source, target, message):
+         await self.message(target, message)
 
 client = MyOwnBot('MyBot', realname='My Bot')
-client.connect('irc.rizon.net', 6697, tls=True, tls_verify=False)
-client.handle_forever()
+client.run('irc.rizon.net', 6697, tls=True, tls_verify=False)
 ```
 
 *But wait, I want to handle multiple clients!*
@@ -69,10 +68,10 @@ To create your own features, just subclass from `pydle.BasicClient` and start ad
 ```python
 # Support custom ACME extension.
 class ACMESupport(pydle.BasicClient):
-    def on_raw_999(self, source, params):
+    async def on_raw_999(self, source, params):
         """ ACME's custom 999 numeric tells us to change our nickname. """
         nickname = params[0]
-        self.set_nickname(nickname)
+        await self.set_nickname(nickname)
 ```
 
 FAQ

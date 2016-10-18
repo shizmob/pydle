@@ -1,6 +1,7 @@
 ## _args.py
 # Common argument parsing code.
 import argparse
+import functools
 import logging
 import pydle
 
@@ -59,7 +60,9 @@ def client_from_args(name, description, default_nick='Bot', cls=pydle.Client):
         sasl_identity=args.sasl_identity, sasl_username=args.sasl_username, sasl_password=args.sasl_password,
         tls_client_cert=args.tls_client_cert, tls_client_cert_key=args.tls_client_cert_keyfile)
 
-    client.connect(hostname=args.server, port=args.port, password=args.password, encoding=args.encoding,
-        channels=args.channels, tls=args.tls, tls_verify=args.verify_tls)
+    connect = functools.partial(client.connect,
+        hostname=args.server, port=args.port, password=args.password, encoding=args.encoding,
+        channels=args.channels, tls=args.tls, tls_verify=args.verify_tls
+    )
 
-    return client
+    return client, connect
