@@ -2,6 +2,7 @@
 # Light wrapper around whatever async library pydle uses.
 import functools
 import datetime
+import traceback
 import asyncio
 
 FUTURE_TIMEOUT = 30
@@ -85,7 +86,17 @@ class EventLoop:
         Schedule a coroutine to be ran as soon as possible in this loop.
         Will return an opaque handle that can be passed to `unschedule` to unschedule the function.
         """
-        task = asyncio.ensure_future(_callback)
+        @coroutine
+        @functools.wraps(_callback)
+        def inner():
+            try:
+                return (yield from _callback)
+            except (GeneratorExit, asyncio.CancelledError):
+                raise
+            except:
+                traceback.print_exc()
+
+        task = asyncio.ensure_future(inner())
         self._tasks.append(task)
         return task
 
