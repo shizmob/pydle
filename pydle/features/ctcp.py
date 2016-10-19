@@ -51,7 +51,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         if self.is_channel(target) and not self.in_channel(target):
             raise client.NotInChannel(target)
 
-        self.message(target, construct_ctcp(query, contents))
+        yield from self.message(target, construct_ctcp(query, contents))
 
     @async.coroutine
     def ctcp_reply(self, target, query, response):
@@ -59,7 +59,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         if self.is_channel(target) and not self.in_channel(target):
             raise client.NotInChannel(target)
 
-        self.notice(target, construct_ctcp(query, response))
+        yield from self.notice(target, construct_ctcp(query, response))
 
 
     ## Handler overrides.
