@@ -139,11 +139,6 @@ class Connection:
 
         self.writer.close()
 
-        with self.send_queue_lock:
-            self.send_queue = None
-            self.unthrottled_sends = 0
-            self.last_sent = None
-
     @property
     def connected(self):
         """ Whether this connection is... connected to something. """
