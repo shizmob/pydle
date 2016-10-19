@@ -7,7 +7,7 @@ pydle is a compact, flexible and standards-abiding IRC library for Python 3.
 
 Features
 --------
-* Well-organized: Thanks to the modularized feature system, it's not hard to find what you're looking for in the well-organized source code.
+* Well-organized: Thanks to the modularized feature system, it's not hard to find what you're looking for in the well-organised source code.
 * Standards-abiding: Based on [RFC1459](https://tools.ietf.org/html/rfc1459.html) with some small extension tweaks, with full support of optional extension standards:
   - [TLS](http://tools.ietf.org/html/rfc5246)
   - [CTCP](http://www.irchelp.org/irchelp/rfc/ctcpspec.html)
@@ -15,8 +15,8 @@ Features
   - [ISUPPORT/PROTOCTL](http://tools.ietf.org/html/draft-hardy-irc-isupport-00)
   - [IRCv3.1](http://ircv3.org/) (full)
   - [IRCv3.2](http://ircv3.org) (base only, in progress)
-* Callback-based: IRC is an asynchronous protocol and so should a library that implements it be. Callbacks are used to process events from the server.
-* Modularised and extensible: Features on top of RFC1459 are implemented as seperate modules for a user to pick and choose, and write their own. Broad features are written to be as extensible as possible.
+* Asynchronous: IRC is an asynchronous protocol and so should be a library that implements it. Coroutines are used to process events from the server asynchronously.
+* Modularised and extensible: Features on top of RFC1459 are implemented as separate modules for a user to pick and choose, and write their own. Broad features are written to be as extensible as possible.
 * Liberally licensed: The 3-clause BSD license ensures you can use it everywhere.
 
 Basic Usage
@@ -38,7 +38,7 @@ class MyOwnBot(pydle.Client):
          await self.message(target, message)
 
 client = MyOwnBot('MyBot', realname='My Bot')
-client.run('irc.rizon.net', 6697, tls=True, tls_verify=False)
+client.run('irc.rizon.net', tls=True, tls_verify=False)
 ```
 
 *But wait, I want to handle multiple clients!*
@@ -53,6 +53,17 @@ for i in range(10):
 # This will make sure all clients are treated in a fair way priority-wise.
 pool.handle_forever()
 ```
+
+Furthermore, since pydle is simply `asyncio`-based, you can run the client in your own event loop, like this:
+```python
+import asyncio
+
+client = MyOwnBot('MyBot')
+loop = asyncio.get_event_loop()
+asyncio.ensure_future(client.connect('irc.rizon.net', tls=True, tls_verify=False), loop=loop)
+loop.run_forever()
+```
+
 
 Customization
 -------------
