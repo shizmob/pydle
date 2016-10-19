@@ -475,7 +475,7 @@ class ClientPool:
             args, kwargs = self.connect_args[c]
             self.eventloop.schedule_async(c.connect(*args, **kwargs))
 
-        self.eventoop.run()
+        self.eventloop.run()
 
         for c in self.clients:
             c.disconnect()
