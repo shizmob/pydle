@@ -10,7 +10,7 @@ __all__ = [ 'IRCv3_2Support' ]
 
 
 class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.TaggedMessageSupport, ircv3_1.IRCv3_1Support):
-    """ Support for some of IRCv3.2's extensions. Currently supported: chghost, userhost-in-names. """
+    """ Support for some of IRCv3.2's extensions. """
 
     ## IRC callbacks.
 

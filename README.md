@@ -13,8 +13,9 @@ Features
   - [CTCP](http://www.irchelp.org/irchelp/rfc/ctcpspec.html)
   - (coming soon) [DCC](http://www.irchelp.org/irchelp/rfc/dccspec.html) and extensions
   - [ISUPPORT/PROTOCTL](http://tools.ietf.org/html/draft-hardy-irc-isupport-00)
-  - [IRCv3.1](http://ircv3.org/) (full)
-  - [IRCv3.2](http://ircv3.org) (base only, in progress)
+  - [IRCv3.1](http://ircv3.net) (full)
+  - [IRCv3.2](http://ircv3.net) (base complete, most optional extensions)
+  - [IRCv3.3](http://ircv3.net) (base in progress)
 * Asynchronous: IRC is an asynchronous protocol and so should be a library that implements it. Coroutines are used to process events from the server asynchronously.
 * Modularised and extensible: Features on top of RFC1459 are implemented as separate modules for a user to pick and choose, and write their own. Broad features are written to be as extensible as possible.
 * Liberally licensed: The 3-clause BSD license ensures you can use it everywhere.

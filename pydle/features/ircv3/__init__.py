@@ -15,5 +15,11 @@ from .metadata import MetadataSupport
 from .ircv3_2 import IRCv3_2Support
 
 
-class IRCv3Support(IRCv3_2Support, IRCv3_1Support):
+## IRCv3.3 support.
+from . import ircv3_3
+
+from .ircv3_3 import IRCv3_3Support
+
+
+class IRCv3Support(IRCv3_3Support, IRCv3_2Support, IRCv3_1Support):
     pass
