@@ -8,7 +8,6 @@ from . import protocol
 
 __all__ = ['Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient', 'ClientPool']
 
-PING_TIMEOUT = 180
 DEFAULT_NICKNAME = '<unregistered>'
 
 
@@ -32,6 +31,7 @@ class BasicClient:
     Base IRC client class.
     This class on its own is not complete: in order to be able to run properly, _has_message, _parse_message and _create_message have to be overloaded.
     """
+    PING_TIMEOUT = 180
     RECONNECT_ON_ERROR = True
     RECONNECT_MAX_ATTEMPTS = 3
     RECONNECT_DELAYED = True
@@ -160,7 +160,7 @@ class BasicClient:
     @async.coroutine
     def _perform_ping_timeout(self):
         """ Handle timeout gracefully. """
-        error = TimeoutError('Ping timeout: no data received from server in {timeout} seconds.'.format(timeout=PING_TIMEOUT))
+        error = TimeoutError('Ping timeout: no data received from server in {timeout} seconds.'.format(timeout=self.PING_TIMEOUT))
         yield from self.on_data_error(error)
 
 
@@ -381,7 +381,7 @@ class BasicClient:
         # Schedule new timeout event.
         if self._ping_checker_handle:
             self.eventloop.unschedule(self._ping_checker_handle)
-        self._ping_checker_handle = self.eventloop.schedule_async_in(PING_TIMEOUT, self._perform_ping_timeout())
+        self._ping_checker_handle = self.eventloop.schedule_async_in(self.PING_TIMEOUT, self._perform_ping_timeout())
 
         while self._has_message():
             message = self._parse_message()
