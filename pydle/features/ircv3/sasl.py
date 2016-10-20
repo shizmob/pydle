@@ -76,14 +76,17 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     def _sasl_respond(self):
         """ Respond to SASL challenge with response. """
         # Formulate a response.
-        try:
-            response = self._sasl_client.process(self._sasl_challenge)
-        except puresasl.SASLError:
-            response = None
+        if self._sasl_client:
+            try:
+                response = self._sasl_client.process(self._sasl_challenge)
+            except puresasl.SASLError:
+                response = None
 
-        if response is None:
-            self.logger.warning('SASL challenge processing failed: aborting SASL authentication.')
-            yield from self._sasl_abort()
+            if response is None:
+                self.logger.warning('SASL challenge processing failed: aborting SASL authentication.')
+                yield from self._sasl_abort()
+        else:
+            response = b''
 
         response = base64.b64encode(response).decode(self.encoding)
         to_send = len(response)
@@ -154,12 +157,6 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     @async.coroutine
     def on_raw_authenticate(self, message):
         """ Received part of the authentication challenge. """
-        if self.sasl_mechanism == 'EXTERNAL':
-            # We don't know what to do here. Call it a day.
-            self.logger.warning('Received SASL challenge with EXTERNAL mechanism: aborting SASL authentication.')
-            yield from self._sasl_abort()
-            return
-
         # Cancel timeout timer.
         if self._sasl_timer:
             self.eventloop.unschedule(self._sasl_timer)
