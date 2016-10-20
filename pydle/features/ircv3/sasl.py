@@ -32,9 +32,9 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
     def _reset_attributes(self):
         super()._reset_attributes()
-        self._sasl_aborted = False
-        self._sasl_challenge = b''
+        self._sasl_client = None
         self._sasl_timer = None
+        self._sasl_challenge = b''
         self._sasl_mechanisms = None
 
 
@@ -44,29 +44,20 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     def _sasl_start(self):
         """ Initiate SASL authentication. """
         # The rest will be handled in on_raw_authenticate()/_sasl_respond().
-        if not self._sasl_mechanisms or 'plain' in self._sasl_mechanisms:
-            yield from self.rawmsg('AUTHENTICATE', 'PLAIN')
-            # Set a timeout handler.
-            self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort())
-        else:
-            # Such a cruel faith...
-            yield from self._sasl_end()
-
+        yield from self.rawmsg('AUTHENTICATE', self._sasl_client.mechanism.upper())
+        self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
 
     @async.coroutine
     def _sasl_abort(self, timeout=False):
         """ Abort SASL authentication. """
-        # You Only Abort Once
-        if not self._sasl_aborted:
-            if timeout:
-                self.logger.error('SASL authentication timed out: aborting.')
-            else:
-                self.logger.error('SASL authentication aborted.')
-            self._sasl_aborted = True
+        if timeout:
+            self.logger.error('SASL authentication timed out: aborting.')
+        else:
+            self.logger.error('SASL authentication aborted.')
 
-            # We're done here.
-            yield from self.rawmsg('AUTHENTICATE', ABORT_MESSAGE)
-            yield from self._capability_negotiated('sasl')
+        # We're done here.
+        yield from self.rawmsg('AUTHENTICATE', ABORT_MESSAGE)
+        yield from self._capability_negotiated('sasl')
 
     @async.coroutine
     def _sasl_end(self):
@@ -77,11 +68,10 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     def _sasl_respond(self):
         """ Respond to SASL challenge with response. """
         # Formulate a response.
-        saslclient = puresasl.client.SASLClient(self.connection.hostname, 'irc', mechanism='PLAIN',
-            username=self.sasl_username, password=self.sasl_password, identity=self.sasl_identity)
-
-        response = base64.b64encode(saslclient.process(challenge=self._sasl_challenge)).decode(self.encoding)
+        response = self._sasl_client.process(self._sasl_challenge)
+        response = base64.b64encode(response).decode(self.encoding)
         to_send = len(response)
+        self._sasl_challenge = b''
 
         # Send response in chunks.
         while to_send > 0:
@@ -100,7 +90,9 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     def on_capability_sasl_available(self, value):
         """ Check whether or not SASL is available. """
         if value:
-            self._sasl_mechanisms = value.split(',')
+            self._sasl_mechanisms = value.upper().split(',')
+        else:
+            self._sasl_mechanisms = ['PLAIN']
 
         if self.sasl_username and self.sasl_password:
             if puresasl:
@@ -111,6 +103,17 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     @async.coroutine
     def on_capability_sasl_enabled(self):
         """ Start SASL authentication. """
+        self._sasl_client = puresasl.client.SASLClient(self.connection.hostname, 'irc',
+            username=self.sasl_username,
+            password=self.sasl_password,
+            identity=self.sasl_identity
+        )
+        try:
+            self._sasl_client.choose_mechanism(self._sasl_mechanisms, allow_anonymous=False)
+        except puresasl.SASLError:
+            self.logger.exception('SASL mechanism choice failed: aborting SASL authentication.')
+            return cap.FAILED
+
         # Initialize SASL.
         yield from self._sasl_start()
         # Tell caller we need more time, and to not end capability negotiation just yet.
@@ -135,7 +138,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
             yield from self._sasl_respond()
         else:
             # Response not done yet. Restart timer.
-            self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort())
+            self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
 
 
     on_raw_900 = cap.CapabilityNegotiationSupport._ignored # You are now logged in as...
