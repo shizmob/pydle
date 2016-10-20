@@ -1,13 +1,11 @@
 ## tls.py
 # TLS support.
-import ssl
-
 from pydle import async
 import pydle.protocol
 from pydle.features import rfc1459
 from .. import connection
 
-__all__ = [ 'TLSSupport' ]
+__all__ = ['TLSSupport']
 
 DEFAULT_TLS_PORT = 6697
 
@@ -71,26 +69,6 @@ class TLSSupport(rfc1459.RFC1459Support):
     ## Message callbacks.
 
     @async.coroutine
-    def on_raw_421(self, message):
-        """ Hijack to ignore absence of STARTTLS support. """
-        if message.params[0] == 'STARTTLS':
-            return
-        yield from super().on_raw_421(message)
-
-    @async.coroutine
-    def on_raw_451(self, message):
-        """ Hijack to ignore absence of STARTTLS support. """
-        if message.params[0] == 'STARTTLS':
-            return
-        yield from super().on_raw_451(message)
-
-    @async.coroutine
-    def on_raw_670(self, message):
-        """ Got the OK from the server to start a TLS connection. Let's roll. """
-        self.connection.tls = True
-        self.connection.setup_tls()
-
-    @async.coroutine
     def on_raw_671(self, message):
         """ WHOIS: user is connected securely. """
         target, nickname = message.params[:2]
@@ -100,8 +78,3 @@ class TLSSupport(rfc1459.RFC1459Support):
 
         if nickname in self._whois_info:
             self._whois_info[nickname].update(info)
-
-    @async.coroutine
-    def on_raw_691(self, message):
-        """ Error setting up TLS server-side. """
-        self.logger.error('Server experienced error in setting up TLS, not proceeding with TLS setup: %s', message.params[0])
