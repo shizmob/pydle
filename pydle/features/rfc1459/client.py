@@ -524,7 +524,7 @@ class RFC1459Support(BasicClient):
         pass
 
     @async.coroutine
-    def on_private_message(self, by, message):
+    def on_private_message(self, target, by, message):
         """ Callback called when the client received a message in private. """
         pass
 
@@ -544,7 +544,7 @@ class RFC1459Support(BasicClient):
         pass
 
     @async.coroutine
-    def on_private_notice(self, by, message):
+    def on_private_notice(self, target, by, message):
         """ Callback called when the client received a notice in private. """
         pass
 
@@ -706,7 +706,7 @@ class RFC1459Support(BasicClient):
         if self.is_channel(target):
             yield from self.on_channel_notice(target, nick, message)
         else:
-            yield from self.on_private_notice(nick, message)
+            yield from self.on_private_notice(target, nick, message)
 
     @async.coroutine
     def on_raw_part(self, message):
@@ -749,7 +749,7 @@ class RFC1459Support(BasicClient):
         if self.is_channel(target):
             yield from self.on_channel_message(target, nick, message)
         else:
-            yield from self.on_private_message(nick, message)
+            yield from self.on_private_message(target, nick, message)
 
     @async.coroutine
     def on_raw_quit(self, message):

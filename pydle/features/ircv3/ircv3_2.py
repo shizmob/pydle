@@ -20,6 +20,11 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
         return True
 
     @async.coroutine
+    def on_capability_echo_message_available(self, value):
+        """ Echo PRIVMSG and NOTICEs back to client. """
+        return True
+
+    @async.coroutine
     def on_capability_userhost_in_names_available(self, value):
         """ Show full user!nick@host in NAMES list. We already parse it like that. """
         return True
@@ -33,6 +38,30 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
     def on_isupport_uhnames(self, value):
         """ Let the server know that we support UHNAMES using the old ISUPPORT method, for legacy support. """
         yield from self.rawmsg('PROTOCTL', 'UHNAMES')
+
+
+
+    ## API overrides.
+
+    @async.coroutine
+    def message(self, target, message):
+        yield from super().message(target, message)
+        if not self._capabilities.get('echo-message'):
+            yield from self.on_message(target, self.nickname, message)
+            if self.is_channel(target):
+                yield from self.on_channel_message(target, self.nickname, message)
+            else:
+                yield from self.on_private_message(target, self.nickname, message)
+
+    @async.coroutine
+    def notice(self, target, message):
+        yield from super().notice(target, message)
+        if not self._capabilities.get('echo-message'):
+            yield from self.on_notice(target, self.nickname, message)
+            if self.is_channel(target):
+                yield from self.on_channel_notice(target, self.nickname, message)
+            else:
+                yield from self.on_private_notice(target, self.nickname, message)
 
 
     ## Message handlers.
