@@ -1,15 +1,13 @@
 ## client.py
 # Basic IRC client implementation.
-import time
-import datetime
-import itertools
 import logging
 
 from . import async
 from . import connection
 from . import protocol
 
-__all__ = [ 'Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
+__all__ = ['Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient', 'ClientPool']
+
 PING_TIMEOUT = 180
 DEFAULT_NICKNAME = '<unregistered>'
 
@@ -335,7 +333,7 @@ class BasicClient:
                     self.logger.error('Unexpected disconnect. Attempting to reconnect.')
 
                 # Wait and reconnect.
-                self.eventloop.schedule_async_in(delay, self.connect, reconnect=True)
+                self.eventloop.schedule_async_in(delay, self.connect(reconnect=True))
             else:
                 self.logger.error('Unexpected disconnect. Giving up.')
 
@@ -383,7 +381,7 @@ class BasicClient:
         # Schedule new timeout event.
         if self._ping_checker_handle:
             self.eventloop.unschedule(self._ping_checker_handle)
-        self._ping_checker_handle = self.eventloop.schedule_async_in(PING_TIMEOUT, self._perform_ping_timeout)
+        self._ping_checker_handle = self.eventloop.schedule_async_in(PING_TIMEOUT, self._perform_ping_timeout())
 
         while self._has_message():
             message = self._parse_message()

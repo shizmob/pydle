@@ -1,36 +1,18 @@
 import sys
-import os
 import os.path as path
-import collections
-import time
-import threading
-import datetime
 
-import socket
 import ssl
-import errno
 
 from . import async
-from . import protocol
 
-__all__ = [ 'BUFFER_SIZE', 'Connection' ]
-
+__all__ = ['Connection']
 
 DEFAULT_CA_PATHS = {
     'linux': '/etc/ssl/certs',
     'linux2': '/etc/ssl/certs',
     'freebsd': '/etc/ssl/certs'
 }
-if hasattr(ssl, 'SSLWantReadError') and hasattr(ssl, 'SSLWantWriteError'):
-    WOULD_BLOCK_ERRORS = (ssl.SSLWantReadError, ssl.SSLWantWriteError)
-else:
-    WOULD_BLOCK_ERRORS = ()
-WOULD_BLOCK_ERRNOS = [
-    getattr(errno, 'EAGAIN', None),
-    getattr(errno, 'EWOULDBLOCK', None),
-]
 
-BUFFER_SIZE = 4096
 MESSAGE_THROTTLE_TRESHOLD = 3
 MESSAGE_THROTTLE_DELAY = 2
 
@@ -64,8 +46,6 @@ class Connection:
         if self.tls:
             self.tls_context = self.create_tls_context()
         (self.reader, self.writer) = yield from self.eventloop.connect((self.hostname, self.port), local_addr=self.source_address, tls=self.tls_context)
-        if self.tls:
-            self.setup_tls(self.writer.transport, self.tls_context)
 
     def create_tls_context(self):
         """ Transform our regular socket into a TLS socket. """
@@ -86,8 +66,7 @@ class Connection:
         # Set TLS verification options.
         if self.tls_verify:
             # Set our custom verification callback, if the library supports it.
-            if hasattr(tls_context, 'set_servername_callback'):
-                tls_context.set_servername_callback(self.verify_tls)
+            tls_context.set_servername_callback(self.verify_tls)
 
             # Load certificate verification paths.
             tls_context.set_default_verify_paths()
@@ -97,16 +76,11 @@ class Connection:
             # If we want to verify the TLS connection, we first need a certicate.
             # Check this certificate and its entire chain, if possible, against revocation lists.
             tls_context.verify_mode = ssl.CERT_REQUIRED
-            if hasattr(tls_context, 'verify_flags'):
-                tls_context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
+            tls_context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
 
         return tls_context
 
-    def setup_tls(self, transport, context):
-        if not hasattr(context, 'set_servername_callback'):
-            self.verify_tls(transport.get_extra_info('ssl_object'), self.hostname, context, as_callback=False)
-
-    def verify_tls(self, socket, hostname, context, as_callback=True):
+    def verify_tls(self, socket, hostname, context):
         """
         Verify a TLS connection. Return behaviour is dependent on the as_callback parameter:
             - If True, a return value of None means verification succeeded, else it failed.
@@ -118,18 +92,9 @@ class Connection:
             # Make sure the hostnames for which this certificate is valid include the one we're connecting to.
             ssl.match_hostname(cert, hostname)
         except ssl.CertificateError:
-            if not as_callback:
-                raise
+            return ssl.ALERT_DESCRIPTION_BAD_CERTIFICATE
 
-            # Try to give back a more elaborate error message if possible.
-            if hasattr(ssl, 'ALERT_DESCRIPTION_BAD_CERTIFICATE'):
-                return ssl.ALERT_DESCRIPTION_BAD_CERTIFICATE
-            return True
-
-        # Verification done.
-        if as_callback:
-            return None
-        return True
+        return None
 
     @async.coroutine
     def disconnect(self):

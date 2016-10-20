@@ -47,7 +47,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         if not self._sasl_mechanisms or 'plain' in self._sasl_mechanisms:
             yield from self.rawmsg('AUTHENTICATE', 'PLAIN')
             # Set a timeout handler.
-            self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort)
+            self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort())
         else:
             # Such a cruel faith...
             yield from self._sasl_end()
@@ -135,7 +135,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
             yield from self._sasl_respond()
         else:
             # Response not done yet. Restart timer.
-            self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort)
+            self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort())
 
 
     on_raw_900 = cap.CapabilityNegotiationSupport._ignored # You are now logged in as...

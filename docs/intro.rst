@@ -4,7 +4,7 @@ Introduction to pydle
 
 What is pydle?
 --------------
-pydle is an IRC library for Python 3.3 and up.
+pydle is an IRC library for Python 3.4 and up.
 
 Although old and dated on some fronts, IRC is still used by a variety of communities as the real-time communication method of choice,
 and the most popular IRC networks can still count on tens of thousands of users at any point during the day.
@@ -23,7 +23,6 @@ and APIs are prone to change or removal at least until version 1.0 has been reac
 Requirements
 ------------
 Most of pydle is written in pure, portable Python that only relies on the standard library.
-If your Python version is from before 3.4, you may install the asyncio_ backport. Be aware that new keywords such as `await` and `async` are not supported in this case.
 Optionally, if you plan to use pydle's SASL functionality for authentication, the excellent pure-sasl_ library is required.
 
 All dependencies can be installed using the standard package manager for Python, pip, and the included requirements file:

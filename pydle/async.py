@@ -116,7 +116,7 @@ class EventLoop:
 
         return self.schedule_async(inner())
 
-    def schedule_async_in(self, _when, _callback, *_args, **_kwargs):
+    def schedule_async_in(self, _when, _callback):
         """
         Schedule a coroutine to be ran as soon as possible after `when` seconds have passed.
         Will return an opaque handle that can be passed to `unschedule` to unschedule the function.
@@ -128,7 +128,7 @@ class EventLoop:
         @functools.wraps(_callback)
         def inner():
             yield from asyncio.sleep(_when)
-            yield from _callback(*_args, **_kwargs)
+            yield from _callback
 
         return self.schedule_async(inner())
 
