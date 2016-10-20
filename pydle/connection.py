@@ -138,6 +138,8 @@ class Connection:
             return
 
         self.writer.close()
+        self.reader = None
+        self.writer = None
 
     @property
     def connected(self):
