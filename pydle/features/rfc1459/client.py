@@ -489,6 +489,11 @@ class RFC1459Support(BasicClient):
         pass
 
     @async.coroutine
+    def on_user_invite(self, target, channel, by):
+        """ Callback called when another user was invited into a channel by someone. """
+        pass
+
+    @async.coroutine
     def on_join(self, channel, user):
         """ Callback called when a user, possibly the client, has joined the channel. """
         pass
@@ -583,6 +588,8 @@ class RFC1459Support(BasicClient):
 
         if self.is_same_nick(self.nickname, target):
             yield from self.on_invite(channel, nick)
+        else:
+            yield from self.on_user_invite(target, channel, nick)
 
     @async.coroutine
     def on_raw_join(self, message):

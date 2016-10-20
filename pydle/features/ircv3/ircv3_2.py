@@ -30,6 +30,11 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
         return True
 
     @async.coroutine
+    def on_capability_invite_notify_available(self, value):
+        """ Broadcast invite messages to certain other clients. """
+        return True
+
+    @async.coroutine
     def on_capability_userhost_in_names_available(self, value):
         """ Show full user!nick@host in NAMES list. We already parse it like that. """
         return True
