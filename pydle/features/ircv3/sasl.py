@@ -24,11 +24,12 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
     ## Internal overrides.
 
-    def __init__(self, *args, sasl_identity='', sasl_username=None, sasl_password=None, **kwargs):
+    def __init__(self, *args, sasl_identity='', sasl_username=None, sasl_password=None, sasl_mechanism=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.sasl_identity = sasl_identity
         self.sasl_username = sasl_username
         self.sasl_password = sasl_password
+        self.sasl_mechanism = sasl_mechanism
 
     def _reset_attributes(self):
         super()._reset_attributes()
@@ -41,10 +42,10 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     ## SASL functionality.
 
     @async.coroutine
-    def _sasl_start(self):
+    def _sasl_start(self, mechanism):
         """ Initiate SASL authentication. """
         # The rest will be handled in on_raw_authenticate()/_sasl_respond().
-        yield from self.rawmsg('AUTHENTICATE', self._sasl_client.mechanism.upper())
+        yield from self.rawmsg('AUTHENTICATE', mechanism)
         self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
 
     @async.coroutine
@@ -55,6 +56,10 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         else:
             self.logger.error('SASL authentication aborted.')
 
+        if self._sasl_timer:
+            self.eventloop.unschedule(self._sasl_timer)
+            self._sasl_timer = None
+
         # We're done here.
         yield from self.rawmsg('AUTHENTICATE', ABORT_MESSAGE)
         yield from self._capability_negotiated('sasl')
@@ -62,6 +67,9 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     @async.coroutine
     def _sasl_end(self):
         """ Finalize SASL authentication. """
+        if self._sasl_timer:
+            self.eventloop.unschedule(self._sasl_timer)
+            self._sasl_timer = None
         yield from self._capability_negotiated('sasl')
 
     @async.coroutine
@@ -100,10 +108,10 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         if value:
             self._sasl_mechanisms = value.upper().split(',')
         else:
-            self._sasl_mechanisms = ['PLAIN']
+            self._sasl_mechanisms = None
 
-        if self.sasl_username and self.sasl_password:
-            if puresasl:
+        if self.sasl_mechanism == 'EXTERNAL' or (self.sasl_username and self.sasl_password):
+            if self.sasl_mechanism == 'EXTERNAL' or puresasl:
                 return True
             self.logger.warning('SASL credentials set but puresasl module not found: not initiating SASL authentication.')
         return False
@@ -111,19 +119,32 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     @async.coroutine
     def on_capability_sasl_enabled(self):
         """ Start SASL authentication. """
-        self._sasl_client = puresasl.client.SASLClient(self.connection.hostname, 'irc',
-            username=self.sasl_username,
-            password=self.sasl_password,
-            identity=self.sasl_identity
-        )
-        try:
-            self._sasl_client.choose_mechanism(self._sasl_mechanisms, allow_anonymous=False)
-        except puresasl.SASLError:
-            self.logger.exception('SASL mechanism choice failed: aborting SASL authentication.')
-            return cap.FAILED
+        if self.sasl_mechanism:
+            if self._sasl_mechanisms and self.sasl_mechanism not in self._sasl_mechanisms:
+                self.logger.warning('Requested SASL mechanism is not in server mechanism list: aborting SASL authentication.')
+                return cap.failed
+            mechanisms = [self.sasl_mechanism]
+        else:
+            mechanisms = self._sasl_mechanisms or ['PLAIN']
+
+        if mechanisms == ['EXTERNAL']:
+            mechanism = 'EXTERNAL'
+        else:
+            self._sasl_client = puresasl.client.SASLClient(self.connection.hostname, 'irc',
+                username=self.sasl_username,
+                password=self.sasl_password,
+                identity=self.sasl_identity
+            )
+
+            try:
+                self._sasl_client.choose_mechanism(mechanisms, allow_anonymous=False)
+            except puresasl.SASLError:
+                self.logger.exception('SASL mechanism choice failed: aborting SASL authentication.')
+                return cap.FAILED
+            mechanism = self._sasl_client.mechanism.upper()
 
         # Initialize SASL.
-        yield from self._sasl_start()
+        yield from self._sasl_start(mechanism)
         # Tell caller we need more time, and to not end capability negotiation just yet.
         return cap.NEGOTIATING
 
@@ -133,8 +154,16 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     @async.coroutine
     def on_raw_authenticate(self, message):
         """ Received part of the authentication challenge. """
+        if self.sasl_mechanism == 'EXTERNAL':
+            # We don't know what to do here. Call it a day.
+            self.logger.warning('Received SASL challenge with EXTERNAL mechanism: aborting SASL authentication.')
+            yield from self._sasl_abort()
+            return
+
         # Cancel timeout timer.
-        self.eventloop.unschedule(self._sasl_timer)
+        if self._sasl_timer:
+            self.eventloop.unschedule(self._sasl_timer)
+            self._sasl_timer = None
 
         # Add response data.
         response = ' '.join(message.params)

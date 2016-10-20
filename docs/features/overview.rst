@@ -165,10 +165,12 @@ to the `pydle.Client` constructor:
  * ``sasl_username``: The SASL username.
  * ``sasl_password``: The SASL password.
  * ``sasl_identity``: The identity to use. Default, and most common, is ``''``.
+ * ``sasl_mechanism``: The SASL mechanism to force. Default involves auto-selection from server-supported mechanism, or a `PLAIN`` fallback.
 
 These arguments are also set as attributes.
 
-Currently, pydle's SASL support requires on the Python `pure-sasl`_ package and is limited to support for the `PLAIN` mechanism.
+Currently, pydle's SASL support requires on the Python `pure-sasl`_ package and is thus limited to the mechanisms it supports.
+The ``EXTERNAL`` mechanism is also supported without, however.
 
 .. _`SASL`: https://tools.ietf.org/html/rfc4422
 .. _`pure-sasl`: https://github.com/thobbs/pure-sasl
