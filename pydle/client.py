@@ -364,8 +364,12 @@ class BasicClient:
     @async.coroutine
     def handle_forever(self):
         """ Handle data forever. """
-        while True:
+        while self.connected:
             data = yield from self.connection.recv()
+            if not data:
+                if self.connected:
+                    self.disconnect(expected=False)
+                break
             yield from self.on_data(data)
 
 
