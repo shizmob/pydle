@@ -193,10 +193,16 @@ class EventLoop:
 
     def run_with(self, func):
         """ Run loop, call function, stop loop. If function returns a future, run until the future has been resolved. """
-        return self.run_until(asyncio.ensure_future(func))
+        @coroutine
+        @functools.wraps(func)
+        def inner():
+            yield from func
+            self._unschedule_all()
+        self.loop.run_until_complete(asyncio.ensure_future(inner()))
 
     def run_until(self, future):
         """ Run until future is resolved. """
+        @coroutine
         def inner():
             yield from future
             self._unschedule_all()
