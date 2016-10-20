@@ -31,7 +31,6 @@ All dependencies can be installed using the standard package manager for Python,
 
   pip install -r requirements.txt
 
-.. _asyncio: https://github.com/python/asyncio
 .. _pure-sasl: https://github.com/thobbs/pure-sasl
 
 Compatibility
