@@ -68,7 +68,15 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     def _sasl_respond(self):
         """ Respond to SASL challenge with response. """
         # Formulate a response.
-        response = self._sasl_client.process(self._sasl_challenge)
+        try:
+            response = self._sasl_client.process(self._sasl_challenge)
+        except puresasl.SASLError:
+            response = None
+
+        if response is None:
+            self.logger.warning('SASL challenge processing failed: aborting SASL authentication.')
+            yield from self._sasl_abort()
+
         response = base64.b64encode(response).decode(self.encoding)
         to_send = len(response)
         self._sasl_challenge = b''
