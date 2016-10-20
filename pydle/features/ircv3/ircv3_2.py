@@ -15,6 +15,11 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
     ## IRC callbacks.
 
     @async.coroutine
+    def on_capability_account_tag_available(self, value):
+        """ Add an account message tag to user messages. """
+        return True
+
+    @async.coroutine
     def on_capability_chghost_available(self, value):
         """ Server reply to indicate a user we are in a common channel with changed user and/or host. """
         return True
@@ -65,6 +70,18 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
 
 
     ## Message handlers.
+
+    @async.coroutine
+    def on_raw(self, message):
+        if 'account' in message.tags:
+            nick, _ = self._parse_user(message.source)
+            if nick in self.users:
+                metadata = {
+                    'identified': True,
+                    'account': message.tags['account']
+                }
+                self._sync_user(nick, metadata)
+        yield from super().on_raw(message)
 
     @async.coroutine
     def on_raw_chghost(self, message):
