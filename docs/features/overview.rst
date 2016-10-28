@@ -134,7 +134,7 @@ Capability Negotiation Support
 
 Support for `capability negotiation` for IRC protocol extensions.
 
-This feature enables support for a generic framework for negotiationg IRC protocol extension support between the client and the
+This feature enables support for a generic framework for negotiating IRC protocol extension support between the client and the
 server. It was quickly found that `ISUPPORT` alone wasn't sufficient, as it only advertises support from the server side instead
 of allowing the server and client to negotiate. This is a generic base feature: enabling it on its own won't do much, instead
 other features like the IRCv3.1 support feature, or the SASL authentication feature will rely on it to work.
