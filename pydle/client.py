@@ -10,7 +10,7 @@ from . import connection
 from . import protocol
 
 __all__ = [ 'Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient' ]
-PING_TIMEOUT = 180
+PING_TIMEOUT = 300
 DEFAULT_NICKNAME = '<unregistered>'
 
 
