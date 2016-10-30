@@ -806,7 +806,7 @@ class RFC1459Support(BasicClient):
     @async.coroutine
     def on_raw_004(self, message):
         """ Basic server information. """
-        hostname, ircd, user_modes, channel_modes = message.params[:4]
+        target, hostname, ircd, user_modes, channel_modes = message.params[:5]
 
         # Set valid channel and user modes.
         self._channel_modes = set(channel_modes)
