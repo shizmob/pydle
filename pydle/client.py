@@ -7,7 +7,6 @@ from . import connection
 from . import protocol
 
 __all__ = ['Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient', 'ClientPool']
-
 DEFAULT_NICKNAME = '<unregistered>'
 
 
@@ -31,7 +30,7 @@ class BasicClient:
     Base IRC client class.
     This class on its own is not complete: in order to be able to run properly, _has_message, _parse_message and _create_message have to be overloaded.
     """
-    PING_TIMEOUT = 180
+    PING_TIMEOUT = 300
     RECONNECT_ON_ERROR = True
     RECONNECT_MAX_ATTEMPTS = 3
     RECONNECT_DELAYED = True

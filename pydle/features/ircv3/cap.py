@@ -173,6 +173,17 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
         if not self._capabilities_requested and not self._capabilities_negotiating:
             yield from self.rawmsg('CAP', 'END')
 
+    @async.coroutine    
+    def on_raw_cap_del(self, params):
+        for capab in params[0].split():
+            attr = 'on_capability_{}_disabled'.format(pydle.protocol.identifierify(capab))
+            if self._capabilities.get(capab, False) and hasattr(self, attr):
+                yield from getattr(self, attr)()
+        yield from self.on_raw_cap_nak(params)
+
+    @async.coroutine
+    def on_raw_cap_new(self, params):
+        yield from self.on_raw_cap_ls(params)
 
     @async.coroutine
     def on_raw_410(self, message):
