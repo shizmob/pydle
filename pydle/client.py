@@ -356,6 +356,7 @@ class BasicClient:
         if isinstance(input, str):
             input = input.encode(self.encoding)
 
+        self.logger.debug('>> %s', input.decode(self.encoding))
         yield from self.connection.send(input)
 
     @async.coroutine
@@ -395,7 +396,7 @@ class BasicClient:
     @async.coroutine
     def on_raw(self, message):
         """ Handle a single message. """
-        self.logger.debug('<< [%s] %s %s', message.source or '', message.command, message.params)
+        self.logger.debug('<< %s', message._raw)
         if not message._valid:
             self.logger.warning('Encountered strictly invalid IRC message from server: %s', message._raw)
 
