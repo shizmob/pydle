@@ -120,9 +120,10 @@ class Connection:
             self.tls_context.load_cert_chain(self.tls_certificate_file, self.tls_certificate_keyfile, password=self.tls_certificate_password)
 
         # Set some relevant options:
-        # - No server should use SSLv2 any more, it's outdated and full of security holes.
+        # - No server should use SSLv2 or SSLv3 any more, they are outdated and full of security holes. (RFC6176, RFC7568)
         # - Disable compression in order to counter the CRIME attack. (https://en.wikipedia.org/wiki/CRIME_%28security_exploit%29)
-        for opt in [ 'NO_SSLv2', 'NO_COMPRESSION']:
+        # - Disable session resumption to maintain perfect forward secrecy. (https://timtaubert.de/blog/2014/11/the-sad-state-of-server-side-tls-session-resumption-implementations/)
+        for opt in ['NO_SSLv2', 'NO_SSLv3', 'NO_COMPRESSION', 'NO_TICKET']:
             if hasattr(ssl, 'OP_' + opt):
                 self.tls_context.options |= getattr(ssl, 'OP_' + opt)
 
