@@ -1,1 +1,1 @@
-from . import irccat, console, run
+from . import irccat, run

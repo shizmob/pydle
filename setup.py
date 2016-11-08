@@ -19,7 +19,6 @@ setup(
     entry_points={
         'console_scripts': [
             'pydle = pydle.utils.run:main',
-            'ipydle = pydle.utils.console:main',
             'pydle-irccat = pydle.utils.irccat:main'
         ]
     },
