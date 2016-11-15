@@ -37,7 +37,7 @@ class TaggedMessage(rfc1459.RFC1459Message):
         # Strip message separator.
         if message.endswith(rfc1459.protocol.LINE_SEPARATOR):
             message = message[:-len(rfc1459.protocol.LINE_SEPARATOR)]
-        elif message.endswith(pydle.protocol.MINIMAL_LINE_SEPARATOR):
+        elif message.endswith(rfc1459.protocol.MINIMAL_LINE_SEPARATOR):
             message = message[:-len(rfc1459.protocol.MINIMAL_LINE_SEPARATOR)]
         raw = message
 
