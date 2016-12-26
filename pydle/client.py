@@ -100,7 +100,12 @@ class BasicClient:
         # Reset attributes and connect.
         if not reconnect:
             self._reset_connection_attributes()
-        self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
+        try:
+            self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
+        except ConnectionRefusedError:
+            self.on_disconnect(
+                expected=False,
+            )
 
         # Set logger name.
         if self.server_tag:
