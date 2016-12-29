@@ -102,7 +102,7 @@ class BasicClient:
             self._reset_connection_attributes()
         try:
             self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
-        except ConnectionRefusedError:
+        except OSError:
             self.on_disconnect(
                 expected=False,
             )
