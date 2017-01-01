@@ -100,7 +100,12 @@ class BasicClient:
         # Reset attributes and connect.
         if not reconnect:
             self._reset_connection_attributes()
-        self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
+        try:
+            self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
+        except OSError:
+            self.on_disconnect(
+                expected=False,
+            )
 
         # Set logger name.
         if self.server_tag:
@@ -363,7 +368,7 @@ class BasicClient:
     def on_data(self, data):
         """ Handle received data. """
         self._receive_buffer += data
-        
+
         # Schedule new timeout event.
         self.eventloop.unschedule(self._ping_checker_handle)
         self._ping_checker_handle = self.eventloop.schedule_in(PING_TIMEOUT, self._perform_ping_timeout)
