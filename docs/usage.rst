@@ -89,7 +89,7 @@ and handle them within a single loop.
   servers = [ 'irc.freenode.net', 'irc.rizon.net', 'irc.esper.net' ]
 
   for server in servers:
-      client = pydle.Client('MyBot')
+      client = MyClient('MyBot')
       pool.connect(client, server, tls=True)
 
   # Handle all clients in the pool at once.
