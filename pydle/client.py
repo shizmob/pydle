@@ -103,9 +103,7 @@ class BasicClient:
         try:
             self._connect(hostname=hostname, port=port, reconnect=reconnect, **kwargs)
         except OSError:
-            self.on_disconnect(
-                expected=False,
-            )
+            self.on_disconnect(expected=False)
 
         # Set logger name.
         if self.server_tag:
