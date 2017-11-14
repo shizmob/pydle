@@ -19,6 +19,9 @@ class RFC1459Support(BasicClient):
 
     def _reset_attributes(self):
         super()._reset_attributes()
+        # Casemapping.
+        self._case_mapping = protocol.DEFAULT_CASE_MAPPING
+
         # Limitations.
         self._away_message_length_limit = None
         self._channel_length_limit = protocol.CHANNEL_LENGTH_LIMIT
@@ -48,14 +51,13 @@ class RFC1459Support(BasicClient):
         self._attempt_nicknames = self._nicknames[:]
 
         # Info.
-        self._pending['whois'] = {}
-        self._pending['whowas'] = {}
+        self._pending['whois'] = parsing.NormalizeDict({}, case_mapping=self._case_mapping)
+        self._pending['whowas'] = parsing.NormalizeDict({}, case_mapping=self._case_mapping)
         self._whois_info = {}
         self._whowas_info = {}
 
         # Misc.
         self.motd = None
-        self._case_mapping = protocol.DEFAULT_CASE_MAPPING
         self.channels = parsing.NormalizingDict(self.channels, case_mapping=self._case_mapping)
         self.users = parsing.NormalizingDict(self.users, case_mapping=self._case_mapping)
 
