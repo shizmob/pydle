@@ -51,10 +51,10 @@ class RFC1459Support(BasicClient):
         self._attempt_nicknames = self._nicknames[:]
 
         # Info.
-        self._pending['whois'] = parsing.NormalizeDict({}, case_mapping=self._case_mapping)
-        self._pending['whowas'] = parsing.NormalizeDict({}, case_mapping=self._case_mapping)
-        self._whois_info = {}
-        self._whowas_info = {}
+        self._pending['whois'] = parsing.NormalizingDict(case_mapping=self._case_mapping)
+        self._pending['whowas'] = parsing.NormalizingDict(case_mapping=self._case_mapping)
+        self._whois_info = parsing.NormalizingDict(case_mapping=self._case_mapping)
+        self._whowas_info = parsing.NormalizingDict(case_mapping=self._case_mapping)
 
         # Misc.
         self.motd = None
