@@ -129,31 +129,20 @@ class Connection:
 
         # Set TLS verification options.
         if self.tls_verify:
-            # Set our custom verification callback, if the library supports it.
-            # jbrunink: This does not seem to work.
-            #if hasattr(self.tls_context, 'set_servername_callback'):
-                #self.tls_context.set_servername_callback(self.verify_tls)
-
             # Load certificate verification paths.
             self.tls_context.set_default_verify_paths()
             if sys.platform in DEFAULT_CA_PATHS and path.isdir(DEFAULT_CA_PATHS[sys.platform]):
                 self.tls_context.load_verify_locations(capath=DEFAULT_CA_PATHS[sys.platform])
 
             # If we want to verify the TLS connection, we first need a certicate.
-            # Check this certificate and its entire chain, if possible, against revocation lists.
+            # Check this certificate and its entire chain.
             self.tls_context.verify_mode = ssl.CERT_REQUIRED
-            # jbrunink: This does not seem to work.
-            #if hasattr(self.tls_context, 'verify_flags'):
-                #self.tls_context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
 
         self.socket = self.tls_context.wrap_socket(self.socket,
             # Send hostname over SNI, but only if our TLS library supports it.
             server_hostname=self.hostname if ssl.HAS_SNI else None)
 
-        # Verify the peer certificate here if our TLS library doesn't have callback functionality.
-        # jbrunink: This does not seem to work.
-        #if self.tls_verify and not hasattr(self.tls_context, 'set_servername_callback'):
-            #self.verify_tls(self.socket, self.hostname, self.tls_context, as_callback=False)
+        # Verify the peer certificate.
         if self.tls_verify:
             self.verify_tls(self.socket, self.hostname, self.tls_context, as_callback=False)
 
