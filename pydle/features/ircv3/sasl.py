@@ -7,7 +7,6 @@ try:
 except ImportError:
     puresasl = None
 
-from pydle import async
 from . import cap
 
 __all__ = [ 'SASLSupport' ]
@@ -41,15 +40,13 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
     ## SASL functionality.
 
-    @async.coroutine
-    def _sasl_start(self, mechanism):
+    async def _sasl_start(self, mechanism):
         """ Initiate SASL authentication. """
         # The rest will be handled in on_raw_authenticate()/_sasl_respond().
-        yield from self.rawmsg('AUTHENTICATE', mechanism)
+        await self.rawmsg('AUTHENTICATE', mechanism)
         self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
 
-    @async.coroutine
-    def _sasl_abort(self, timeout=False):
+    async def _sasl_abort(self, timeout=False):
         """ Abort SASL authentication. """
         if timeout:
             self.logger.error('SASL authentication timed out: aborting.')
@@ -61,19 +58,17 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
             self._sasl_timer = None
 
         # We're done here.
-        yield from self.rawmsg('AUTHENTICATE', ABORT_MESSAGE)
-        yield from self._capability_negotiated('sasl')
+        await self.rawmsg('AUTHENTICATE', ABORT_MESSAGE)
+        await self._capability_negotiated('sasl')
 
-    @async.coroutine
-    def _sasl_end(self):
+    async def _sasl_end(self):
         """ Finalize SASL authentication. """
         if self._sasl_timer:
             self.eventloop.unschedule(self._sasl_timer)
             self._sasl_timer = None
-        yield from self._capability_negotiated('sasl')
+        await self._capability_negotiated('sasl')
 
-    @async.coroutine
-    def _sasl_respond(self):
+    async def _sasl_respond(self):
         """ Respond to SASL challenge with response. """
         # Formulate a response.
         if self._sasl_client:
@@ -84,7 +79,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
             if response is None:
                 self.logger.warning('SASL challenge processing failed: aborting SASL authentication.')
-                yield from self._sasl_abort()
+                await self._sasl_abort()
         else:
             response = b''
 
@@ -94,19 +89,18 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
         # Send response in chunks.
         while to_send > 0:
-            yield from self.rawmsg('AUTHENTICATE', response[:RESPONSE_LIMIT])
+            await self.rawmsg('AUTHENTICATE', response[:RESPONSE_LIMIT])
             response = response[RESPONSE_LIMIT:]
             to_send -= RESPONSE_LIMIT
 
         # If our message fit exactly in SASL_RESPOSE_LIMIT-byte chunks, send an empty message to indicate we're done.
         if to_send == 0:
-            yield from self.rawmsg('AUTHENTICATE', EMPTY_MESSAGE)
+            await self.rawmsg('AUTHENTICATE', EMPTY_MESSAGE)
 
 
     ## Capability callbacks.
 
-    @async.coroutine
-    def on_capability_sasl_available(self, value):
+    async def on_capability_sasl_available(self, value):
         """ Check whether or not SASL is available. """
         if value:
             self._sasl_mechanisms = value.upper().split(',')
@@ -119,8 +113,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
             self.logger.warning('SASL credentials set but puresasl module not found: not initiating SASL authentication.')
         return False
 
-    @async.coroutine
-    def on_capability_sasl_enabled(self):
+    async def on_capability_sasl_enabled(self):
         """ Start SASL authentication. """
         if self.sasl_mechanism:
             if self._sasl_mechanisms and self.sasl_mechanism not in self._sasl_mechanisms:
@@ -147,15 +140,14 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
             mechanism = self._sasl_client.mechanism.upper()
 
         # Initialize SASL.
-        yield from self._sasl_start(mechanism)
+        await self._sasl_start(mechanism)
         # Tell caller we need more time, and to not end capability negotiation just yet.
         return cap.NEGOTIATING
 
 
     ## Message handlers.
 
-    @async.coroutine
-    def on_raw_authenticate(self, message):
+    async def on_raw_authenticate(self, message):
         """ Received part of the authentication challenge. """
         # Cancel timeout timer.
         if self._sasl_timer:
@@ -169,7 +161,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
         # If the response ain't exactly SASL_RESPONSE_LIMIT bytes long, it's the end. Process.
         if len(response) % RESPONSE_LIMIT > 0:
-            yield from self._sasl_respond()
+            await self._sasl_respond()
         else:
             # Response not done yet. Restart timer.
             self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
@@ -177,20 +169,17 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
 
     on_raw_900 = cap.CapabilityNegotiationSupport._ignored # You are now logged in as...
 
-    @async.coroutine
-    def on_raw_903(self, message):
+    async def on_raw_903(self, message):
         """ SASL authentication successful. """
-        yield from self._sasl_end()
+        await self._sasl_end()
 
-    @async.coroutine
-    def on_raw_904(self, message):
+    async def on_raw_904(self, message):
         """ Invalid mechanism or authentication failed. Abort SASL. """
-        yield from self._sasl_abort()
+        await self._sasl_abort()
 
-    @async.coroutine
-    def on_raw_905(self, message):
+    async def on_raw_905(self, message):
         """ Authentication failed. Abort SASL. """
-        yield from self._sasl_abort()
+        await self._sasl_abort()
 
     on_raw_906 = cap.CapabilityNegotiationSupport._ignored # Completed registration while authenticating/registration aborted.
     on_raw_907 = cap.CapabilityNegotiationSupport._ignored # Already authenticated over SASL.
