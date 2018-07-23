@@ -1,7 +1,7 @@
 ## account.py
 # Account system support.
-from pydle import async
 from pydle.features import rfc1459
+
 
 class AccountSupport(rfc1459.RFC1459Support):
 
@@ -18,24 +18,20 @@ class AccountSupport(rfc1459.RFC1459Support):
     def _rename_user(self, user, new):
         super()._rename_user(user, new)
         # Unset account info to be certain until we get a new response.
-        self._sync_user(new, { 'account': None, 'identified': False })
+        self._sync_user(new, {'account': None, 'identified': False})
         self.whois(new)
-
 
     ## IRC API.
 
-    @async.coroutine
-    def whois(self, nickname):
-        info = yield from super().whois(nickname)
+    async def whois(self, nickname):
+        info = await super().whois(nickname)
         info.setdefault('account', None)
         info.setdefault('identified', False)
         return info
 
-
     ## Message handlers.
 
-    @async.coroutine
-    def on_raw_307(self, message):
+    async def on_raw_307(self, message):
         """ WHOIS: User has identified for this nickname. (Anope) """
         target, nickname = message.params[:2]
         info = {
@@ -47,8 +43,7 @@ class AccountSupport(rfc1459.RFC1459Support):
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
-    @async.coroutine
-    def on_raw_330(self, message):
+    async def on_raw_330(self, message):
         """ WHOIS account name (Atheme). """
         target, nickname, account = message.params[:3]
         info = {
