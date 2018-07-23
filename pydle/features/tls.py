@@ -1,6 +1,5 @@
 ## tls.py
 # TLS support.
-from pydle import async
 import pydle.protocol
 from pydle.features import rfc1459
 from .. import connection
@@ -26,18 +25,16 @@ class TLSSupport(rfc1459.RFC1459Support):
         self.tls_client_cert_key = tls_client_cert_key
         self.tls_client_cert_password = tls_client_cert_password
 
-    @async.coroutine
-    def connect(self, hostname=None, port=None, tls=False, **kwargs):
+    async def connect(self, hostname=None, port=None, tls=False, **kwargs):
         """ Connect to a server, optionally over TLS. See pydle.features.RFC1459Support.connect for misc parameters. """
         if not port:
             if tls:
                 port = DEFAULT_TLS_PORT
             else:
                 port = rfc1459.protocol.DEFAULT_PORT
-        return (yield from super().connect(hostname, port, tls=tls, **kwargs))
+        return await super().connect(hostname, port, tls=tls, **kwargs)
 
-    @async.coroutine
-    def _connect(self, hostname, port, reconnect=False, password=None, encoding=pydle.protocol.DEFAULT_ENCODING, channels=[], tls=False, tls_verify=False, source_address=None):
+    async def _connect(self, hostname, port, reconnect=False, password=None, encoding=pydle.protocol.DEFAULT_ENCODING, channels=[], tls=False, tls_verify=False, source_address=None):
         """ Connect to IRC server, optionally over TLS. """
         self.password = password
 
@@ -54,22 +51,20 @@ class TLSSupport(rfc1459.RFC1459Support):
             self.encoding = encoding
 
         # Connect.
-        yield from self.connection.connect()
+        await self.connection.connect()
 
 
     ## API.
 
-    @async.coroutine
-    def whois(self, nickname):
-        info = yield from super().whois(nickname)
+    async def whois(self, nickname):
+        info = await super().whois(nickname)
         info.setdefault('secure', False)
         return info
 
 
     ## Message callbacks.
 
-    @async.coroutine
-    def on_raw_671(self, message):
+    async def on_raw_671(self, message):
         """ WHOIS: user is connected securely. """
         target, nickname = message.params[:2]
         info = {
