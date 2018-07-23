@@ -968,7 +968,7 @@ class RFC1459Support(BasicClient):
 
     async def on_raw_422(self, message):
         """ MOTD is missing. """
-        self._registration_completed(message)
+        await self._registration_completed(message)
         self.motd = None
         await self.on_connect()
 
