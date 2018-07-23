@@ -1,7 +1,7 @@
 ## account.py
 # Account system support.
 from pydle.features import rfc1459
-
+import asyncio
 
 class AccountSupport(rfc1459.RFC1459Support):
 
@@ -22,9 +22,9 @@ class AccountSupport(rfc1459.RFC1459Support):
         self.whois(new)
 
     ## IRC API.
-
-    async def whois(self, nickname):
-        info = await super().whois(nickname)
+    @asyncio.coroutine
+    def whois(self, nickname):
+        info = yield from super().whois(nickname)
         info.setdefault('account', None)
         info.setdefault('identified', False)
         return info
