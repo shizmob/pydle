@@ -1,6 +1,5 @@
 ## ircv3_1.py
 # IRCv3.1 full spec support.
-from pydle import async
 from pydle.features import account, tls
 from . import cap
 from . import sasl
