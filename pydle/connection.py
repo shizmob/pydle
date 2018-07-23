@@ -44,9 +44,14 @@ class Connection:
 
         if self.tls:
             self.tls_context = self.create_tls_context()
-        (self.reader, self.writer) = await self.eventloop.connect((self.hostname, self.port),
-                                                                  local_addr=self.source_address,
-                                                                  tls=self.tls_context)
+
+        (self.reader, self.writer) = await asyncio.open_connection(
+            host=self.hostname,
+            port=self.port,
+            local_addr=self.source_address,
+            ssl=self.tls_context,
+            loop=self.eventloop
+        )
 
     def create_tls_context(self):
         """ Transform our regular socket into a TLS socket. """
