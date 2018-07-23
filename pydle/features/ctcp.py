@@ -1,6 +1,5 @@
 ## ctcp.py
 # Client-to-Client-Protocol (CTCP) support.
-from pydle import async
 import pydle.protocol
 from pydle.features import rfc1459
 
@@ -16,8 +15,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
     ## Callbacks.
 
-    @async.coroutine
-    def on_ctcp(self, by, target, what, contents):
+    async def on_ctcp(self, by, target, what, contents):
         """
         Callback called when the user received a CTCP message.
         Client subclasses can override on_ctcp_<type> to be called when receiving a message of that specific CTCP type,
@@ -25,8 +23,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         """
         pass
 
-    @async.coroutine
-    def on_ctcp_reply(self, by, target, what, response):
+    async def on_ctcp_reply(self, by, target, what, response):
         """
         Callback called when the user received a CTCP response.
         Client subclasses can override on_ctcp_<type>_reply to be called when receiving a reply of that specific CTCP type,
@@ -34,8 +31,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         """
         pass
 
-    @async.coroutine
-    def on_ctcp_version(self, by, target, contents):
+    async def on_ctcp_version(self, by, target, contents):
         """ Built-in CTCP version as some networks seem to require it. """
         import pydle
 
@@ -45,27 +41,24 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
     ## IRC API.
 
-    @async.coroutine
-    def ctcp(self, target, query, contents=None):
+    async def ctcp(self, target, query, contents=None):
         """ Send a CTCP request to a target. """
         if self.is_channel(target) and not self.in_channel(target):
             raise client.NotInChannel(target)
 
-        yield from self.message(target, construct_ctcp(query, contents))
+        await self.message(target, construct_ctcp(query, contents))
 
-    @async.coroutine
-    def ctcp_reply(self, target, query, response):
+    async def ctcp_reply(self, target, query, response):
         """ Send a CTCP reply to a target. """
         if self.is_channel(target) and not self.in_channel(target):
             raise client.NotInChannel(target)
 
-        yield from self.notice(target, construct_ctcp(query, response))
+        await self.notice(target, construct_ctcp(query, response))
 
 
     ## Handler overrides.
 
-    @async.coroutine
-    def on_raw_privmsg(self, message):
+    async def on_raw_privmsg(self, message):
         """ Modify PRIVMSG to redirect CTCP messages. """
         nick, metadata = self._parse_user(message.source)
         target, msg = message.params
@@ -77,14 +70,14 @@ class CTCPSupport(rfc1459.RFC1459Support):
             # Find dedicated handler if it exists.
             attr = 'on_ctcp_' + pydle.protocol.identifierify(type)
             if hasattr(self, attr):
-                yield from getattr(self, attr)(nick, target, contents)
+                await getattr(self, attr)(nick, target, contents)
             # Invoke global handler.
-            yield from self.on_ctcp(nick, target, type, contents)
+            await self.on_ctcp(nick, target, type, contents)
         else:
-            yield from super().on_raw_privmsg(message)
+            await super().on_raw_privmsg(message)
 
-    @async.coroutine
-    def on_raw_notice(self, message):
+
+    async def on_raw_notice(self, message):
         """ Modify NOTICE to redirect CTCP messages. """
         nick, metadata = self._parse_user(message.source)
         target, msg = message.params
@@ -96,11 +89,11 @@ class CTCPSupport(rfc1459.RFC1459Support):
             # Find dedicated handler if it exists.
             attr = 'on_ctcp_' + pydle.protocol.identifierify(type) + '_reply'
             if hasattr(self, attr):
-                yield from getattr(self, attr)(user, target, response)
+                await getattr(self, attr)(user, target, response)
             # Invoke global handler.
-            yield from self.on_ctcp_reply(user, target, type, response)
+            await self.on_ctcp_reply(user, target, type, response)
         else:
-            yield from super().on_raw_notice(message)
+            await super().on_raw_notice(message)
 
 
 ## Helpers.
