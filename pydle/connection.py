@@ -1,9 +1,7 @@
-import sys
+import asyncio
 import os.path as path
-
 import ssl
-
-from . import async
+import sys
 
 __all__ = ['Connection']
 
@@ -21,7 +19,9 @@ class Connection:
     """ A TCP connection over the IRC protocol. """
     CONNECT_TIMEOUT = 10
 
-    def __init__(self, hostname, port, tls=False, tls_verify=True, tls_certificate_file=None, tls_certificate_keyfile=None, tls_certificate_password=None, ping_timeout=240, source_address=None, eventloop=None):
+    def __init__(self, hostname, port, tls=False, tls_verify=True, tls_certificate_file=None,
+                 tls_certificate_keyfile=None, tls_certificate_password=None, ping_timeout=240,
+                 source_address=None, eventloop=None):
         self.hostname = hostname
         self.port = port
         self.source_address = source_address
@@ -36,16 +36,17 @@ class Connection:
 
         self.reader = None
         self.writer = None
-        self.eventloop = eventloop or async.EventLoop()
+        self.eventloop = eventloop or asyncio.new_event_loop()
 
-    @async.coroutine
-    def connect(self):
+    async def connect(self):
         """ Connect to target. """
         self.tls_context = None
 
         if self.tls:
             self.tls_context = self.create_tls_context()
-        (self.reader, self.writer) = yield from self.eventloop.connect((self.hostname, self.port), local_addr=self.source_address, tls=self.tls_context)
+        (self.reader, self.writer) = await self.eventloop.connect((self.hostname, self.port),
+                                                                  local_addr=self.source_address,
+                                                                  tls=self.tls_context)
 
     def create_tls_context(self):
         """ Transform our regular socket into a TLS socket. """
@@ -54,7 +55,8 @@ class Connection:
 
         # Load client/server certificate.
         if self.tls_certificate_file:
-            tls_context.load_cert_chain(self.tls_certificate_file, self.tls_certificate_keyfile, password=self.tls_certificate_password)
+            tls_context.load_cert_chain(self.tls_certificate_file, self.tls_certificate_keyfile,
+                                        password=self.tls_certificate_password)
 
         # Set some relevant options:
         # - No server should use SSLv2 or SSLv3 any more, they are outdated and full of security holes. (RFC6176, RFC7568)
@@ -97,8 +99,7 @@ class Connection:
 
         return None
 
-    @async.coroutine
-    def disconnect(self):
+    async def disconnect(self):
         """ Disconnect from target. """
         if not self.connected:
             return
@@ -112,18 +113,14 @@ class Connection:
         """ Whether this connection is... connected to something. """
         return self.reader is not None and self.writer is not None
 
-
     def stop(self):
         """ Stop event loop. """
         self.eventloop.schedule(lambda: self.eventloop.stop())
 
-
-    @async.coroutine
-    def send(self, data):
+    async def send(self, data):
         """ Add data to send queue. """
         self.writer.write(data)
-        yield from self.writer.drain()
+        await self.writer.drain()
 
-    @async.coroutine
-    def recv(self):
-        return (yield from self.reader.readline())
+    async def recv(self):
+        return await self.reader.readline()
