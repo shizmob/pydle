@@ -1,7 +1,7 @@
 ## client.py
 # Basic IRC client implementation.
 import logging
-from asyncio import ensure_future, Handle, new_event_loop
+from asyncio import ensure_future, Handle, new_event_loop, BaseEventLoop, Future
 
 from . import connection
 from . import protocol
@@ -47,7 +47,7 @@ class BasicClient:
         if eventloop:
             self.eventloop = eventloop
         else:
-            self.eventloop = new_event_loop()
+            self.eventloop: BaseEventLoop = new_event_loop()
 
         self.own_eventloop = not eventloop
         self._reset_connection_attributes()
@@ -109,17 +109,16 @@ class BasicClient:
         # Set logger name.
         if self.server_tag:
             self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
-
-        self.eventloop.schedule_async(self.handle_forever())
+        ensure_future(self.handle_forever(), loop=self.eventloop)
 
     def disconnect(self, expected=True):
         """ Disconnect from server. """
         if self.connected:
             # Unschedule ping checker.
             if self._ping_checker_handle:
-                self.eventloop.unschedule(self._ping_checker_handle)
+                self._ping_checker_handle.cancel()
             # Schedule disconnect.
-            self.eventloop.schedule_async(self._disconnect(expected))
+            ensure_future(self._disconnect(expected), loop=self.eventloop)
 
     async def _disconnect(self, expected):
         # Shutdown connection.
@@ -372,6 +371,7 @@ class BasicClient:
         # Schedule new timeout event.
         if self._ping_checker_handle:
             self._ping_checker_handle.cancel()
+
         self._ping_checker_handle: Handle = self.eventloop.call_later(self.PING_TIMEOUT,
                                                                       self._perform_ping_timeout())
 
