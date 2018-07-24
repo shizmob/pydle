@@ -87,7 +87,7 @@ class BasicClient:
 
     def run(self, *args, **kwargs):
         """ Connect and run bot in event loop. """
-        ensure_future(self.connect(*args, **kwargs))
+        self.eventloop.run_until_complete(self.connect(*args, **kwargs))
         try:
             self.eventloop.run_forever()
         finally:
