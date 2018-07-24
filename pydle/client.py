@@ -1,7 +1,7 @@
 ## client.py
 # Basic IRC client implementation.
 import logging
-from asyncio import ensure_future, Handle, new_event_loop, BaseEventLoop, gather
+from asyncio import ensure_future, new_event_loop, BaseEventLoop, gather, TimerHandle
 from typing import Set
 
 from . import connection
@@ -372,8 +372,8 @@ class BasicClient:
         if self._ping_checker_handle:
             self._ping_checker_handle.cancel()
 
-        self._ping_checker_handle: Handle = self.eventloop.call_later(self.PING_TIMEOUT,
-                                                                      self._perform_ping_timeout())
+        self._ping_checker_handle: TimerHandle = self.eventloop.call_later(self.PING_TIMEOUT,
+                                                                           self._perform_ping_timeout)
 
         while self._has_message():
             message = self._parse_message()
