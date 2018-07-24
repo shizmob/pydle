@@ -1,7 +1,8 @@
 ## client.py
 # Basic IRC client implementation.
 import logging
-from asyncio import ensure_future, Handle, new_event_loop, BaseEventLoop, Future
+from asyncio import ensure_future, Handle, new_event_loop, BaseEventLoop, gather
+from typing import Set
 
 from . import connection
 from . import protocol
@@ -195,7 +196,6 @@ class BasicClient:
             self._create_user(nick)
             if nick not in self.users:
                 return
-
         self.users[nick].update(metadata)
 
     def _rename_user(self, user, new):
@@ -442,13 +442,16 @@ class ClientPool:
 
     def __init__(self, clients=None, eventloop=None):
         self.eventloop = eventloop or new_event_loop()
-        self.clients = set(clients or [])
+        self.clients: Set[BasicClient] = set(clients or [])
         self.connect_args = {}
 
-    def connect(self, client, *args, **kwargs):
+    def connect(self, client: BasicClient, *args, **kwargs):
         """ Add client to pool. """
         self.clients.add(client)
         self.connect_args[client] = (args, kwargs)
+        # hack the clients event loop to use the pools own event loop
+        client.eventloop = self.eventloop
+        # necessary to run multiple clients in the same thread via the pool
 
     def disconnect(self, client):
         """ Remove client from pool. """
@@ -463,11 +466,19 @@ class ClientPool:
 
     def handle_forever(self):
         """ Main loop of the pool: handle clients forever, until the event loop is stopped. """
-        for c in self.clients:
-            args, kwargs = self.connect_args[c]
-            self.eventloop.schedule_async(c.connect(*args, **kwargs))
+        # container for all the client connection coros
+        connection_list = []
+        for client in self.clients:
+            args, kwargs = self.connect_args[client]
+            connection_list.append(client.connect(*args, **kwargs))
+        # single future for executing the connections
+        connections = gather(*connection_list, loop=self.eventloop)
 
-        self.eventloop.run()
+        # run the connections
+        self.eventloop.run_until_complete(connections)
 
-        for c in self.clients:
-            c.disconnect()
+        # run the clients
+        self.eventloop.run_forever()
+
+        for client in self.clients:
+            client.disconnect()
