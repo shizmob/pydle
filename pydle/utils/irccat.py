@@ -8,9 +8,9 @@ import logging
 import asyncio
 from asyncio.streams import FlowControlMixin
 
-from .. import async, Client, __version__
+from .. import  Client, __version__
 from . import _args
-
+import asyncio
 
 class IRCCat(Client):
     """ irccat. Takes raw messages on stdin, dumps raw messages to stdout. Life has never been easier. """
@@ -18,12 +18,12 @@ class IRCCat(Client):
         super().__init__(*args, **kwargs)
         self.async_stdin = None
 
-    @async.coroutine
+    @asyncio.coroutine
     def _send(self, data):
         sys.stdout.write(data)
         yield from super()._send(data)
 
-    @async.coroutine
+    @asyncio.coroutine
     def process_stdin(self):
         """ Yes. """
         loop = self.eventloop.loop
@@ -40,12 +40,12 @@ class IRCCat(Client):
 
         yield from self.quit('EOF')
 
-    @async.coroutine
+    @asyncio.coroutine
     def on_raw(self, message):
         print(message._raw)
         yield from super().on_raw(message)
 
-    @async.coroutine
+    @asyncio.coroutine
     def on_ctcp_version(self, source, target, contents):
         self.ctcp_reply(source, 'VERSION', 'pydle-irccat v{}'.format(__version__))
 
