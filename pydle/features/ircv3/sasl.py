@@ -58,7 +58,8 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
             self.logger.error('SASL authentication aborted.')
 
         if self._sasl_timer:
-            self.eventloop.unschedule(self._sasl_timer)
+            self._sasl_timer.cancel()
+
             self._sasl_timer = None
 
         # We're done here.
@@ -68,7 +69,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
     async def _sasl_end(self):
         """ Finalize SASL authentication. """
         if self._sasl_timer:
-            self.eventloop.unschedule(self._sasl_timer)
+            self._sasl_timer.cancel()
             self._sasl_timer = None
         await self._capability_negotiated('sasl')
 
