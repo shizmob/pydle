@@ -1,6 +1,8 @@
 ## sasl.py
 # SASL authentication support. Currently we only support PLAIN authentication.
 import base64
+from functools import partial
+
 try:
     import puresasl
     import puresasl.client
@@ -44,7 +46,9 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         """ Initiate SASL authentication. """
         # The rest will be handled in on_raw_authenticate()/_sasl_respond().
         await self.rawmsg('AUTHENTICATE', mechanism)
-        self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
+        # create a partial, required for our callback to get the kwarg
+        _sasl_partial = partial(self._sasl_abort, timeout=True)
+        self._sasl_timer = self.eventloop.call_later(self.SASL_TIMEOUT, _sasl_partial)
 
     async def _sasl_abort(self, timeout=False):
         """ Abort SASL authentication. """
@@ -151,7 +155,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         """ Received part of the authentication challenge. """
         # Cancel timeout timer.
         if self._sasl_timer:
-            self.eventloop.unschedule(self._sasl_timer)
+            self._sasl_timer.cancel()
             self._sasl_timer = None
 
         # Add response data.
@@ -164,7 +168,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
             await self._sasl_respond()
         else:
             # Response not done yet. Restart timer.
-            self._sasl_timer = self.eventloop.schedule_async_in(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
+            self._sasl_timer = self.eventloop.call_later(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
 
 
     on_raw_900 = cap.CapabilityNegotiationSupport._ignored # You are now logged in as...
