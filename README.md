@@ -35,7 +35,7 @@ class MyOwnBot(pydle.Client):
     async def on_connect(self):
          await self.join('#bottest')
 
-    async def on_message(self, target, source, message):
+    async def on_message(self,target, by, message):
          await self.message(target, message)
 
 client = MyOwnBot('MyBot', realname='My Bot')
