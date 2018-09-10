@@ -143,7 +143,7 @@ while still retaining the benefits of asynchronous program flow. Coroutines allo
 and then resume execution of the calling function appropriately. That way, blocking operations do not block the entire program flow,
 
 In order for a function to be declared as a coroutine, it has to be decorated using the :func:`pydle.coroutine` decorator.
-It can then call functions that would normally block using Python's ``yield`` operator.
+It can then call functions that would normally block using Python's ``yield from`` operator.
 Since a function that calls a blocking function is itself blocking too, it has to be declared a coroutine as well.
 
 .. hint::
@@ -184,7 +184,7 @@ the act of WHOISing will not block the entire program flow of the client.
           # Check the WHOIS info to see if the source has identified with NickServ.
           # This is a blocking operation, so use yield.
           if source in ADMIN_NICKNAMES:
-              info = yield self.whois(source)
+              info = yield from self.whois(source)
               admin = info['identified']
 
           return admin
@@ -195,7 +195,7 @@ the act of WHOISing will not block the entire program flow of the client.
 
           # Tell a user if they are an administrator for this bot.
           if message.startswith('!adminstatus'):
-              admin = yield self.is_admin(source)
+              admin = yield from self.is_admin(source)
 
               if admin:
                   self.message(target, '{source}: You are an administrator.', source=source)
@@ -206,5 +206,7 @@ Writing your own blocking operation that can work with coroutines is trivial:
 just make your blocking method return a :class:`pydle.Future` instance (without the act of creating and returning the Future itself being blocking),
 and any coroutine yielding it will halt execution until the returned future is resolved, using either
 :meth:`pydle.Future.set_result` or :meth:`pydle.Future.set_exception`, while pydle can still handle everything else.
+
+You can create a :class:`pydle.Future` instance that belongs to the client by calling :meth:`pydle.async.EventLoop.create_future`.
 
 .. _coroutines: https://en.wikipedia.org/wiki/Coroutine

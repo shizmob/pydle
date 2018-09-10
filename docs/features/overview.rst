@@ -134,7 +134,7 @@ Capability Negotiation Support
 
 Support for `capability negotiation` for IRC protocol extensions.
 
-This feature enables support for a generic framework for negotiationg IRC protocol extension support between the client and the
+This feature enables support for a generic framework for negotiating IRC protocol extension support between the client and the
 server. It was quickly found that `ISUPPORT` alone wasn't sufficient, as it only advertises support from the server side instead
 of allowing the server and client to negotiate. This is a generic base feature: enabling it on its own won't do much, instead
 other features like the IRCv3.1 support feature, or the SASL authentication feature will rely on it to work.
@@ -165,10 +165,12 @@ to the `pydle.Client` constructor:
  * ``sasl_username``: The SASL username.
  * ``sasl_password``: The SASL password.
  * ``sasl_identity``: The identity to use. Default, and most common, is ``''``.
+ * ``sasl_mechanism``: The SASL mechanism to force. Default involves auto-selection from server-supported mechanism, or a `PLAIN`` fallback.
 
 These arguments are also set as attributes.
 
-Currently, pydle's SASL support requires on the Python `pure-sasl`_ package and is limited to support for the `PLAIN` mechanism.
+Currently, pydle's SASL support requires on the Python `pure-sasl`_ package and is thus limited to the mechanisms it supports.
+The ``EXTERNAL`` mechanism is also supported without, however.
 
 .. _`SASL`: https://tools.ietf.org/html/rfc4422
 .. _`pure-sasl`: https://github.com/thobbs/pure-sasl

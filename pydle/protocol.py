@@ -1,7 +1,7 @@
 ## protocol.py
 # IRC implementation-agnostic constants/helpers.
 import re
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 
 DEFAULT_ENCODING = 'utf-8'
 FALLBACK_ENCODING = 'iso-8859-1'

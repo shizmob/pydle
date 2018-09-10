@@ -3,20 +3,21 @@ pydle
 Python IRC library.
 -------------------
 
-pydle is a compact, flexible and standards-abiding IRC library for Python 3.
+pydle is a compact, flexible and standards-abiding IRC library for Python 3.4+.
 
 Features
 --------
-* Well-organized: Thanks to the modularized feature system, it's not hard to find what you're looking for in the well-organized source code.
+* Well-organized: Thanks to the modularized feature system, it's not hard to find what you're looking for in the well-organised source code.
 * Standards-abiding: Based on [RFC1459](https://tools.ietf.org/html/rfc1459.html) with some small extension tweaks, with full support of optional extension standards:
   - [TLS](http://tools.ietf.org/html/rfc5246)
   - [CTCP](http://www.irchelp.org/irchelp/rfc/ctcpspec.html)
   - (coming soon) [DCC](http://www.irchelp.org/irchelp/rfc/dccspec.html) and extensions
   - [ISUPPORT/PROTOCTL](http://tools.ietf.org/html/draft-hardy-irc-isupport-00)
-  - [IRCv3.1](http://ircv3.org/) (full)
-  - [IRCv3.2](http://ircv3.org) (base only, in progress)
-* Callback-based: IRC is an asynchronous protocol and so should a library that implements it be. Callbacks are used to process events from the server.
-* Modularised and extensible: Features on top of RFC1459 are implemented as seperate modules for a user to pick and choose, and write their own. Broad features are written to be as extensible as possible.
+  - [IRCv3.1](http://ircv3.net) (full)
+  - [IRCv3.2](http://ircv3.net) (base complete, most optional extensions)
+  - [IRCv3.3](http://ircv3.net) (base in progress)
+* Asynchronous: IRC is an asynchronous protocol and so should be a library that implements it. Coroutines are used to process events from the server asynchronously.
+* Modularised and extensible: Features on top of RFC1459 are implemented as separate modules for a user to pick and choose, and write their own. Broad features are written to be as extensible as possible.
 * Liberally licensed: The 3-clause BSD license ensures you can use it everywhere.
 
 Basic Usage
@@ -31,15 +32,14 @@ import pydle
 
 # Simple echo bot.
 class MyOwnBot(pydle.Client):
-    def on_connect(self):
-         self.join('#bottest')
+    async def on_connect(self):
+         await self.join('#bottest')
 
-    def on_message(self, source, target, message):
-         self.message(target, message)
+    async def on_message(self, target, source, message):
+         await self.message(target, message)
 
 client = MyOwnBot('MyBot', realname='My Bot')
-client.connect('irc.rizon.net', 6697, tls=True, tls_verify=False)
-client.handle_forever()
+client.run('irc.rizon.net', tls=True, tls_verify=False)
 ```
 
 *But wait, I want to handle multiple clients!*
@@ -55,6 +55,17 @@ for i in range(10):
 pool.handle_forever()
 ```
 
+Furthermore, since pydle is simply `asyncio`-based, you can run the client in your own event loop, like this:
+```python
+import asyncio
+
+client = MyOwnBot('MyBot')
+loop = asyncio.get_event_loop()
+asyncio.ensure_future(client.connect('irc.rizon.net', tls=True, tls_verify=False), loop=loop)
+loop.run_forever()
+```
+
+
 Customization
 -------------
 
@@ -69,10 +80,10 @@ To create your own features, just subclass from `pydle.BasicClient` and start ad
 ```python
 # Support custom ACME extension.
 class ACMESupport(pydle.BasicClient):
-    def on_raw_999(self, source, params):
+    async def on_raw_999(self, source, params):
         """ ACME's custom 999 numeric tells us to change our nickname. """
         nickname = params[0]
-        self.set_nickname(nickname)
+        await self.set_nickname(nickname)
 ```
 
 FAQ

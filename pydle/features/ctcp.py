@@ -1,5 +1,6 @@
 ## ctcp.py
 # Client-to-Client-Protocol (CTCP) support.
+from pydle import async
 import pydle.protocol
 from pydle.features import rfc1459
 
@@ -15,6 +16,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
     ## Callbacks.
 
+    @async.coroutine
     def on_ctcp(self, by, target, what, contents):
         """
         Callback called when the user received a CTCP message.
@@ -23,6 +25,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         """
         pass
 
+    @async.coroutine
     def on_ctcp_reply(self, by, target, what, response):
         """
         Callback called when the user received a CTCP response.
@@ -31,6 +34,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         """
         pass
 
+    @async.coroutine
     def on_ctcp_version(self, by, target, contents):
         """ Built-in CTCP version as some networks seem to require it. """
         import pydle
@@ -41,23 +45,26 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
     ## IRC API.
 
+    @async.coroutine
     def ctcp(self, target, query, contents=None):
         """ Send a CTCP request to a target. """
         if self.is_channel(target) and not self.in_channel(target):
             raise client.NotInChannel(target)
 
-        self.message(target, construct_ctcp(query, contents))
+        yield from self.message(target, construct_ctcp(query, contents))
 
+    @async.coroutine
     def ctcp_reply(self, target, query, response):
         """ Send a CTCP reply to a target. """
         if self.is_channel(target) and not self.in_channel(target):
             raise client.NotInChannel(target)
 
-        self.notice(target, construct_ctcp(query, response))
+        yield from self.notice(target, construct_ctcp(query, response))
 
 
     ## Handler overrides.
 
+    @async.coroutine
     def on_raw_privmsg(self, message):
         """ Modify PRIVMSG to redirect CTCP messages. """
         nick, metadata = self._parse_user(message.source)
@@ -70,12 +77,13 @@ class CTCPSupport(rfc1459.RFC1459Support):
             # Find dedicated handler if it exists.
             attr = 'on_ctcp_' + pydle.protocol.identifierify(type)
             if hasattr(self, attr):
-                getattr(self, attr)(nick, target, contents)
+                yield from getattr(self, attr)(nick, target, contents)
             # Invoke global handler.
-            self.on_ctcp(nick, target, type, contents)
+            yield from self.on_ctcp(nick, target, type, contents)
         else:
-            super().on_raw_privmsg(message)
+            yield from super().on_raw_privmsg(message)
 
+    @async.coroutine
     def on_raw_notice(self, message):
         """ Modify NOTICE to redirect CTCP messages. """
         nick, metadata = self._parse_user(message.source)
@@ -88,11 +96,11 @@ class CTCPSupport(rfc1459.RFC1459Support):
             # Find dedicated handler if it exists.
             attr = 'on_ctcp_' + pydle.protocol.identifierify(type) + '_reply'
             if hasattr(self, attr):
-                getattr(self, attr)(user, target, response)
+                yield from getattr(self, attr)(user, target, response)
             # Invoke global handler.
-            self.on_ctcp_reply(user, target, type, response)
+            yield from self.on_ctcp_reply(user, target, type, response)
         else:
-            super().on_raw_notice(message)
+            yield from super().on_raw_notice(message)
 
 
 ## Helpers.

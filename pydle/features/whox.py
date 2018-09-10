@@ -1,5 +1,6 @@
 ## whox.py
 # WHOX support.
+from pydle import async
 from pydle.features import isupport, account
 
 NO_ACCOUNT = '0'
@@ -10,9 +11,10 @@ class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
 
     ## Overrides.
 
+    @async.coroutine
     def on_raw_join(self, message):
         """ Override JOIN to send WHOX. """
-        super().on_raw_join(message)
+        yield from super().on_raw_join(message)
         nick, metadata = self._parse_user(message.source)
         channels = message.params[0].split(',')
 
@@ -20,7 +22,7 @@ class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
             # We joined.
             if 'WHOX' in self._isupport and self._isupport['WHOX']:
                 # Get more relevant channel info thanks to WHOX.
-                self.rawmsg('WHO', ','.join(channels), '%tnurha,{id}'.format(id=WHOX_IDENTIFIER))
+                yield from self.rawmsg('WHO', ','.join(channels), '%tnurha,{id}'.format(id=WHOX_IDENTIFIER))
         else:
             # Find account name of person.
             pass
@@ -30,6 +32,7 @@ class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
         if self.registered and 'WHOX' not in self._isupport:
             self.whois(nickname)
 
+    @async.coroutine
     def on_raw_354(self, message):
         """ WHOX results have arrived. """
         # Is the message for us?

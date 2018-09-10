@@ -1,200 +1,49 @@
 ## async.py
 # Light wrapper around whatever async library pydle uses.
-import os
 import functools
-import itertools
-import collections
-import threading
 import datetime
-import types
-
-import tornado.concurrent
-import tornado.ioloop
+import traceback
+import asyncio
 
 FUTURE_TIMEOUT = 30
 
 
-class Future(tornado.concurrent.TracebackFuture):
+class Future(asyncio.Future):
     """
     A future. An object that represents a result that has yet to be created or returned.
     """
 
-
-def coroutine(func):
-    """ Decorator for coroutine functions that need to block for asynchronous operations. """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        return_future = Future()
-
-        def handle_future(future):
-            # Chained futures!
-            try:
-                if future.exception() is not None:
-                    result = gen.throw(future.exception())
-                else:
-                    result = gen.send(future.result())
-                if isinstance(result, tuple):
-                    result = parallel(*result)
-                result.add_done_callback(handle_future)
-            except StopIteration as e:
-                return_future.set_result(getattr(e, 'value', None))
-            except Exception as e:
-                return_future.set_exception(e)
-
-        try:
-            # Handle initial value.
-            gen = func(*args, **kwargs)
-        except Exception as e:
-            return_future.set_exception(e)
-            return return_future
-        else:
-            # If this isn't a generator, then wrap the result with a future.
-            if not isinstance(gen, types.GeneratorType):
-                return_future.set_result(gen)
-                return return_future
-
-        try:
-            result = next(gen)
-            if isinstance(result, tuple):
-                result = parallel(*result)
-            result.add_done_callback(handle_future)
-        except StopIteration as e:
-            return_future.set_result(getattr(e, 'value', None))
-        except Exception as e:
-            return_future.set_exception(e)
-
-        return return_future
-    return wrapper
+def coroutine(f):
+    return asyncio.coroutine(f)
 
 def parallel(*futures):
-    """ Create a single future that will be completed when all the given futures are. """
-    result_future = Future()
-    results = collections.OrderedDict(zip(futures, itertools.repeat(None)))
-    futures = list(futures)
-
-    if not futures:
-        # If we don't have any futures, then we return an empty tuple.
-        result_future.set_result(())
-        return result_future
-
-    def done(future):
-        futures.remove(future)
-        results[future] = future.result()
-        # All out of futures. set the result.
-        if not futures:
-            result_future.set_result(tuple(results.values()))
-
-    for future in futures:
-        future.add_done_callback(done)
-
-    return result_future
+    return asyncio.gather(*futures)
 
 
 class EventLoop:
     """ A light wrapper around what event loop mechanism pydle uses underneath. """
-    EVENT_MAPPING = {
-        'read': tornado.ioloop.IOLoop.READ,
-        'write': tornado.ioloop.IOLoop.WRITE,
-        'error': tornado.ioloop.IOLoop.ERROR
-    }
 
-    def __init__(self, io_loop=None):
-        self.io_loop = io_loop or tornado.ioloop.IOLoop.current()
-        self.running = False
-        self.run_thread = None
-        self.handlers = {}
+    def __init__(self, loop=None):
+        self.loop = loop or asyncio.get_event_loop()
         self.future_timeout = FUTURE_TIMEOUT
-        self._registered_events = set()
         self._future_timeouts = {}
-        self._timeout_id = 0
-        self._timeout_handles = {}
+        self._tasks = []
 
     def __del__(self):
-        self.io_loop.close()
+        self.loop.close()
 
 
-    def register(self, fd):
-        """ Register a file descriptor with this event loop. """
-        self.handlers[fd] = { key: [] for key in self.EVENT_MAPPING }
+    @property
+    def running(self):
+        return self.loop.is_running()
 
-    def unregister(self, fd):
-        """ Unregister a file descriptor with this event loop. """
-        del self.handlers[fd]
+    def create_future(self):
+        return Future(loop=self.loop)
 
-
-    def on_read(self, fd, callback):
-        """
-        Add a callback for when the given file descriptor is available for reading.
-        Callback will be called with file descriptor as sole argument.
-        """
-        self.handlers[fd]['read'].append(callback)
-        self._update_events(fd)
-
-    def on_write(self, fd, callback):
-        """
-        Add a callback for when the given file descriptor is available for writing.
-        Callback will be called with file descriptor as sole argument.
-        """
-        self.handlers[fd]['write'].append(callback)
-        self._update_events(fd)
-
-    def on_error(self, fd, callback):
-        """
-        Add a callback for when an error has occurred on the given file descriptor.
-        Callback will be called with file descriptor as sole argument.
-        """
-        self.handlers[fd]['error'].append(callback)
-        self._update_events(fd)
-
-    def off_read(self, fd, callback):
-        """ Remove read callback for given file descriptor. """
-        self.handlers[fd]['read'].remove(callback)
-        self._update_events(fd)
-
-    def off_write(self, fd, callback):
-        """ Remove write callback for given file descriptor. """
-        self.handlers[fd]['write'].remove(callback)
-        self._update_events(fd)
-
-    def off_error(self, fd, callback):
-        """ Remove error callback for given file descriptor. """
-        self.handlers[fd]['error'].remove(callback)
-        self._update_events(fd)
-
-    def handles_read(self, fd, callback):
-        """ Return whether or the given read callback is active for the given file descriptor. """
-        return callback in self.handlers[fd]['read']
-
-    def handles_write(self, fd, callback):
-        """ Return whether or the given write callback is active for the given file descriptor. """
-        return callback in self.handlers[fd]['write']
-
-    def handles_error(self, fd, callback):
-        """ Return whether or the given error callback is active for the given file descriptor. """
-        return callback in self.handlers[fd]['error']
-
-
-    def _update_events(self, fd):
-        if fd in self._registered_events:
-            self.io_loop.remove_handler(fd)
-
-        events = 0
-        for event, ident in self.EVENT_MAPPING.items():
-            if self.handlers[fd][event]:
-                events |= ident
-
-        self.io_loop.add_handler(fd, self._do_on_event, events)
-        self._registered_events.add(fd)
-
-    def _do_on_event(self, fd, events):
-        if fd not in self.handlers:
-            return
-
-        for event, ident in self.EVENT_MAPPING.items():
-            if events & ident:
-                for handler in self.handlers[fd][event]:
-                    handler(fd)
-
+    @asyncio.coroutine
+    def connect(self, dest, tls=None, **kwargs):
+        (host, port) = dest
+        return (yield from asyncio.open_connection(host=host, port=port, ssl=tls, **kwargs))
 
     def on_future(self, _future, _callback, *_args, **_kwargs):
         """ Add a callback for when the given future has been resolved. """
@@ -202,7 +51,7 @@ class EventLoop:
 
         # Create timeout handler and regular handler.
         self._future_timeouts[_future] = self.schedule_in(self.future_timeout, callback)
-        self.io_loop.add_future(_future, callback)
+        future.add_done_callback(callback)
 
     def _do_on_future(self, callback, args, kwargs, future):
         # This was a time-out.
@@ -220,36 +69,68 @@ class EventLoop:
         callback(*args, **kwargs)
 
 
-    def _get_schedule_handle(self):
-        """ Get a unique handle for use in the schedule_* functions. """
-        # Just use a simple monotonically increasing number.
-        handle = self._timeout_id
-        self._timeout_id += 1
-
-        return handle
-
     def schedule(self, _callback, *_args, **_kwargs):
-        """ Schedule a callback to be ran as soon as possible in this loop. """
-        self.io_loop.add_callback(_callback, *_args, **_kwargs)
+        """
+        Schedule a callback to be ran as soon as possible in this loop.
+        Will return an opaque handle that can be passed to `unschedule` to unschedule the function.
+        """
+        @coroutine
+        @functools.wraps(_callback)
+        def inner():
+            _callback(*_args, **_kwargs)
+
+        return self.schedule_async(inner())
+
+    def schedule_async(self, _callback):
+        """
+        Schedule a coroutine to be ran as soon as possible in this loop.
+        Will return an opaque handle that can be passed to `unschedule` to unschedule the function.
+        """
+        @coroutine
+        @functools.wraps(_callback)
+        def inner():
+            try:
+                return (yield from _callback)
+            except (GeneratorExit, asyncio.CancelledError):
+                raise
+            except:
+                traceback.print_exc()
+
+        task = asyncio.ensure_future(inner())
+        self._tasks.append(task)
+        return task
 
     def schedule_in(self, _when, _callback, *_args, **_kwargs):
         """
         Schedule a callback to be ran as soon as possible after `when` seconds have passed.
         Will return an opaque handle that can be passed to `unschedule` to unschedule the function.
         """
-        if not isinstance(_when, datetime.timedelta):
-            _when = datetime.timedelta(seconds=_when)
+        if isinstance(_when, datetime.timedelta):
+            _when = _when.total_seconds()
 
-        # Create ID for this timeout.
-        id = self._get_schedule_handle()
+        @coroutine
+        @functools.wraps(_callback)
+        def inner():
+            yield from asyncio.sleep(_when)
+            _callback(*_args, **_kwargs)
 
-        if self.run_thread != threading.current_thread().ident:
-            # Schedule scheduling in IOLoop thread because of thread-safety.
-            self.schedule(functools.partial(self._do_schedule_in, id, _when, _callback, _args, _kwargs))
-        else:
-            self._do_schedule_in(id, _when, _callback, _args, _kwargs)
+        return self.schedule_async(inner())
 
-        return id
+    def schedule_async_in(self, _when, _callback):
+        """
+        Schedule a coroutine to be ran as soon as possible after `when` seconds have passed.
+        Will return an opaque handle that can be passed to `unschedule` to unschedule the function.
+        """
+        if isinstance(_when, datetime.timedelta):
+            _when = _when.total_seconds()
+
+        @coroutine
+        @functools.wraps(_callback)
+        def inner():
+            yield from asyncio.sleep(_when)
+            yield from _callback
+
+        return self.schedule_async(inner())
 
     def schedule_periodically(self, _interval, _callback, *_args, **_kwargs):
         """
@@ -257,75 +138,78 @@ class EventLoop:
         Will return an opaque handle that can be passed to unschedule() to unschedule the interval function.
         A function will also stop being scheduled if it returns False or raises an Exception.
         """
-        if not isinstance(_interval, datetime.timedelta):
-            _interval = datetime.timedelta(seconds=_interval)
+        if isinstance(_interval, datetime.timedelta):
+            _interval = _interval.total_seconds()
 
-        # Create ID for this periodic.
-        id = self._get_schedule_handle()
+        @coroutine
+        @functools.wraps(_callback)
+        def inner():
+            while True:
+                yield from asyncio.sleep(_when)
+                ret = _callback(*_args, **_kwargs)
+                if ret is False:
+                    break
 
-        if self.run_thread != threading.current_thread().ident:
-            # Schedule scheduling in IOLoop thread because of thread-safety.
-            self.schedule(functools.partial(self._do_schedule_periodically, id, _interval, _callback, _args, _kwargs))
-        else:
-            self._do_schedule_periodically(id, _interval, _callback, _args, _kwargs)
+        return self.schedule_async(inner())
 
-        return id
+    def schedule_async_periodically(self, _interval, _callback, *_args, **_kwargs):
+        """
+        Schedule a coroutine to be ran every `interval` seconds.
+        Will return an opaque handle that can be passed to unschedule() to unschedule the interval function.
+        A function will also stop being scheduled if it returns False or raises an Exception.
+        """
+        if isinstance(_when, datetime.timedelta):
+            _when = _when.total_seconds()
 
-    def _do_schedule_in(self, id, when, callback, args, kwargs):
-        self._timeout_handles[id] = self.io_loop.add_timeout(when, functools.partial(callback, *args, **kwargs))
+        @coroutine
+        @functools.wraps(_callback)
+        def inner():
+            while True:
+                yield from asyncio.sleep(_when)
+                ret = yield from _callback(*_args, **_kwargs)
+                if ret is False:
+                    break
 
-    def _do_schedule_periodically(self, id, interval, callback, args, kwargs):
-        # Use a wrapper function.
-        self._timeout_handles[id] = self.io_loop.add_timeout(interval, functools.partial(self._periodic_handler, id, interval, callback, args, kwargs))
-
-    def _periodic_handler(self, id, interval, callback, args, kwargs):
-        # We could've been unscheduled for some reason.
-        if not self.is_scheduled(id):
-            return
-
-        # Call callback, and schedule again if it doesn't return False.
-        self._do_schedule_periodically(id, interval, callback, args, kwargs)
-        result = False
-
-        try:
-            result = callback(*args, **kwargs)
-        finally:
-            if result == False:
-                self.unschedule(id)
+        return self.schedule_async(inner())
 
     def is_scheduled(self, handle):
         """ Return whether or not the given handle is still scheduled. """
-        return handle in self._timeout_handles
+        return not handle.cancelled()
 
     def unschedule(self, handle):
         """ Unschedule a given timeout or periodical callback. """
         if self.is_scheduled(handle):
-            handle = self._timeout_handles.pop(handle)
-            self.io_loop.remove_timeout(handle)
+            self.schedule(handle.cancel)
+
+    def _unschedule_all(self):
+        for task in self._tasks:
+            task.cancel()
 
 
     def run(self):
         """ Run the event loop. """
         if not self.running:
-            self.running = True
-            self.run_thread = threading.current_thread().ident
-            self.io_loop.start()
-            self.run_thread = None
-            self.running = False
+            self.loop.run_forever()
 
     def run_with(self, func):
         """ Run loop, call function, stop loop. If function returns a future, run until the future has been resolved. """
-        self.running = True
-        self.run_thread = threading.current_thread().ident
-        self.io_loop.run_sync(func)
-        self.run_thread = None
-        self.running = False
+        @coroutine
+        @functools.wraps(func)
+        def inner():
+            yield from func
+            self._unschedule_all()
+        self.loop.run_until_complete(asyncio.ensure_future(inner()))
 
     def run_until(self, future):
         """ Run until future is resolved. """
-        return self.run_with(lambda: future)
+        @coroutine
+        def inner():
+            yield from future
+            self._unschedule_all()
+        self.loop.run_until_complete(asyncio.ensure_future(inner()))
 
     def stop(self):
         """ Stop the event loop. """
         if self.running:
-            self.io_loop.stop()
+            self._unschedule_all()
+            self.loop.stop()

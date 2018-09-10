@@ -28,7 +28,7 @@ Features
   No half-assing functionality.
 - **Asynchronous**
 
-  IRC is an asychronous protocol; it only makes sense a clients that implements it is asynchronous as well. Built on top of the wonderful Tornado_ library, pydle relies on proven technologies to deliver proper high-performance asynchronous functionality and primitives.
+  IRC is an asychronous protocol; it only makes sense a clients that implements it is asynchronous as well. Built on top of the wonderful asyncio_ library, pydle relies on proven technologies to deliver proper high-performance asynchronous functionality and primitives.
   pydle allows using Futures to make asynchronous programming just as intuitive as doing regular blocking operations.
 
   No callback spaghetti.
@@ -45,7 +45,7 @@ Features
 .. _WHOX: https://hg.quakenet.org/snircd/file/tip/doc/readme.who
 .. _IRCv3.1: http://ircv3.org/
 .. _IRCv3.2: http://ircv3.org/
-.. _Tornado: http://tornadoweb.org
+.. _asyncio: https://docs.python.org/3/library/asyncio.html
 
 Contents
 --------

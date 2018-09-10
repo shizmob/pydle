@@ -92,4 +92,3 @@ class TaggedMessageSupport(rfc1459.RFC1459Support):
         self._receive_buffer = data
 
         return TaggedMessage.parse(message + sep, encoding=self.encoding)
-

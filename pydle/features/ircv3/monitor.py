@@ -1,5 +1,6 @@
 ## monitor.py
 # Online status monitoring support.
+from pydle import async
 from . import cap
 
 
@@ -39,7 +40,7 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
     def monitor(self, target):
         """ Start monitoring the online status of a user. Returns whether or not the server supports monitoring. """
         if 'monitor-notify' in self._capabilities and not self.is_monitoring(target):
-            self.rawmsg('MONITOR', '+', target)
+            yield from self.rawmsg('MONITOR', '+', target)
             self._monitoring.add(target)
             return True
         else:
@@ -48,7 +49,7 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
     def unmonitor(self, target):
         """ Stop monitoring the online status of a user. Returns whether or not the server supports monitoring. """
         if 'monitor-notify' in self._capabilities and self.is_monitoring(target):
-            self.rawmsg('MONITOR', '-', target)
+            yield from self.rawmsg('MONITOR', '-', target)
             self._monitoring.remove(target)
             return True
         else:
@@ -61,10 +62,12 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
 
     ## Callbacks.
 
+    @async.coroutine
     def on_user_online(self, nickname):
         """ Callback called when a monitored user appears online. """
         pass
 
+    @async.coroutine
     def on_user_offline(self, nickname):
         """ Callback called when a monitored users goes offline. """
         pass
@@ -72,27 +75,32 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
 
     ## Message handlers.
 
+    @async.coroutine
     def on_capability_monitor_notify_available(self, value):
         return True
 
+    @async.coroutine
     def on_raw_730(self, message):
         """ Someone we are monitoring just came online. """
         for nick in message.params[1].split(','):
             self._create_user(nick)
-            self.eventloop.schedule(self.on_user_online, nickname)
+            yield from self.on_user_online(nickname)
 
+    @async.coroutine
     def on_raw_731(self, message):
         """ Someone we are monitoring got offline. """
         for nick in message.params[1].split(','):
             self._destroy_user(nick, monitor_override=True)
-            self.eventloop.schedule(self.on_user_offline, nickname)
+            yield from self.on_user_offline(nickname)
 
+    @async.coroutine
     def on_raw_732(self, message):
         """ List of users we're monitoring. """
         self._monitoring.update(message.params[1].split(','))
 
     on_raw_733 = cap.CapabilityNegotiationSupport._ignored  # End of MONITOR list.
 
+    @async.coroutine
     def on_raw_734(self, message):
         """ Monitor list is full, can't add target. """
         # Remove from monitoring list, not much else we can do.

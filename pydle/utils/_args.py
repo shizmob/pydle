@@ -1,6 +1,7 @@
 ## _args.py
 # Common argument parsing code.
 import argparse
+import functools
 import logging
 import pydle
 
@@ -33,6 +34,7 @@ def client_from_args(name, description, default_nick='Bot', cls=pydle.Client):
     auth.add_argument('--sasl-identity', help='Identity to use for SASL authentication. (default: <empty>)', default='', metavar='SASLIDENT')
     auth.add_argument('--sasl-username', help='Username to use for SASL authentication.', metavar='SASLUSER')
     auth.add_argument('--sasl-password', help='Password to use for SASL authentication.', metavar='SASLPASS')
+    auth.add_argument('--sasl-mechanism', help='Mechanism to use for SASL authentication.', metavar='SASLMECH')
     auth.add_argument('--tls-client-cert', help='TLS client certificate to use.', metavar='CERT')
     auth.add_argument('--tls-client-cert-keyfile', help='Keyfile to use for TLS client cert.', metavar='KEYFILE')
 
@@ -56,10 +58,12 @@ def client_from_args(name, description, default_nick='Bot', cls=pydle.Client):
 
     # Setup client and connect.
     client = cls(nickname=nick, fallback_nicknames=fallback, username=args.username, realname=args.realname,
-        sasl_identity=args.sasl_identity, sasl_username=args.sasl_username, sasl_password=args.sasl_password,
+        sasl_identity=args.sasl_identity, sasl_username=args.sasl_username, sasl_password=args.sasl_password, sasl_mechanism=args.sasl_mechanism,
         tls_client_cert=args.tls_client_cert, tls_client_cert_key=args.tls_client_cert_keyfile)
 
-    client.connect(hostname=args.server, port=args.port, password=args.password, encoding=args.encoding,
-        channels=args.channels, tls=args.tls, tls_verify=args.verify_tls)
+    connect = functools.partial(client.connect,
+        hostname=args.server, port=args.port, password=args.password, encoding=args.encoding,
+        channels=args.channels, tls=args.tls, tls_verify=args.verify_tls
+    )
 
-    return client
+    return client, connect
