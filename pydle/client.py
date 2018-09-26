@@ -1,7 +1,7 @@
 ## client.py
 # Basic IRC client implementation.
 import logging
-from asyncio import ensure_future, new_event_loop, BaseEventLoop, gather, TimerHandle
+from asyncio import ensure_future, new_event_loop, BaseEventLoop, gather, TimerHandle, get_event_loop
 from typing import Set
 
 from . import connection
@@ -48,7 +48,7 @@ class BasicClient:
         if eventloop:
             self.eventloop = eventloop
         else:
-            self.eventloop: BaseEventLoop = new_event_loop()
+            self.eventloop: BaseEventLoop = get_event_loop()
 
         self.own_eventloop = not eventloop
         self._reset_connection_attributes()
@@ -441,7 +441,7 @@ class ClientPool:
     """ A pool of clients that are ran and handled in parallel. """
 
     def __init__(self, clients=None, eventloop=None):
-        self.eventloop = eventloop or new_event_loop()
+        self.eventloop = eventloop if eventloop else new_event_loop()
         self.clients: Set[BasicClient] = set(clients or [])
         self.connect_args = {}
 
