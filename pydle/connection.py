@@ -66,36 +66,20 @@ class Connection:
 
         # Set TLS verification options.
         if self.tls_verify:
-            # Set our custom verification callback, if the library supports it.
-            tls_context.set_servername_callback(self.verify_tls)
-
             # Load certificate verification paths.
             tls_context.set_default_verify_paths()
             if sys.platform in DEFAULT_CA_PATHS and path.isdir(DEFAULT_CA_PATHS[sys.platform]):
                 tls_context.load_verify_locations(capath=DEFAULT_CA_PATHS[sys.platform])
 
             # If we want to verify the TLS connection, we first need a certicate.
-            # Check this certificate and its entire chain, if possible, against revocation lists.
             tls_context.verify_mode = ssl.CERT_REQUIRED
-            tls_context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
+
+            # And have python call match_hostname in do_handshake
+            tls_context.check_hostname = True
+
+            # We don't check for revocation, because that's impractical still (https://www.imperialviolet.org/2012/02/05/crlsets.html)
 
         return tls_context
-
-    def verify_tls(self, socket, hostname, context):
-        """
-        Verify a TLS connection. Return behaviour is dependent on the as_callback parameter:
-            - If True, a return value of None means verification succeeded, else it failed.
-            - If False, a return value of True means verification succeeded, an exception or False means it failed.
-        """
-        cert = socket.getpeercert()
-
-        try:
-            # Make sure the hostnames for which this certificate is valid include the one we're connecting to.
-            ssl.match_hostname(cert, hostname)
-        except ssl.CertificateError:
-            return ssl.ALERT_DESCRIPTION_BAD_CERTIFICATE
-
-        return None
 
     @async.coroutine
     def disconnect(self):
