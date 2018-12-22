@@ -4,6 +4,9 @@ from .client import Error, NotInChannel, AlreadyInChannel, BasicClient, ClientPo
 from .features.ircv3.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as CAPABILITY_FAILED, \
     NEGOTIATED as CAPABILITY_NEGOTIATED
 
+# noinspection PyUnresolvedReferences
+from asyncio import coroutine, Future
+
 __name__ = 'pydle'
 __version__ = '0.8.2'
 __version_info__ = (0, 8, 2)
