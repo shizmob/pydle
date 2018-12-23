@@ -1,11 +1,10 @@
 ## rfc1459.py
 # Basic RFC1459 stuff.
-import datetime
-import itertools
 import copy
+import datetime
 import ipaddress
+import itertools
 
-from pydle import async
 from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
 from . import parsing
 from . import protocol
@@ -98,7 +97,7 @@ class RFC1459Support(BasicClient):
 
     def _destroy_user(self, user, channel=None):
         if channel:
-            channels = [ self.channels[channel] ]
+            channels = [self.channels[channel]]
         else:
             channels = self.channels.values()
 
@@ -185,19 +184,18 @@ class RFC1459Support(BasicClient):
 
     ## Connection.
 
-    @async.coroutine
-    def connect(self, hostname=None, port=None, password=None, **kwargs):
+    async def connect(self, hostname=None, port=None, password=None, **kwargs):
         port = port or protocol.DEFAULT_PORT
 
         # Connect...
-        yield from super().connect(hostname, port, **kwargs)
+        await super().connect(hostname, port, **kwargs)
         # Set password.
         self.password = password
         # And initiate the IRC connection.
-        yield from self._register()
+        await self._register()
 
-    @async.coroutine
-    def _register(self):
+
+    async def _register(self):
         """ Perform IRC connection registration. """
         if self.registered:
             return
@@ -209,15 +207,14 @@ class RFC1459Support(BasicClient):
 
         # Password first.
         if self.password:
-            yield from self.rawmsg('PASS', self.password)
+            await self.rawmsg('PASS', self.password)
 
         # Then nickname...
-        yield from self.set_nickname(self._attempt_nicknames.pop(0))
+        await self.set_nickname(self._attempt_nicknames.pop(0))
         # And now for the rest of the user information.
-        yield from self.rawmsg('USER', self.username, '0', '*', self.realname)
+        await self.rawmsg('USER', self.username, '0', '*', self.realname)
 
-    @async.coroutine
-    def _registration_completed(self, message):
+    async def _registration_completed(self, message):
         """ We're connected and registered. Receive proper nickname and emit fake NICK message. """
         if not self.registered:
             # Re-enable throttling.
@@ -226,8 +223,7 @@ class RFC1459Support(BasicClient):
 
             target = message.params[0]
             fakemsg = self._create_message('NICK', target, source=self.nickname)
-            yield from self.on_raw_nick(fakemsg)
-
+            await self.on_raw_nick(fakemsg)
 
     ## Message handling.
 
@@ -245,53 +241,48 @@ class RFC1459Support(BasicClient):
         self._receive_buffer = data
         return parsing.RFC1459Message.parse(message + sep, encoding=self.encoding)
 
-
     ## IRC API.
 
-    @async.coroutine
-    def set_nickname(self, nickname):
+    async def set_nickname(self, nickname):
         """
         Set nickname to given nickname.
         Users should only rely on the nickname actually being changed when receiving an on_nick_change callback.
         """
-        yield from self.rawmsg('NICK', nickname)
+        await self.rawmsg('NICK', nickname)
 
-    @async.coroutine
-    def join(self, channel, password=None):
+    async def join(self, channel, password=None):
         """ Join channel, optionally with password. """
         if self.in_channel(channel):
             raise AlreadyInChannel(channel)
 
         if password:
-            yield from self.rawmsg('JOIN', channel, password)
+            await self.rawmsg('JOIN', channel, password)
         else:
-            yield from self.rawmsg('JOIN', channel)
+            await self.rawmsg('JOIN', channel)
 
-    @async.coroutine
-    def part(self, channel, message=None):
+    async def part(self, channel, message=None):
         """ Leave channel, optionally with message. """
         if not self.in_channel(channel):
             raise NotInChannel(channel)
 
         # Message seems to be an extension to the spec.
         if message:
-            yield from self.rawmsg('PART', channel, message)
+            await self.rawmsg('PART', channel, message)
         else:
-            yield from self.rawmsg('PART', channel)
+            await self.rawmsg('PART', channel)
 
-    @async.coroutine
-    def kick(self, channel, target, reason=None):
+
+    async def kick(self, channel, target, reason=None):
         """ Kick user from channel. """
         if not self.in_channel(channel):
             raise NotInChannel(channel)
 
         if reason:
-            yield from self.rawmsg('KICK', channel, target, reason)
+           await self.rawmsg('KICK', channel, target, reason)
         else:
-            yield from self.rawmsg('KICK', channel, target)
+            await self.rawmsg('KICK', channel, target)
 
-    @async.coroutine
-    def ban(self, channel, target, range=0):
+    async def ban(self, channel, target, range=0):
         """
         Ban user from channel. Target can be either a user or a host.
         This command will not kick: use kickban() for that.
@@ -305,10 +296,9 @@ class RFC1459Support(BasicClient):
 
         host = self._format_host_range(host, range)
         mask = self._format_host_mask('*', '*', host)
-        yield from self.rawmsg('MODE', channel, '+b', mask)
+        await self.rawmsg('MODE', channel, '+b', mask)
 
-    @async.coroutine
-    def unban(self, channel, target, range=0):
+    async def unban(self, channel, target, range=0):
         """
         Unban user from channel. Target can be either a user or a host.
         See ban documentation for the range parameter.
@@ -320,60 +310,56 @@ class RFC1459Support(BasicClient):
 
         host = self._format_host_range(host, range)
         mask = self._format_host_mask('*', '*', host)
-        yield from self.rawmsg('MODE', channel, '-b', mask)
+        await self.rawmsg('MODE', channel, '-b', mask)
 
-    @async.coroutine
-    def kickban(self, channel, target, reason=None, range=0):
+    async def kickban(self, channel, target, reason=None, range=0):
         """
         Kick and ban user from channel.
         """
-        yield from self.ban(channel, target, range)
-        yield from self.kick(channel, target, reason)
+        await self.ban(channel, target, range)
+        await self.kick(channel, target, reason)
 
-    @async.coroutine
-    def quit(self, message=None):
+    async def quit(self, message=None):
         """ Quit network. """
         if message is None:
             message = self.DEFAULT_QUIT_MESSAGE
 
-        yield from self.rawmsg('QUIT', message)
+        await self.rawmsg('QUIT', message)
         self.disconnect(expected=True)
 
-    @async.coroutine
-    def cycle(self, channel):
+    async def cycle(self, channel):
         """ Rejoin channel. """
         if not self.in_channel(channel):
             raise NotInChannel(channel)
 
         password = self.channels[channel]['password']
-        yield from self.part(channel)
-        yield from self.join(channel, password)
+        await self.part(channel)
+        await self.join(channel, password)
 
-    @async.coroutine
-    def message(self, target, message):
+    async def message(self, target, message):
         """ Message channel or user. """
         hostmask = self._format_user_mask(self.nickname)
         # Leeway.
-        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=target)) - 25
+        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len(
+            '{hostmask} PRIVMSG {target} :'.format(hostmask=hostmask, target=target)) - 25
 
         for line in message.replace('\r', '').split('\n'):
             for chunk in chunkify(line, chunklen):
                 # Some IRC servers respond with "412 Bot :No text to send" on empty messages.
-                yield from self.rawmsg('PRIVMSG', target, chunk or ' ')
+                await self.rawmsg('PRIVMSG', target, chunk or ' ')
 
-    @async.coroutine
-    def notice(self, target, message):
+    async def notice(self, target, message):
         """ Notice channel or user. """
         hostmask = self._format_user_mask(self.nickname)
         # Leeway.
-        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len('{hostmask} NOTICE {target} :'.format(hostmask=hostmask, target=target)) - 25
+        chunklen = protocol.MESSAGE_LENGTH_LIMIT - len(
+            '{hostmask} NOTICE {target} :'.format(hostmask=hostmask, target=target)) - 25
 
         for line in message.replace('\r', '').split('\n'):
             for chunk in chunkify(line, chunklen):
-                yield from self.rawmsg('NOTICE', target, chunk)
+                await self.rawmsg('NOTICE', target, chunk)
 
-    @async.coroutine
-    def set_mode(self, target, *modes):
+    async def set_mode(self, target, *modes):
         """
         Set mode on target.
         Users should only rely on the mode actually being changed when receiving an on_{channel,user}_mode_change callback.
@@ -381,10 +367,9 @@ class RFC1459Support(BasicClient):
         if self.is_channel(target) and not self.in_channel(target):
             raise NotInChannel(target)
 
-        yield from self.rawmsg('MODE', target, *modes)
+        await self.rawmsg('MODE', target, *modes)
 
-    @async.coroutine
-    def set_topic(self, channel, topic):
+    async def set_topic(self, channel, topic):
         """
         Set topic on channel.
         Users should only rely on the topic actually being changed when receiving an on_topic_change callback.
@@ -394,25 +379,22 @@ class RFC1459Support(BasicClient):
         elif not self.in_channel(channel):
             raise NotInChannel(channel)
 
-        yield from self.rawmsg('TOPIC', channel, topic)
+        await self.rawmsg('TOPIC', channel, topic)
 
-    @async.coroutine
-    def away(self, message):
+    async def away(self, message):
         """ Mark self as away. """
-        yield from self.rawmsg('AWAY', message)
+        await self.rawmsg('AWAY', message)
 
-    @async.coroutine
-    def back(self):
+    async def back(self):
         """ Mark self as not away. """
-        yield from self.rawmsg('AWAY')
+        await self.rawmsg('AWAY')
 
-    @async.coroutine
-    def whois(self, nickname):
+    async def whois(self, nickname):
         """
         Return information about user.
         This is an blocking asynchronous method: it has to be called from a coroutine, as follows:
 
-            info = yield from self.whois('Nick')
+            info = await self.whois('Nick')
         """
         # Some IRCDs are wonky and send strange responses for spaces in nicknames.
         # We just check if there's a space in the nickname -- if there is,
@@ -423,7 +405,7 @@ class RFC1459Support(BasicClient):
             return result
 
         if nickname not in self._pending['whois']:
-            yield from self.rawmsg('WHOIS', nickname)
+            await self.rawmsg('WHOIS', nickname)
             self._whois_info[nickname] = {
                 'oper': False,
                 'idle': 0,
@@ -434,15 +416,14 @@ class RFC1459Support(BasicClient):
             # Create a future for when the WHOIS requests succeeds.
             self._pending['whois'][nickname] = self.eventloop.create_future()
 
-        return (yield from self._pending['whois'][nickname])
+        return await self._pending['whois'][nickname]
 
-    @async.coroutine
-    def whowas(self, nickname):
+    async def whowas(self, nickname):
         """
         Return information about offline user.
         This is an blocking asynchronous method: it has to be called from a coroutine, as follows:
 
-            info = yield from self.whowas('Nick')
+            info = await self.whowas('Nick')
         """
         # Same treatment as nicknames in whois.
         if protocol.ARGUMENT_SEPARATOR.search(nickname) is not None:
@@ -451,14 +432,13 @@ class RFC1459Support(BasicClient):
             return result
 
         if nickname not in self._pending['whowas']:
-            yield from self.rawmsg('WHOWAS', nickname)
+            await self.rawmsg('WHOWAS', nickname)
             self._whowas_info[nickname] = {}
 
             # Create a future for when the WHOWAS requests succeeds.
             self._pending['whowas'][nickname] = self.eventloop.create_future()
 
-        return (yield from self._pending['whowas'][nickname])
-
+        return (await self._pending['whowas'][nickname])
 
     ## IRC helpers.
 
@@ -476,111 +456,89 @@ class RFC1459Support(BasicClient):
         """ Check if given nicknames are equal in the server's case mapping. """
         return self.normalize(left) == self.normalize(right)
 
-
     ## Overloadable callbacks.
 
-    @async.coroutine
-    def on_connect(self):
+    async def on_connect(self):
         # Auto-join channels.
         for channel in self._autojoin_channels:
-            yield from self.join(channel)
+            await self.join(channel)
 
-    @async.coroutine
-    def on_invite(self, channel, by):
+    async def on_invite(self, channel, by):
         """ Callback called when the client was invited into a channel by someone. """
         pass
 
-    @async.coroutine
-    def on_user_invite(self, target, channel, by):
+    async def on_user_invite(self, target, channel, by):
         """ Callback called when another user was invited into a channel by someone. """
         pass
 
-    @async.coroutine
-    def on_join(self, channel, user):
+    async def on_join(self, channel, user):
         """ Callback called when a user, possibly the client, has joined the channel. """
         pass
 
-    @async.coroutine
-    def on_kill(self, target, by, reason):
+    async def on_kill(self, target, by, reason):
         """ Callback called when a user, possibly the client, was killed from the server. """
         pass
 
-    @async.coroutine
-    def on_kick(self, channel, target, by, reason=None):
+    async def on_kick(self, channel, target, by, reason=None):
         """ Callback called when a user, possibly the client, was kicked from a channel. """
         pass
 
-    @async.coroutine
-    def on_mode_change(self, channel, modes, by):
+    async def on_mode_change(self, channel, modes, by):
         """ Callback called when the mode on a channel was changed. """
         pass
 
-    @async.coroutine
-    def on_user_mode_change(self, modes):
+    async def on_user_mode_change(self, modes):
         """ Callback called when a user mode change occurred for the client. """
         pass
 
-    @async.coroutine
-    def on_message(self, target, by, message):
+    async def on_message(self, target, by, message):
         """ Callback called when the client received a message. """
         pass
 
-    @async.coroutine
-    def on_channel_message(self, target, by, message):
+    async def on_channel_message(self, target, by, message):
         """ Callback received when the client received a message in a channel. """
         pass
 
-    @async.coroutine
-    def on_private_message(self, target, by, message):
+    async def on_private_message(self, target, by, message):
         """ Callback called when the client received a message in private. """
         pass
 
-    @async.coroutine
-    def on_nick_change(self, old, new):
+    async def on_nick_change(self, old, new):
         """ Callback called when a user, possibly the client, changed their nickname. """
         pass
 
-    @async.coroutine
-    def on_notice(self, target, by, message):
+    async def on_notice(self, target, by, message):
         """ Callback called when the client received a notice. """
         pass
 
-    @async.coroutine
-    def on_channel_notice(self, target, by, message):
+    async def on_channel_notice(self, target, by, message):
         """ Callback called when the client received a notice in a channel. """
         pass
 
-    @async.coroutine
-    def on_private_notice(self, target, by, message):
+    async def on_private_notice(self, target, by, message):
         """ Callback called when the client received a notice in private. """
         pass
 
-    @async.coroutine
-    def on_part(self, channel, user, message=None):
+    async def on_part(self, channel, user, message=None):
         """ Callback called when a user, possibly the client, left a channel. """
         pass
 
-    @async.coroutine
-    def on_topic_change(self, channel, message, by):
+    async def on_topic_change(self, channel, message, by):
         """ Callback called when the topic for a channel was changed. """
         pass
 
-    @async.coroutine
-    def on_quit(self, user, message=None):
+    async def on_quit(self, user, message=None):
         """ Callback called when a user, possibly the client, left the network. """
         pass
 
-
     ## Callback handlers.
 
-    @async.coroutine
-    def on_raw_error(self, message):
+    async def on_raw_error(self, message):
         """ Server encountered an error and will now close the connection. """
         error = protocol.ServerError(' '.join(message.params))
-        yield from self.on_data_error(error)
+        await self.on_data_error(error)
 
-    @async.coroutine
-    def on_raw_invite(self, message):
+    async def on_raw_invite(self, message):
         """ INVITE command. """
         nick, metadata = self._parse_user(message.source)
         self._sync_user(nick, metadata)
@@ -589,12 +547,11 @@ class RFC1459Support(BasicClient):
         target, metadata = self._parse_user(target)
 
         if self.is_same_nick(self.nickname, target):
-            yield from self.on_invite(channel, nick)
+            await self.on_invite(channel, nick)
         else:
-            yield from self.on_user_invite(target, channel, nick)
+            await self.on_user_invite(target, channel, nick)
 
-    @async.coroutine
-    def on_raw_join(self, message):
+    async def on_raw_join(self, message):
         """ JOIN command. """
         nick, metadata = self._parse_user(message.source)
         self._sync_user(nick, metadata)
@@ -607,7 +564,7 @@ class RFC1459Support(BasicClient):
                     self._create_channel(channel)
 
                 # Request channel mode from IRCd.
-                yield from self.rawmsg('MODE', channel)
+                await self.rawmsg('MODE', channel)
         else:
             # Add user to channel user list.
             for channel in channels:
@@ -615,10 +572,9 @@ class RFC1459Support(BasicClient):
                     self.channels[channel]['users'].add(nick)
 
         for channel in channels:
-            yield from self.on_join(channel, nick)
+            await self.on_join(channel, nick)
 
-    @async.coroutine
-    def on_raw_kick(self, message):
+    async def on_raw_kick(self, message):
         """ KICK command. """
         kicker, kickermeta = self._parse_user(message.source)
         self._sync_user(kicker, kickermeta)
@@ -643,10 +599,9 @@ class RFC1459Support(BasicClient):
                 if self.in_channel(channel):
                     self._destroy_user(target, channel)
 
-            yield from self.on_kick(channel, target, kicker, reason)
+            await self.on_kick(channel, target, kicker, reason)
 
-    @async.coroutine
-    def on_raw_kill(self, message):
+    async def on_raw_kill(self, message):
         """ KILL command. """
         by, bymeta = self._parse_user(message.source)
         target, targetmeta = self._parse_user(message.params[0])
@@ -656,14 +611,13 @@ class RFC1459Support(BasicClient):
         if by in self.users:
             self._sync_user(by, bymeta)
 
-        yield from self.on_kill(target, by, reason)
+        await self.on_kill(target, by, reason)
         if self.is_same_nick(self.nickname, target):
             self.disconnect(expected=False)
         else:
             self._destroy_user(target)
 
-    @async.coroutine
-    def on_raw_mode(self, message):
+    async def on_raw_mode(self, message):
         """ MODE command. """
         nick, metadata = self._parse_user(message.source)
         target, modes = message.params[0], message.params[1:]
@@ -674,7 +628,7 @@ class RFC1459Support(BasicClient):
                 # Parse modes.
                 self.channels[target]['modes'] = self._parse_channel_modes(target, modes)
 
-                yield from self.on_mode_change(target, modes, nick)
+                await self.on_mode_change(target, modes, nick)
         else:
             target, targetmeta = self._parse_user(target)
             self._sync_user(target, targetmeta)
@@ -683,10 +637,9 @@ class RFC1459Support(BasicClient):
             if self.is_same_nick(self.nickname, nick):
                 self._mode = self._parse_user_modes(nick, modes, current=self._mode)
 
-            yield from self.on_user_mode_change(modes)
+            await self.on_user_mode_change(modes)
 
-    @async.coroutine
-    def on_raw_nick(self, message):
+    async def on_raw_nick(self, message):
         """ NICK command. """
         nick, metadata = self._parse_user(message.source)
         new = message.params[0]
@@ -701,24 +654,22 @@ class RFC1459Support(BasicClient):
         self._rename_user(nick, new)
 
         # Call handler.
-        yield from self.on_nick_change(nick, new)
+        await self.on_nick_change(nick, new)
 
-    @async.coroutine
-    def on_raw_notice(self, message):
+    async def on_raw_notice(self, message):
         """ NOTICE command. """
         nick, metadata = self._parse_user(message.source)
         target, message = message.params
 
         self._sync_user(nick, metadata)
 
-        yield from self.on_notice(target, nick, message)
+        await self.on_notice(target, nick, message)
         if self.is_channel(target):
-            yield from self.on_channel_notice(target, nick, message)
+            await self.on_channel_notice(target, nick, message)
         else:
-            yield from self.on_private_notice(target, nick, message)
+            await self.on_private_notice(target, nick, message)
 
-    @async.coroutine
-    def on_raw_part(self, message):
+    async def on_raw_part(self, message):
         """ PART command. """
         nick, metadata = self._parse_user(message.source)
         channels = message.params[0].split(',')
@@ -733,35 +684,32 @@ class RFC1459Support(BasicClient):
             for channel in channels:
                 if self.in_channel(channel):
                     self._destroy_channel(channel)
-                    yield from self.on_part(channel, nick, reason)
+                    await self.on_part(channel, nick, reason)
         else:
             # Someone else left. Remove them.
             for channel in channels:
                 self._destroy_user(nick, channel)
-                yield from self.on_part(channel, nick, reason)
+                await self.on_part(channel, nick, reason)
 
-    @async.coroutine
-    def on_raw_ping(self, message):
+    async def on_raw_ping(self, message):
         """ PING command. """
         # Respond with a pong.
-        yield from self.rawmsg('PONG', *message.params)
+        await self.rawmsg('PONG', *message.params)
 
-    @async.coroutine
-    def on_raw_privmsg(self, message):
+    async def on_raw_privmsg(self, message):
         """ PRIVMSG command. """
         nick, metadata = self._parse_user(message.source)
         target, message = message.params
 
         self._sync_user(nick, metadata)
 
-        yield from self.on_message(target, nick, message)
+        await self.on_message(target, nick, message)
         if self.is_channel(target):
-            yield from self.on_channel_message(target, nick, message)
+            await self.on_channel_message(target, nick, message)
         else:
-            yield from self.on_private_message(target, nick, message)
+            await self.on_private_message(target, nick, message)
 
-    @async.coroutine
-    def on_raw_quit(self, message):
+    async def on_raw_quit(self, message):
         """ QUIT command. """
         nick, metadata = self._parse_user(message.source)
 
@@ -771,7 +719,7 @@ class RFC1459Support(BasicClient):
         else:
             reason = None
 
-        yield from self.on_quit(nick, reason)
+        await self.on_quit(nick, reason)
         # Remove user from database.
         if not self.is_same_nick(self.nickname, nick):
             self._destroy_user(nick)
@@ -779,8 +727,7 @@ class RFC1459Support(BasicClient):
         elif self.connected:
             self.disconnect(expected=True)
 
-    @async.coroutine
-    def on_raw_topic(self, message):
+    async def on_raw_topic(self, message):
         """ TOPIC command. """
         setter, settermeta = self._parse_user(message.source)
         target, topic = message.params
@@ -793,20 +740,18 @@ class RFC1459Support(BasicClient):
             self.channels[target]['topic_by'] = setter
             self.channels[target]['topic_set'] = datetime.datetime.now()
 
-        yield from self.on_topic_change(target, topic, setter)
-
+        await self.on_topic_change(target, topic, setter)
 
     ## Numeric responses.
 
     # Since RFC1459 specifies no specific banner message upon completion of registration,
     # take any of the below commands as an indication that registration succeeded.
 
-    on_raw_001 = _registration_completed # Welcome message.
-    on_raw_002 = _registration_completed # Server host.
-    on_raw_003 = _registration_completed # Server creation time.
+    on_raw_001 = _registration_completed  # Welcome message.
+    on_raw_002 = _registration_completed  # Server host.
+    on_raw_003 = _registration_completed  # Server creation time.
 
-    @async.coroutine
-    def on_raw_004(self, message):
+    async def on_raw_004(self, message):
         """ Basic server information. """
         target, hostname, ircd, user_modes, channel_modes = message.params[:5]
 
@@ -814,19 +759,18 @@ class RFC1459Support(BasicClient):
         self._channel_modes = set(channel_modes)
         self._user_modes = set(user_modes)
 
-    on_raw_008 = _registration_completed # Server notice mask.
-    on_raw_042 = _registration_completed # Unique client ID.
-    on_raw_250 = _registration_completed # Connection statistics.
-    on_raw_251 = _registration_completed # Amount of users online.
-    on_raw_252 = _registration_completed # Amount of operators online.
-    on_raw_253 = _registration_completed # Amount of unknown connections.
-    on_raw_254 = _registration_completed # Amount of channels.
-    on_raw_255 = _registration_completed # Amount of local users and servers.
-    on_raw_265 = _registration_completed # Amount of local users.
-    on_raw_266 = _registration_completed # Amount of global users.
+    on_raw_008 = _registration_completed  # Server notice mask.
+    on_raw_042 = _registration_completed  # Unique client ID.
+    on_raw_250 = _registration_completed  # Connection statistics.
+    on_raw_251 = _registration_completed  # Amount of users online.
+    on_raw_252 = _registration_completed  # Amount of operators online.
+    on_raw_253 = _registration_completed  # Amount of unknown connections.
+    on_raw_254 = _registration_completed  # Amount of channels.
+    on_raw_255 = _registration_completed  # Amount of local users and servers.
+    on_raw_265 = _registration_completed  # Amount of local users.
+    on_raw_266 = _registration_completed  # Amount of global users.
 
-    @async.coroutine
-    def on_raw_301(self, message):
+    async def on_raw_301(self, message):
         """ User is away. """
         target, nickname, message = message.params
         info = {
@@ -839,8 +783,7 @@ class RFC1459Support(BasicClient):
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
-    @async.coroutine
-    def on_raw_311(self, message):
+    async def on_raw_311(self, message):
         """ WHOIS user info. """
         target, nickname, username, hostname, _, realname = message.params
         info = {
@@ -853,8 +796,7 @@ class RFC1459Support(BasicClient):
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
-    @async.coroutine
-    def on_raw_312(self, message):
+    async def on_raw_312(self, message):
         """ WHOIS server info. """
         target, nickname, server, serverinfo = message.params
         info = {
@@ -867,8 +809,7 @@ class RFC1459Support(BasicClient):
         if nickname in self._pending['whowas']:
             self._whowas_info[nickname].update(info)
 
-    @async.coroutine
-    def on_raw_313(self, message):
+    async def on_raw_313(self, message):
         """ WHOIS operator info. """
         target, nickname = message.params[:2]
         info = {
@@ -878,8 +819,7 @@ class RFC1459Support(BasicClient):
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
-    @async.coroutine
-    def on_raw_314(self, message):
+    async def on_raw_314(self, message):
         """ WHOWAS user info. """
         target, nickname, username, hostname, _, realname = message.params
         info = {
@@ -891,10 +831,9 @@ class RFC1459Support(BasicClient):
         if nickname in self._pending['whowas']:
             self._whowas_info[nickname].update(info)
 
-    on_raw_315 = BasicClient._ignored    # End of /WHO list.
+    on_raw_315 = BasicClient._ignored  # End of /WHO list.
 
-    @async.coroutine
-    def on_raw_317(self, message):
+    async def on_raw_317(self, message):
         """ WHOIS idle time. """
         target, nickname, idle_time = message.params[:3]
         info = {
@@ -904,21 +843,19 @@ class RFC1459Support(BasicClient):
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
-    @async.coroutine
-    def on_raw_318(self, message):
+    async def on_raw_318(self, message):
         """ End of /WHOIS list. """
-        target, nickname =  message.params[:2]
+        target, nickname = message.params[:2]
 
         # Mark future as done.
         if nickname in self._pending['whois']:
             future = self._pending['whois'].pop(nickname)
             future.set_result(self._whois_info[nickname])
 
-    @async.coroutine
-    def on_raw_319(self, message):
+    async def on_raw_319(self, message):
         """ WHOIS active channels. """
         target, nickname, channels = message.params[:3]
-        channels = { channel.lstrip() for channel in channels.strip().split(' ') }
+        channels = {channel.lstrip() for channel in channels.strip().split(' ')}
         info = {
             'channels': channels
         }
@@ -926,8 +863,7 @@ class RFC1459Support(BasicClient):
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
-    @async.coroutine
-    def on_raw_324(self, message):
+    async def on_raw_324(self, message):
         """ Channel mode. """
         target, channel = message.params[:2]
         modes = message.params[2:]
@@ -936,8 +872,7 @@ class RFC1459Support(BasicClient):
 
         self.channels[channel]['modes'] = self._parse_channel_modes(channel, modes)
 
-    @async.coroutine
-    def on_raw_329(self, message):
+    async def on_raw_329(self, message):
         """ Channel creation time. """
         target, channel, timestamp = message.params
         if not self.in_channel(channel):
@@ -945,8 +880,7 @@ class RFC1459Support(BasicClient):
 
         self.channels[channel]['created'] = datetime.datetime.fromtimestamp(int(timestamp))
 
-    @async.coroutine
-    def on_raw_332(self, message):
+    async def on_raw_332(self, message):
         """ Current topic on channel join. """
         target, channel, topic = message.params
         if not self.in_channel(channel):
@@ -954,8 +888,7 @@ class RFC1459Support(BasicClient):
 
         self.channels[channel]['topic'] = topic
 
-    @async.coroutine
-    def on_raw_333(self, message):
+    async def on_raw_333(self, message):
         """ Topic setter and time on channel join. """
         target, channel, setter, timestamp = message.params
         if not self.in_channel(channel):
@@ -965,8 +898,7 @@ class RFC1459Support(BasicClient):
         self.channels[channel]['topic_by'] = self._parse_user(setter)[0]
         self.channels[channel]['topic_set'] = datetime.datetime.fromtimestamp(int(timestamp))
 
-    @async.coroutine
-    def on_raw_353(self, message):
+    async def on_raw_353(self, message):
         """ Response to /NAMES. """
         target, visibility, channel, names = message.params
         if not self.in_channel(channel):
@@ -1004,29 +936,25 @@ class RFC1459Support(BasicClient):
                     self.channels[channel]['modes'][status] = []
                 self.channels[channel]['modes'][status].append(nick)
 
-    on_raw_366 = BasicClient._ignored # End of /NAMES list.
+    on_raw_366 = BasicClient._ignored  # End of /NAMES list.
 
-    @async.coroutine
-    def on_raw_375(self, message):
+    async def on_raw_375(self, message):
         """ Start message of the day. """
         self._registration_completed(message)
         self.motd = message.params[1] + '\n'
 
-    @async.coroutine
-    def on_raw_372(self, message):
+    async def on_raw_372(self, message):
         """ Append message of the day. """
         self.motd += message.params[1] + '\n'
 
-    @async.coroutine
-    def on_raw_376(self, message):
+    async def on_raw_376(self, message):
         """ End of message of the day. """
         self.motd += message.params[1] + '\n'
 
         # MOTD is done, let's tell our bot the connection is ready.
-        yield from self.on_connect()
+        await self.on_connect()
 
-    @async.coroutine
-    def on_raw_401(self, message):
+    async def on_raw_401(self, message):
         """ No such nick/channel. """
         nickname = message.params[1]
 
@@ -1036,32 +964,27 @@ class RFC1459Support(BasicClient):
             future.set_result(None)
             del self._whois_info[nickname]
 
-    @async.coroutine
-    def on_raw_402(self, message):
+    async def on_raw_402(self, message):
         """ No such server. """
-        return (yield from self.on_raw_401(message))
+        return (await self.on_raw_401(message))
 
-    @async.coroutine
-    def on_raw_422(self, message):
+    async def on_raw_422(self, message):
         """ MOTD is missing. """
-        self._registration_completed(message)
+        await self._registration_completed(message)
         self.motd = None
-        yield from self.on_connect()
+        await self.on_connect()
 
-    @async.coroutine
-    def on_raw_421(self, message):
+    async def on_raw_421(self, message):
         """ Server responded with 'unknown command'. """
         self.logger.warning('Server responded with "Unknown command: %s"', message.params[0])
 
-    @async.coroutine
-    def on_raw_432(self, message):
+    async def on_raw_432(self, message):
         """ Erroneous nickname. """
         if not self.registered:
             # Nothing else we can do than try our next nickname.
-            yield from self.on_raw_433(message)
+            await self.on_raw_433(message)
 
-    @async.coroutine
-    def on_raw_433(self, message):
+    async def on_raw_433(self, message):
         """ Nickname in use. """
         if not self.registered:
             self._registration_attempts += 1
@@ -1069,17 +992,17 @@ class RFC1459Support(BasicClient):
             if self._attempt_nicknames:
                 self.set_nickname(self._attempt_nicknames.pop(0))
             else:
-                self.set_nickname(self._nicknames[0] + '_' * (self._registration_attempts - len(self._nicknames)))
+                self.set_nickname(
+                    self._nicknames[0] + '_' * (self._registration_attempts - len(self._nicknames)))
 
-    on_raw_436 = BasicClient._ignored # Nickname collision, issued right before the server kills us.
+    on_raw_436 = BasicClient._ignored  # Nickname collision, issued right before the server kills us.
 
-    @async.coroutine
-    def on_raw_451(self, message):
+    async def on_raw_451(self, message):
         """ We have to register first before doing X. """
         self.logger.warning('Attempted to send non-registration command before being registered.')
 
-    on_raw_451 = BasicClient._ignored # You have to register first.
-    on_raw_462 = BasicClient._ignored # You may not re-register.
+    on_raw_451 = BasicClient._ignored  # You have to register first.
+    on_raw_462 = BasicClient._ignored  # You may not re-register.
 
 
 ## Helpers.

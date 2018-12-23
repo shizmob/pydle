@@ -1,4 +1,3 @@
-from pydle import async
 from . import cap
 
 VISIBLITY_ALL = '*'
@@ -17,16 +16,15 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
     ## IRC API.
 
-    @async.coroutine
-    def get_metadata(self, target):
+    async def get_metadata(self, target):
         """
         Return user metadata information.
         This is a blocking asynchronous method: it has to be called from a coroutine, as follows:
 
-            metadata = yield from self.get_metadata('#foo')
+            metadata = await self.get_metadata('#foo')
         """
         if target not in self._pending['metadata']:
-            yield from self.rawmsg('METADATA', target, 'LIST')
+            await self.rawmsg('METADATA', target, 'LIST')
 
             self._metadata_queue.append(target)
             self._metadata_info[target] = {}
@@ -34,34 +32,28 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
         return self._pending['metadata'][target]
 
-    @async.coroutine
-    def set_metadata(self, target, key, value):
-        yield from self.rawmsg('METADATA', target, 'SET', key, value)
+    async def set_metadata(self, target, key, value):
+        await self.rawmsg('METADATA', target, 'SET', key, value)
 
-    @async.coroutine
-    def unset_metadata(self, target, key):
-        yield from self.rawmsg('METADATA', target, 'SET', key)
+    async def unset_metadata(self, target, key):
+        await self.rawmsg('METADATA', target, 'SET', key)
 
-    @async.coroutine
-    def clear_metadata(self, target):
-        yield from self.rawmsg('METADATA', target, 'CLEAR')
+    async def clear_metadata(self, target):
+        await self.rawmsg('METADATA', target, 'CLEAR')
 
 
     ## Callbacks.
 
-    @async.coroutine
-    def on_metadata(self, target, key, value, visibility=None):
+    async def on_metadata(self, target, key, value, visibility=None):
         pass
 
 
     ## Message handlers.
 
-    @async.coroutine
-    def on_capability_metadata_notify_available(self, value):
+    async def on_capability_metadata_notify_available(self, value):
         return True
 
-    @async.coroutine
-    def on_raw_metadata(self, message):
+    async def on_raw_metadata(self, message):
         """ Metadata event. """
         target, targetmeta = self._parse_user(message.params[0])
         key, visibility, value = message.params[1:4]
@@ -70,10 +62,9 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
         if target in self.users:
             self._sync_user(target, targetmeta)
-        yield from self.on_metadata(target, key, value, visibility=visibility)
+        await self.on_metadata(target, key, value, visibility=visibility)
 
-    @async.coroutine
-    def on_raw_760(self, message):
+    async def on_raw_760(self, message):
         """ Metadata key/value for whois. """
         target, targetmeta = self._parse_user(message.params[0])
         key, _, value = message.params[1:4]
@@ -86,8 +77,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         self._whois_info[target].setdefault('metadata', {})
         self._whois_info[target]['metadata'][key] = value
 
-    @async.coroutine
-    def on_raw_761(self, message):
+    async def on_raw_761(self, message):
         """ Metadata key/value. """
         target, targetmeta = self._parse_user(message.params[0])
         key, visibility = message.params[1:3]
@@ -100,8 +90,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
         self._metadata_info[target][key] = value
 
-    @async.coroutine
-    def on_raw_762(self, message):
+    async def on_raw_762(self, message):
         """ End of metadata. """
         # No way to figure out whose query this belongs to, so make a best guess
         # it was the first one.
@@ -112,13 +101,11 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         future = self._pending['metadata'].pop(nickname)
         future.set_result(self._metadata_info.pop(nickname))
 
-    @async.coroutine
-    def on_raw_764(self, message):
+    async def on_raw_764(self, message):
         """ Metadata limit reached. """
         pass
 
-    @async.coroutine
-    def on_raw_765(self, message):
+    async def on_raw_765(self, message):
         """ Invalid metadata target. """
         target, targetmeta = self._parse_user(message.params[0])
 
@@ -133,22 +120,18 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         future = self._pending['metadata'].pop(target)
         future.set_result(None)
 
-    @async.coroutine
-    def on_raw_766(self, message):
+    async def on_raw_766(self, message):
         """ Unknown metadata key. """
         pass
 
-    @async.coroutine
-    def on_raw_767(self, message):
+    async def on_raw_767(self, message):
         """ Invalid metadata key. """
         pass
 
-    @async.coroutine
-    def on_raw_768(self, message):
+    async def on_raw_768(self, message):
         """ Metadata key not set. """
         pass
 
-    @async.coroutine
-    def on_raw_769(self, message):
+    async def on_raw_769(self, message):
         """ Metadata permission denied. """
         pass

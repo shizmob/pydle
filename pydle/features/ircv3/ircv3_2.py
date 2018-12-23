@@ -1,6 +1,5 @@
 ## ircv3_2.py
 # IRCv3.2 support (in progress).
-from pydle import async
 from . import ircv3_1
 from . import tags
 from . import monitor
@@ -14,75 +13,64 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
 
     ## IRC callbacks.
 
-    @async.coroutine
-    def on_capability_account_tag_available(self, value):
+    async def on_capability_account_tag_available(self, value):
         """ Add an account message tag to user messages. """
         return True
 
-    @async.coroutine
-    def on_capability_cap_notify_available(self, value):
+    async def on_capability_cap_notify_available(self, value):
         """ Take note of new or removed capabilities. """
         return True
     
-    @async.coroutine
-    def on_capability_chghost_available(self, value):
+    async def on_capability_chghost_available(self, value):
         """ Server reply to indicate a user we are in a common channel with changed user and/or host. """
         return True
 
-    @async.coroutine
-    def on_capability_echo_message_available(self, value):
+    async def on_capability_echo_message_available(self, value):
         """ Echo PRIVMSG and NOTICEs back to client. """
         return True
 
-    @async.coroutine
-    def on_capability_invite_notify_available(self, value):
+    async def on_capability_invite_notify_available(self, value):
         """ Broadcast invite messages to certain other clients. """
         return True
 
-    @async.coroutine
-    def on_capability_userhost_in_names_available(self, value):
+    async def on_capability_userhost_in_names_available(self, value):
         """ Show full user!nick@host in NAMES list. We already parse it like that. """
         return True
 
-    @async.coroutine
-    def on_capability_uhnames_available(self, value):
+    async def on_capability_uhnames_available(self, value):
         """ Possibly outdated alias for userhost-in-names. """
-        return (yield from self.on_capability_userhost_in_names_available(value))
+        return (await self.on_capability_userhost_in_names_available(value))
 
-    @async.coroutine
-    def on_isupport_uhnames(self, value):
+    async def on_isupport_uhnames(self, value):
         """ Let the server know that we support UHNAMES using the old ISUPPORT method, for legacy support. """
-        yield from self.rawmsg('PROTOCTL', 'UHNAMES')
+        await self.rawmsg('PROTOCTL', 'UHNAMES')
 
 
 
     ## API overrides.
 
-    @async.coroutine
-    def message(self, target, message):
-        yield from super().message(target, message)
+    async def message(self, target, message):
+        await super().message(target, message)
         if not self._capabilities.get('echo-message'):
-            yield from self.on_message(target, self.nickname, message)
+            await self.on_message(target, self.nickname, message)
             if self.is_channel(target):
-                yield from self.on_channel_message(target, self.nickname, message)
+                await self.on_channel_message(target, self.nickname, message)
             else:
-                yield from self.on_private_message(target, self.nickname, message)
+                await self.on_private_message(target, self.nickname, message)
 
-    @async.coroutine
-    def notice(self, target, message):
-        yield from super().notice(target, message)
+    async def notice(self, target, message):
+        await super().notice(target, message)
         if not self._capabilities.get('echo-message'):
-            yield from self.on_notice(target, self.nickname, message)
+            await self.on_notice(target, self.nickname, message)
             if self.is_channel(target):
-                yield from self.on_channel_notice(target, self.nickname, message)
+                await self.on_channel_notice(target, self.nickname, message)
             else:
-                yield from self.on_private_notice(target, self.nickname, message)
+                await self.on_private_notice(target, self.nickname, message)
 
 
     ## Message handlers.
 
-    @async.coroutine
-    def on_raw(self, message):
+    async def on_raw(self, message):
         if 'account' in message.tags:
             nick, _ = self._parse_user(message.source)
             if nick in self.users:
@@ -91,10 +79,9 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
                     'account': message.tags['account']
                 }
                 self._sync_user(nick, metadata)
-        yield from super().on_raw(message)
+        await super().on_raw(message)
 
-    @async.coroutine
-    def on_raw_chghost(self, message):
+    async def on_raw_chghost(self, message):
         """ Change user and/or host of user. """
         if 'chghost' not in self._capabilities or not self._capabilities['chghost']:
             return
