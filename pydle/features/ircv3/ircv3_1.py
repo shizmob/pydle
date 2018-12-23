@@ -1,6 +1,5 @@
 ## ircv3_1.py
 # IRCv3.1 full spec support.
-from pydle import async
 from pydle.features import account, tls
 from . import cap
 from . import sasl
@@ -27,36 +26,30 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
 
     ## IRC callbacks.
 
-    @async.coroutine
-    def on_capability_account_notify_available(self, value):
+    async def on_capability_account_notify_available(self, value):
         """ Take note of user account changes. """
         return True
 
-    @async.coroutine
-    def on_capability_away_notify_available(self, value):
+    async def on_capability_away_notify_available(self, value):
         """ Take note of AWAY messages. """
         return True
 
-    @async.coroutine
-    def on_capability_extended_join_available(self, value):
+    async def on_capability_extended_join_available(self, value):
         """ Take note of user account and realname on JOIN. """
         return True
 
-    @async.coroutine
-    def on_capability_multi_prefix_available(self, value):
+    async def on_capability_multi_prefix_available(self, value):
         """ Thanks to how underlying client code works we already support multiple prefixes. """
         return True
 
-    @async.coroutine
-    def on_capability_tls_available(self, value):
+    async def on_capability_tls_available(self, value):
         """ We never need to request this explicitly. """
         return False
 
 
     ## Message handlers.
 
-    @async.coroutine
-    def on_raw_account(self, message):
+    async def on_raw_account(self, message):
         """ Changes in the associated account for a nickname. """
         if not self._capabilities.get('account-notify', False):
             return
@@ -73,8 +66,7 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
         else:
             self._sync_user(nick, { 'account': account, 'identified': True })
 
-    @async.coroutine
-    def on_raw_away(self, message):
+    async def on_raw_away(self, message):
         """ Process AWAY messages. """
         if 'away-notify' not in self._capabilities or not self._capabilities['away-notify']:
             return
@@ -87,8 +79,7 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
         self.users[nick]['away'] = len(message.params) > 0
         self.users[nick]['away_message'] = message.params[0] if len(message.params) > 0 else None
 
-    @async.coroutine
-    def on_raw_join(self, message):
+    async def on_raw_join(self, message):
         """ Process extended JOIN messages. """
         if 'extended-join' in self._capabilities and self._capabilities['extended-join']:
             nick, metadata = self._parse_user(message.source)
@@ -98,11 +89,11 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
 
             # Emit a fake join message.
             fakemsg = self._create_message('JOIN', channels, source=message.source)
-            yield from super().on_raw_join(fakemsg)
+            await super().on_raw_join(fakemsg)
 
             if account == NO_ACCOUNT:
                 account = None
             self.users[nick]['account'] = account
             self.users[nick]['realname'] = realname
         else:
-            yield from super().on_raw_join(message)
+            await super().on_raw_join(message)
