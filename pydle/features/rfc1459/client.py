@@ -438,7 +438,7 @@ class RFC1459Support(BasicClient):
             # Create a future for when the WHOWAS requests succeeds.
             self._pending['whowas'][nickname] = self.eventloop.create_future()
 
-        return (await self._pending['whowas'][nickname])
+        return await self._pending['whowas'][nickname]
 
     ## IRC helpers.
 
@@ -966,7 +966,7 @@ class RFC1459Support(BasicClient):
 
     async def on_raw_402(self, message):
         """ No such server. """
-        return (await self.on_raw_401(message))
+        return await self.on_raw_401(message)
 
     async def on_raw_422(self, message):
         """ MOTD is missing. """

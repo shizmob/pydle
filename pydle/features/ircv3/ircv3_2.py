@@ -39,7 +39,7 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
 
     async def on_capability_uhnames_available(self, value):
         """ Possibly outdated alias for userhost-in-names. """
-        return (await self.on_capability_userhost_in_names_available(value))
+        return await self.on_capability_userhost_in_names_available(value)
 
     async def on_isupport_uhnames(self, value):
         """ Let the server know that we support UHNAMES using the old ISUPPORT method, for legacy support. """
