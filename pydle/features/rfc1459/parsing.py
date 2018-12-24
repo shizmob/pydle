@@ -1,6 +1,6 @@
 ## parsing.py
 # RFC1459 parsing and construction.
-import collections
+import collections.abc
 import pydle.protocol
 from . import protocol
 
@@ -145,7 +145,7 @@ def normalize(input, case_mapping=protocol.DEFAULT_CASE_MAPPING):
 
     return input
 
-class NormalizingDict(collections.MutableMapping):
+class NormalizingDict(collections.abc.MutableMapping):
     """ A dict that normalizes entries according to the given case mapping. """
     def __init__(self, *args, case_mapping):
         self.storage = {}
