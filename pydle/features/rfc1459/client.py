@@ -990,9 +990,9 @@ class RFC1459Support(BasicClient):
             self._registration_attempts += 1
             # Attempt to set new nickname.
             if self._attempt_nicknames:
-                self.set_nickname(self._attempt_nicknames.pop(0))
+                await self.set_nickname(self._attempt_nicknames.pop(0))
             else:
-                self.set_nickname(
+                await self.set_nickname(
                     self._nicknames[0] + '_' * (self._registration_attempts - len(self._nicknames)))
 
     on_raw_436 = BasicClient._ignored  # Nickname collision, issued right before the server kills us.
