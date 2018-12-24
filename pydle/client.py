@@ -2,7 +2,6 @@
 # Basic IRC client implementation.
 import logging
 from asyncio import ensure_future, new_event_loop, BaseEventLoop, gather, TimerHandle, get_event_loop
-from typing import Set
 
 from . import connection
 from . import protocol
