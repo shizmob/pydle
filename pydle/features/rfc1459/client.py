@@ -940,7 +940,7 @@ class RFC1459Support(BasicClient):
 
     async def on_raw_375(self, message):
         """ Start message of the day. """
-        self._registration_completed(message)
+        await self._registration_completed(message)
         self.motd = message.params[1] + '\n'
 
     async def on_raw_372(self, message):
