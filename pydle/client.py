@@ -48,7 +48,7 @@ class BasicClient:
         if eventloop:
             self.eventloop = eventloop
         else:
-            self.eventloop: BaseEventLoop = get_event_loop()
+            self.eventloop = get_event_loop()
 
         self.own_eventloop = not eventloop
         self._reset_connection_attributes()
@@ -372,8 +372,8 @@ class BasicClient:
         if self._ping_checker_handle:
             self._ping_checker_handle.cancel()
 
-        self._ping_checker_handle: TimerHandle = self.eventloop.call_later(self.PING_TIMEOUT,
-                                                                           self._perform_ping_timeout)
+        self._ping_checker_handle = self.eventloop.call_later(self.PING_TIMEOUT,
+                                                              self._perform_ping_timeout)
 
         while self._has_message():
             message = self._parse_message()
@@ -442,7 +442,7 @@ class ClientPool:
 
     def __init__(self, clients=None, eventloop=None):
         self.eventloop = eventloop if eventloop else new_event_loop()
-        self.clients: Set[BasicClient] = set(clients or [])
+        self.clients = set(clients or [])
         self.connect_args = {}
 
     def connect(self, client: BasicClient, *args, **kwargs):
