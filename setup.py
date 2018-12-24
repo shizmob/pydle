@@ -3,6 +3,7 @@ from setuptools import setup
 setup(
     name='pydle',
     version='0.8.5',
+    python_requires=">=3.5",
     packages=[
         'pydle',
         'pydle.features',
