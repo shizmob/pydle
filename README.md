@@ -36,7 +36,8 @@ class MyOwnBot(pydle.Client):
          await self.join('#bottest')
 
     async def on_message(self, target, source, message):
-         await self.message(target, message)
+         if source != self.nickname:
+            await self.message(target, message)
 
 client = MyOwnBot('MyBot', realname='My Bot')
 client.run('irc.rizon.net', tls=True, tls_verify=False)
