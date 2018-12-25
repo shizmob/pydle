@@ -120,7 +120,7 @@ class Connection:
 
     def stop(self):
         """ Stop event loop. """
-        self.eventloop.schedule(lambda: self.eventloop.stop())
+        self.eventloop.call_soon(lambda: self.eventloop.stop())
 
     async def send(self, data):
         """ Add data to send queue. """
