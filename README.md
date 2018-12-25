@@ -36,6 +36,7 @@ class MyOwnBot(pydle.Client):
          await self.join('#bottest')
 
     async def on_message(self, target, source, message):
+         # don't respond to our own messages, as this leads to a positive feedback loop
          if source != self.nickname:
             await self.message(target, message)
 
