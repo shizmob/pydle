@@ -1,7 +1,8 @@
 ## client.py
 # Basic IRC client implementation.
+import asyncio
 import logging
-from asyncio import ensure_future, new_event_loop, gather, get_event_loop, sleep
+from asyncio import new_event_loop, gather, get_event_loop, sleep
 
 from . import connection, protocol
 
@@ -35,7 +36,7 @@ class BasicClient:
     RECONNECT_ON_ERROR = True
     RECONNECT_MAX_ATTEMPTS = 3
     RECONNECT_DELAYED = True
-    RECONNECT_DELAYS = [0, 5, 10, 30, 120, 600]
+    RECONNECT_DELAYS = [5, 5, 10, 30, 120, 600]
 
     def __init__(self, nickname, fallback_nicknames=[], username=None, realname=None,
                  eventloop=None, **kwargs):
@@ -98,7 +99,7 @@ class BasicClient:
 
         # Disconnect from current connection.
         if self.connected:
-            self.disconnect(expected=True)
+            await self.disconnect(expected=True)
 
         # Reset attributes and connect.
         if not reconnect:
@@ -108,7 +109,6 @@ class BasicClient:
         # Set logger name.
         if self.server_tag:
             self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
-        ensure_future(self.handle_forever(), loop=self.eventloop)
 
     def disconnect(self, expected=True):
         """ Disconnect from server. """
@@ -117,7 +117,7 @@ class BasicClient:
             if self._ping_checker_handle:
                 self._ping_checker_handle.cancel()
             # Schedule disconnect.
-            ensure_future(self._disconnect(expected), loop=self.eventloop)
+            await self._disconnect(expected)
 
     async def _disconnect(self, expected):
         # Shutdown connection.
@@ -365,7 +365,7 @@ class BasicClient:
             data = await self.connection.recv()
             if not data:
                 if self.connected:
-                    self.disconnect(expected=False)
+                    await self.disconnect(expected=False)
                 break
             await self.on_data(data)
 
@@ -391,7 +391,7 @@ class BasicClient:
         """ Handle error. """
         self.logger.error('Encountered error on socket.',
                           exc_info=(type(exception), exception, None))
-        self.disconnect(expected=False)
+        await self.disconnect(expected=False)
 
     async def on_raw(self, message):
         """ Handle a single message. """

@@ -6,8 +6,7 @@ import ipaddress
 import itertools
 
 from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
-from . import parsing
-from . import protocol
+from . import parsing, protocol
 
 
 class RFC1459Support(BasicClient):
@@ -194,7 +193,6 @@ class RFC1459Support(BasicClient):
         # And initiate the IRC connection.
         await self._register()
 
-
     async def _register(self):
         """ Perform IRC connection registration. """
         if self.registered:
@@ -271,14 +269,13 @@ class RFC1459Support(BasicClient):
         else:
             await self.rawmsg('PART', channel)
 
-
     async def kick(self, channel, target, reason=None):
         """ Kick user from channel. """
         if not self.in_channel(channel):
             raise NotInChannel(channel)
 
         if reason:
-           await self.rawmsg('KICK', channel, target, reason)
+            await self.rawmsg('KICK', channel, target, reason)
         else:
             await self.rawmsg('KICK', channel, target)
 
@@ -325,7 +322,7 @@ class RFC1459Support(BasicClient):
             message = self.DEFAULT_QUIT_MESSAGE
 
         await self.rawmsg('QUIT', message)
-        self.disconnect(expected=True)
+        await self.disconnect(expected=True)
 
     async def cycle(self, channel):
         """ Rejoin channel. """
@@ -613,7 +610,7 @@ class RFC1459Support(BasicClient):
 
         await self.on_kill(target, by, reason)
         if self.is_same_nick(self.nickname, target):
-            self.disconnect(expected=False)
+            await self.disconnect(expected=False)
         else:
             self._destroy_user(target)
 
@@ -725,7 +722,7 @@ class RFC1459Support(BasicClient):
             self._destroy_user(nick)
         # Else, we quit.
         elif self.connected:
-            self.disconnect(expected=True)
+            await self.disconnect(expected=True)
 
     async def on_raw_topic(self, message):
         """ TOPIC command. """
