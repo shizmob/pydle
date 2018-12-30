@@ -1,11 +1,9 @@
 ## client.py
 # Basic IRC client implementation.
 import logging
-from asyncio import ensure_future, new_event_loop, BaseEventLoop, gather, TimerHandle, get_event_loop
-from typing import Set
+from asyncio import ensure_future, new_event_loop, gather, get_event_loop, sleep
 
-from . import connection
-from . import protocol
+from . import connection, protocol
 
 __all__ = ['Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient', 'ClientPool']
 DEFAULT_NICKNAME = '<unregistered>'
@@ -327,7 +325,8 @@ class BasicClient:
                     self.logger.error('Unexpected disconnect. Attempting to reconnect.')
 
                 # Wait and reconnect.
-                self.eventloop.call_soon(delay, self.connect(reconnect=True))
+                await sleep(delay)
+                await self.connect(reconnect=True)
             else:
                 self.logger.error('Unexpected disconnect. Giving up.')
 
