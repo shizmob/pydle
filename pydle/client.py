@@ -156,8 +156,16 @@ class BasicClient:
         else:
             return 0
 
-    async def _perform_ping_timeout(self):
-        """ Handle timeout gracefully. """
+    async def _perform_ping_timeout(self, delay: int):
+        """ Handle timeout gracefully.
+
+        Args:
+            delay (int): delay before raising the timeout (in seconds)
+        """
+
+        # pause for delay seconds
+        await sleep(delay)
+        # then continue
         error = TimeoutError(
             'Ping timeout: no data received from server in {timeout} seconds.'.format(
                 timeout=self.PING_TIMEOUT))
@@ -371,12 +379,13 @@ class BasicClient:
         if self._ping_checker_handle:
             self._ping_checker_handle.cancel()
 
-        self._ping_checker_handle = self.eventloop.call_later(self.PING_TIMEOUT,
-                                                                           self._perform_ping_timeout)
+        # create a task for the ping checker
+        self._ping_checker_handle = self.eventloop.create_task(
+            self._perform_ping_timeout(self.PING_TIMEOUT))
 
         while self._has_message():
             message = self._parse_message()
-            ensure_future(self.on_raw(message), loop=self.eventloop)
+            await self.on_raw(message)
 
     async def on_data_error(self, exception):
         """ Handle error. """
