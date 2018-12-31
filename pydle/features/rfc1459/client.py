@@ -188,8 +188,11 @@ class RFC1459Support(BasicClient):
 
         # Connect...
         await super().connect(hostname, port, **kwargs)
-        # Set password.
-        self.password = password
+
+        # Check if a password was provided and we don't already have one
+        if password is not None and self.password:
+            # if so, set the password.
+            self.password = password
         # And initiate the IRC connection.
         await self._register()
 
