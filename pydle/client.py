@@ -121,13 +121,15 @@ class BasicClient:
             if self._ping_checker_handle:
                 self._ping_checker_handle.cancel()
 
-
             # Schedule disconnect.
             await self._disconnect(expected)
 
     async def _disconnect(self, expected):
         # Shutdown connection.
         await self.connection.disconnect()
+
+        # Reset any attributes.
+        self._reset_attributes()
 
         # Callback.
         await self.on_disconnect(expected)
@@ -142,9 +144,6 @@ class BasicClient:
         # Shut down event loop.
         if expected and self.own_eventloop:
             self.connection.stop()
-
-        # Reset any attributes.
-        self._reset_attributes()
 
     async def _connect(self, hostname, port, reconnect=False, channels=[],
                        encoding=protocol.DEFAULT_ENCODING, source_address=None):
