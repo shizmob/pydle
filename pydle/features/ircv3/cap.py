@@ -31,6 +31,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
     async def _register(self):
         """ Hijack registration to send a CAP LS first. """
         if self.registered:
+            self.logger.debug("skipping cap registration, already registered!")
             return
 
         # Ask server to list capabilities.
