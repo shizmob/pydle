@@ -460,6 +460,9 @@ class RFC1459Support(BasicClient):
         for channel in self._autojoin_channels:
             await self.join(channel)
 
+        # super call
+        await super().on_connect()
+
     async def on_invite(self, channel, by):
         """ Callback called when the client was invited into a channel by someone. """
         pass
