@@ -110,12 +110,18 @@ class BasicClient:
         if self.server_tag:
             self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
 
-    def disconnect(self, expected=True):
+        # store the handle forever task, so we can cancel it during disconnection
+        self._handle_forever_task = self.eventloop.create_task(self.handle_forever())
+        # ensure_future(self.handle_forever(), loop=self.eventloop)
+
+    async def disconnect(self, expected=True):
         """ Disconnect from server. """
         if self.connected:
             # Unschedule ping checker.
             if self._ping_checker_handle:
                 self._ping_checker_handle.cancel()
+
+
             # Schedule disconnect.
             await self._disconnect(expected)
 
@@ -126,6 +132,13 @@ class BasicClient:
         # Callback.
         await self.on_disconnect(expected)
 
+        # cancel the handle forever task
+        try:
+            if self._handle_forever_task:
+                self._handle_forever_task.cancel()
+        except asyncio.CancelledError:
+            # a canceled error is expected here, and is not an error.
+            self.logger.debug("swallowing expected CancelError")
         # Shut down event loop.
         if expected and self.own_eventloop:
             self.connection.stop()
