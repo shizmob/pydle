@@ -17,8 +17,8 @@ pydle will automatically take care of ensuring that the connection persists, and
   import pydle
 
   client = pydle.Client('MyBot')
-  # Client.connect() is a blocking function.
-  client.connect('irc.freenode.net', tls=True)
+  # Client.connect() is a coroutine.
+  await client.connect('irc.freenode.net', tls=True)
   client.handle_forever()
 
 Adding functionality
@@ -33,17 +33,17 @@ To truly start adding functionality to the client, subclass :class:`pydle.Client
   class MyClient(pydle.Client):
       """ This is a simple bot that will greet people as they join the channel. """
 
-      def on_connect(self):
-          super().on_connect()
+      async def on_connect(self):
+          await super().on_connect()
           # Can't greet many people without joining a channel.
-          self.join('#kochira')
+          await self.join('#kochira')
 
-      def on_join(self, channel, user):
-          super().on_join(channel, user)
-          self.message(channel, 'Hey there, {user}!', user=user)
+      async def on_join(self, channel, user):
+          await super().on_join(channel, user)
+          await self.message(channel, 'Hey there, {user}!', user=user)
 
   client = MyClient('MyBot')
-  client.connect('irc.freenode.net', tls=True)
+  await client.connect('irc.freenode.net', tls=True)
   client.handle_forever()
 
 This trivial example shows a few things:
@@ -75,14 +75,14 @@ and handle them within a single loop.
   class MyClient(pydle.Client):
       """ This is a simple bot that will greet people as they join the channel. """
 
-      def on_connect(self):
-          super().on_connect()
+      async def on_connect(self):
+          await super().on_connect()
           # Can't greet many people without joining a channel.
-          self.join('#kochira')
+          await self.join('#kochira')
 
-      def on_join(self, channel, user):
-          super().on_join(channel, user)
-          self.message(channel, 'Hey there, {user}!', user=user)
+      async def on_join(self, channel, user):
+          await super().on_join(channel, user)
+          await self.message(channel, 'Hey there, {user}!', user=user)
 
   # Setup pool and connect clients.
   pool = pydle.ClientPool()
@@ -138,12 +138,12 @@ Asynchronous functionality
 Some actions inevitably require blocking and waiting for a result. Since pydle is an asynchronous library where a client runs in a single thread,
 doing this blindly could lead to issues like the operation blocking the handling of messages entirely.
 
-Fortunately, pydle implements coroutines_ which allow you to handle a blocking operation almost as if it were a regular operation,
+Fortunately, pydle utilizes asyncio coroutines_ which allow you to handle a blocking operation almost as if it were a regular operation,
 while still retaining the benefits of asynchronous program flow. Coroutines allow pydle to be notified when a blocking operation is done,
-and then resume execution of the calling function appropriately. That way, blocking operations do not block the entire program flow,
+and then resume execution of the calling function appropriately. That way, blocking operations do not block the entire program flow.
 
-In order for a function to be declared as a coroutine, it has to be decorated using the :func:`pydle.coroutine` decorator.
-It can then call functions that would normally block using Python's ``yield from`` operator.
+In order for a function to be declared as a coroutine, it has to be declared as an ``async def`` function or decorated with the :meth:`asyncio.coroutine` decorator.
+It can then call functions that would normally block using Python's ``await`` operator.
 Since a function that calls a blocking function is itself blocking too, it has to be declared a coroutine as well.
 
 .. hint::
@@ -168,12 +168,12 @@ the act of WHOISing will not block the entire program flow of the client.
       that would be invalidated upon parting, quitting or changing nicknames.
       """
 
-      def on_connect(self):
-          super().on_connect()
+      async def on_connect(self):
+          await super().on_connect()
           self.join('#kochira')
 
-      @pydle.coroutine
-      def is_admin(self, nickname):
+
+      await def is_admin(self, nickname):
           """
           Check whether or not a user has administrative rights for this bot.
           This is a blocking function: use a coroutine to call it.
@@ -184,18 +184,18 @@ the act of WHOISing will not block the entire program flow of the client.
           # Check the WHOIS info to see if the source has identified with NickServ.
           # This is a blocking operation, so use yield.
           if source in ADMIN_NICKNAMES:
-              info = yield from self.whois(source)
+              info = await self.whois(source)
               admin = info['identified']
 
           return admin
 
-      @pydle.coroutine
-      def on_message(self, target, source, message):
-          super().on_message(target, source, message)
+
+      async def on_message(self, target, source, message):
+          await super().on_message(target, source, message)
 
           # Tell a user if they are an administrator for this bot.
           if message.startswith('!adminstatus'):
-              admin = yield from self.is_admin(source)
+              admin = await self.is_admin(source)
 
               if admin:
                   self.message(target, '{source}: You are an administrator.', source=source)
@@ -203,10 +203,8 @@ the act of WHOISing will not block the entire program flow of the client.
                   self.message(target, '{source}: You are not an administrator.', source=source)
 
 Writing your own blocking operation that can work with coroutines is trivial:
-just make your blocking method return a :class:`pydle.Future` instance (without the act of creating and returning the Future itself being blocking),
-and any coroutine yielding it will halt execution until the returned future is resolved, using either
-:meth:`pydle.Future.set_result` or :meth:`pydle.Future.set_exception`, while pydle can still handle everything else.
+Simply use the existing asyncio apis: https://docs.python.org/3.7/library/asyncio-task.html#coroutines-and-tasks
 
-You can create a :class:`pydle.Future` instance that belongs to the client by calling :meth:`pydle.async.EventLoop.create_future`.
+
 
 .. _coroutines: https://en.wikipedia.org/wiki/Coroutine

@@ -6,5 +6,4 @@ API reference
    :maxdepth: 2
 
    client
-   async
    features
