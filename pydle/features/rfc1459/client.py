@@ -190,7 +190,7 @@ class RFC1459Support(BasicClient):
         await super().connect(hostname, port, **kwargs)
 
         # Check if a password was provided and we don't already have one
-        if password is not None and self.password:
+        if password is not None and not self.password:
             # if so, set the password.
             self.password = password
         # And initiate the IRC connection.
