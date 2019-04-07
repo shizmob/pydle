@@ -2,7 +2,7 @@
 # Client-to-Client-Protocol (CTCP) support.
 import pydle.protocol
 from pydle.features import rfc1459
-
+from pydle import client
 __all__ = [ 'CTCPSupport' ]
 
 
