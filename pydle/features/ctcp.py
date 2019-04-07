@@ -36,7 +36,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         import pydle
 
         version = '{name} v{ver}'.format(name=pydle.__name__, ver=pydle.__version__)
-        self.ctcp_reply(by, 'VERSION', version)
+        await self.ctcp_reply(by, 'VERSION', version)
 
 
     ## IRC API.
