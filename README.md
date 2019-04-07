@@ -22,7 +22,7 @@ Features
 
 Basic Usage
 -----------
-`python3 setup.py install`
+`pip install pydle`
 
 From there, you can `import pydle` and subclass `pydle.Client` for your own functionality.
 

@@ -60,6 +60,53 @@ This trivial example shows a few things:
    was implemented or no callbacks overridden.
 
 .. _`advanced string formatting`: http://legacy.python.org/dev/peps/pep-3101/
+Authentication
+-----------------
+Pydle can also handle authenticating against IRC services by default, all you need to do is tell
+it what its credentials are.
+
+.. note::
+    the server must support SASL based authentication.
+
+-----------
+SASL(Username + password)
+-----------
+To authenticate, pydle simply needs to be provided with a set of credentials to present during the
+connection process, the most common type being a username+password pair
+
+.. code:: python
+
+    import pydle
+
+    client = pydle.Client(
+        nickname="my_irc_bot[bot]",
+        sasl_username = "username",
+        sasl_password = "my_secret_bot_password",
+        sasl_identity = "account_to_identify_against",
+        )
+
+-----------
+External authentication (Certificate)
+-----------
+As an alternative to using passwords for credentials, certificates can also be used via the
+SASL (External) authentication method.
+
+All you need to do is tell pydle where it can find the certificate, which it will then present
+during the TLS handshake when connecting to the server.
+
+.. code:: python
+
+    import pydle
+
+    client = pydle.Client(
+        nickname="my_irc_bot[bot]",
+        sasl_mechanism = "EXTERNAL",
+        tls_client_cert = "/path/to/client_certificate"
+        )
+
+.. note::
+    this authentication mode only works over TLS connections
+
 
 Multiple servers, multiple clients
 ----------------------------------
