@@ -84,14 +84,14 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
         if is_ctcp(msg):
             self._sync_user(nick, metadata)
-            type, response = parse_ctcp(msg)
+            _type, response = parse_ctcp(msg)
 
             # Find dedicated handler if it exists.
-            attr = 'on_ctcp_' + pydle.protocol.identifierify(type) + '_reply'
+            attr = 'on_ctcp_' + pydle.protocol.identifierify(_type) + '_reply'
             if hasattr(self, attr):
                 await getattr(self, attr)(user, target, response)
             # Invoke global handler.
-            await self.on_ctcp_reply(user, target, type, response)
+            await self.on_ctcp_reply(user, target, _type, response)
         else:
             await super().on_raw_notice(message)
 
