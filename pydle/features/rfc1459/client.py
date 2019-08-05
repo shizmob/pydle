@@ -914,7 +914,7 @@ class RFC1459Support(BasicClient):
             self.channels[channel]['public'] = False
 
         # Update channel user list.
-        for entry in names.split():
+        for entry in names.split(' '):
             statuses = []
             # Make entry safe for _parse_user().
             safe_entry = entry.lstrip(''.join(self._nickname_prefixes.keys()))
