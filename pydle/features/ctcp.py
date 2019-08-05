@@ -2,7 +2,7 @@
 # Client-to-Client-Protocol (CTCP) support.
 import pydle.protocol
 from pydle.features import rfc1459
-
+from pydle import client
 __all__ = [ 'CTCPSupport' ]
 
 
@@ -36,7 +36,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         import pydle
 
         version = '{name} v{ver}'.format(name=pydle.__name__, ver=pydle.__version__)
-        self.ctcp_reply(by, 'VERSION', version)
+        await self.ctcp_reply(by, 'VERSION', version)
 
 
     ## IRC API.
@@ -84,14 +84,14 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
         if is_ctcp(msg):
             self._sync_user(nick, metadata)
-            type, response = parse_ctcp(msg)
+            _type, response = parse_ctcp(msg)
 
             # Find dedicated handler if it exists.
-            attr = 'on_ctcp_' + pydle.protocol.identifierify(type) + '_reply'
+            attr = 'on_ctcp_' + pydle.protocol.identifierify(_type) + '_reply'
             if hasattr(self, attr):
-                await getattr(self, attr)(user, target, response)
+                await getattr(self, attr)(nick, target, response)
             # Invoke global handler.
-            await self.on_ctcp_reply(user, target, type, response)
+            await self.on_ctcp_reply(nick, target, _type, response)
         else:
             await super().on_raw_notice(message)
 
