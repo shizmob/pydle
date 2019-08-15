@@ -541,6 +541,9 @@ class RFC1459Support(BasicClient):
         error = protocol.ServerError(' '.join(message.params))
         await self.on_data_error(error)
 
+    async def on_raw_pong(self, message):
+        self.logger.debug('>> PONG received')
+
     async def on_raw_invite(self, message):
         """ INVITE command. """
         nick, metadata = self._parse_user(message.source)
