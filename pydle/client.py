@@ -348,7 +348,7 @@ class BasicClient:
             try:
                 data = await self.connection.recv(timeout=self.READ_TIMEOUT)
             except asyncio.TimeoutError:
-                self.logger.debug('>> Receive timeout reached, sending ping to check connection state...')
+                self.logger.warning('>> Receive timeout reached, sending ping to check connection state...')
 
                 try:
                     await self.rawmsg("PING", self.server_tag)
