@@ -32,7 +32,7 @@ class BasicClient:
     Base IRC client class.
     This class on its own is not complete: in order to be able to run properly, _has_message, _parse_message and _create_message have to be overloaded.
     """
-    PING_TIMEOUT = 300
+    READ_TIMEOUT = 300
     RECONNECT_ON_ERROR = True
     RECONNECT_MAX_ATTEMPTS = 3
     RECONNECT_DELAYED = True
@@ -66,7 +66,6 @@ class BasicClient:
         self._receive_buffer = b''
         self._pending = {}
         self._handler_top_level = False
-        self._ping_checker_handle = None
 
         # Misc.
         self.logger = logging.getLogger(__name__)
@@ -115,10 +114,6 @@ class BasicClient:
     async def disconnect(self, expected=True):
         """ Disconnect from server. """
         if self.connected:
-            # Unschedule ping checker.
-            if self._ping_checker_handle:
-                self._ping_checker_handle.cancel()
-
             # Schedule disconnect.
             await self._disconnect(expected)
 
@@ -158,21 +153,6 @@ class BasicClient:
                 return self.RECONNECT_DELAYS[self._reconnect_attempts]
         else:
             return 0
-
-    async def _perform_ping_timeout(self, delay: int):
-        """ Handle timeout gracefully.
-
-        Args:
-            delay (int): delay before raising the timeout (in seconds)
-        """
-
-        # pause for delay seconds
-        await sleep(delay)
-        # then continue
-        error = TimeoutError(
-            'Ping timeout: no data received from server in {timeout} seconds.'.format(
-                timeout=self.PING_TIMEOUT))
-        await self.on_data_error(error)
 
     ## Internal database management.
 
@@ -365,7 +345,17 @@ class BasicClient:
     async def handle_forever(self):
         """ Handle data forever. """
         while self.connected:
-            data = await self.connection.recv()
+            try:
+                data = await self.connection.recv(timeout=self.READ_TIMEOUT)
+            except asyncio.TimeoutError:
+                self.logger.debug('>> Receive timeout reached, sending ping to check connection state...')
+
+                try:
+                    await self.rawmsg("PING", self.server_tag)
+                    data = await self.connection.recv(timeout=self.READ_TIMEOUT)
+                except asyncio.TimeoutError:
+                    data = None
+
             if not data:
                 if self.connected:
                     await self.disconnect(expected=False)
@@ -377,14 +367,6 @@ class BasicClient:
     async def on_data(self, data):
         """ Handle received data. """
         self._receive_buffer += data
-
-        # Schedule new timeout event.
-        if self._ping_checker_handle:
-            self._ping_checker_handle.cancel()
-
-        # create a task for the ping checker
-        self._ping_checker_handle = self.eventloop.create_task(
-            self._perform_ping_timeout(self.PING_TIMEOUT))
 
         while self._has_message():
             message = self._parse_message()
