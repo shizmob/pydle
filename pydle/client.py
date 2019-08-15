@@ -5,6 +5,7 @@ import logging
 from asyncio import new_event_loop, gather, get_event_loop, sleep
 
 from . import connection, protocol
+import warnings
 
 __all__ = ['Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient', 'ClientPool']
 DEFAULT_NICKNAME = '<unregistered>'
@@ -37,6 +38,23 @@ class BasicClient:
     RECONNECT_MAX_ATTEMPTS = 3
     RECONNECT_DELAYED = True
     RECONNECT_DELAYS = [5, 5, 10, 30, 120, 600]
+
+    @property
+    def PING_TIMEOUT(self):
+        warnings.warn(
+            "PING_TIMEOUT has been moved to READ_TIMEOUT and may be removed in a future version. "
+            "Please migrate to READ_TIMEOUT.",
+            DeprecationWarning
+        )
+        return self.READ_TIMEOUT
+
+    @PING_TIMEOUT.setter
+    def PING_TIMEOUT(self, value):
+        warnings.warn(
+            "PING_TIMEOUT has been moved to READ_TIMEOUT and may be removed in a future version",
+            DeprecationWarning
+        )
+        self.READ_TIMEOUT = value
 
     def __init__(self, nickname, fallback_nicknames=[], username=None, realname=None,
                  eventloop=None, **kwargs):
@@ -348,7 +366,8 @@ class BasicClient:
             try:
                 data = await self.connection.recv(timeout=self.READ_TIMEOUT)
             except asyncio.TimeoutError:
-                self.logger.warning('>> Receive timeout reached, sending ping to check connection state...')
+                self.logger.warning(
+                    '>> Receive timeout reached, sending ping to check connection state...')
 
                 try:
                     await self.rawmsg("PING", self.server_tag)
@@ -371,7 +390,6 @@ class BasicClient:
         while self._has_message():
             message = self._parse_message()
             self.eventloop.create_task(self.on_raw(message))
-
 
     async def on_data_error(self, exception):
         """ Handle error. """
