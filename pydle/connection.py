@@ -127,5 +127,5 @@ class Connection:
         self.writer.write(data)
         await self.writer.drain()
 
-    async def recv(self):
-        return await self.reader.readline()
+    async def recv(self, *, timeout=None):
+        return await asyncio.wait_for(self.reader.readline(), timeout=timeout)
