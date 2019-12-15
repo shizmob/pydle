@@ -372,7 +372,7 @@ class BasicClient:
                 try:
                     await self.rawmsg("PING", self.server_tag)
                     data = await self.connection.recv(timeout=self.READ_TIMEOUT)
-                except asyncio.TimeoutError:
+                except (asyncio.TimeoutError, ConnectionResetError) as e:
                     data = None
 
             if not data:
