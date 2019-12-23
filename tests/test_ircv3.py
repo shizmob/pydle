@@ -2,7 +2,7 @@ import pytest
 
 from pydle.features import ircv3
 
-pytestmark = pytest.mark.new_test
+pytestmark = pytest.mark.unit
 
 
 @pytest.mark.parametrize(
@@ -13,8 +13,8 @@ pytestmark = pytest.mark.new_test
                 {"+example": """raw+:=,escaped; \\"""}
         ),
         (
-            rb"@+example=\foo\bar :irc.example.com NOTICE #channel :Message",
-            {"+example": "foobar"}
+                rb"@+example=\foo\bar :irc.example.com NOTICE #channel :Message",
+                {"+example": "foobar"}
         ),
     ]
 )
