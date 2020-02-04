@@ -3,14 +3,24 @@
 import pydle.client
 import pydle.protocol
 from pydle.features import rfc1459
+import re
 
 TAG_INDICATOR = '@'
 TAG_SEPARATOR = ';'
 TAG_VALUE_SEPARATOR = '='
 TAGGED_MESSAGE_LENGTH_LIMIT = 1024
 
+TAG_CONVERSIONS = {
+    r"\:": ';',
+    r"\s": ' ',
+    r"\\": '\\',
+    r"\r": '\r',
+    r"\n": '\n'
+}
+
 
 class TaggedMessage(rfc1459.RFC1459Message):
+
     def __init__(self, tags=None, **kw):
         super().__init__(**kw)
         self._kw['tags'] = tags
@@ -53,6 +63,20 @@ class TaggedMessage(rfc1459.RFC1459Message):
                 else:
                     tag = raw_tag
                     value = True
+                # Parse escape sequences since IRC escapes != python escapes
+
+                # convert known escapes first
+                for escape, replacement in TAG_CONVERSIONS.items():
+                    value = value.replace(escape, replacement)
+
+                # convert other escape sequences based on the spec
+                pattern =re.compile(r"(\\[\s\S])+")
+                for match in pattern.finditer(value):
+                    escape = match.group()
+                    value = value.replace(escape, escape[1])
+
+
+                # Finally: add constructed tag to the output object.
                 tags[tag] = value
 
         # Parse rest of message.
@@ -77,7 +101,10 @@ class TaggedMessage(rfc1459.RFC1459Message):
             message = TAG_INDICATOR + TAG_SEPARATOR.join(raw_tags) + ' ' + message
 
         if len(message) > TAGGED_MESSAGE_LENGTH_LIMIT and not force:
-            raise protocol.ProtocolViolation('The constructed message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=TAGGED_MESSAGE_LENGTH_LIMIT), message=message)
+            raise protocol.ProtocolViolation(
+                'The constructed message is too long. ({len} > {maxlen})'.format(len=len(message),
+                                                                                 maxlen=TAGGED_MESSAGE_LENGTH_LIMIT),
+                message=message)
         return message
 
 
