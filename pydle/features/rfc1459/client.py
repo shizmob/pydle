@@ -689,13 +689,13 @@ class RFC1459Support(BasicClient):
             # We left the channel. Remove from channel list. :(
             for channel in channels:
                 if self.in_channel(channel):
-                    self._destroy_channel(channel)
                     await self.on_part(channel, nick, reason)
+                    self._destroy_channel(channel)
         else:
             # Someone else left. Remove them.
             for channel in channels:
-                self._destroy_user(nick, channel)
                 await self.on_part(channel, nick, reason)
+                self._destroy_user(nick, channel)
 
     async def on_raw_ping(self, message):
         """ PING command. """
