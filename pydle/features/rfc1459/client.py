@@ -923,6 +923,9 @@ class RFC1459Support(BasicClient):
             safe_entry = entry.lstrip(''.join(self._nickname_prefixes.keys()))
             # Parse entry and update database.
             nick, metadata = self._parse_user(safe_entry)
+            if not nick:
+                # nonsense nickname
+                continue
             self._sync_user(nick, metadata)
 
             # Get prefixes.
