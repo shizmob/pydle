@@ -236,13 +236,13 @@ Support for user and channel metadata.
 This allows you to set and unset arbitrary key-value information on yourself and on channels, as well as retrieve such values from other users and channels.
 
 ==============
-IRCd implementations-specific features
+IRCd implementation-specific features
 ==============
 Optional features that for IRCds that have non-standard messages.
 
 UnrealIRCd
 ==========
-Features implementaiton-specific to UnrealIRCd servers.
+Features implementation-specific to UnrealIRCd servers.
 
 RPL_WHOIS_HOST
 --------------
