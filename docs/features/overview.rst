@@ -234,3 +234,22 @@ Metadata
 Support for user and channel metadata.
 
 This allows you to set and unset arbitrary key-value information on yourself and on channels, as well as retrieve such values from other users and channels.
+
+==============
+IRCd implementation-specific features
+==============
+Optional features that for IRCds that have non-standard messages.
+
+UnrealIRCd
+==========
+Features implementation-specific to UnrealIRCd servers.
+
+RPL_WHOIS_HOST
+--------------
+*API:* :class:`pydle.features.rpl_whoishost.RplWhoisHostSupport`
+
+Support For `RPL_WHOIS_HOST` messages, this allows pydle to expose an IRC users
+real IP address and host, if the bot has access to that information.
+
+This information will fill in the `real_ip_address` and `real_hostname` fields
+of an :class:`pydle.Client.whois()` response.
