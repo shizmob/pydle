@@ -2,11 +2,12 @@ from setuptools import setup
 
 setup(
     name='pydle',
-    version='0.9.4rc1',
+    version='0.9.4',
     python_requires=">=3.5",
     packages=[
         'pydle',
         'pydle.features',
+        'pydle.features.rpl_whoishost',
         'pydle.features.rfc1459',
         'pydle.features.ircv3',
         'pydle.utils'
