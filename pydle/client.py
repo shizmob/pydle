@@ -469,7 +469,7 @@ class ClientPool:
         """ Remove client from pool. """
         self.clients.remove(client)
         del self.connect_args[client]
-        client.disconnect()
+        asyncio.run_coroutine_threadsafe(client.disconnect(expected=True), self.eventloop)
 
     def __contains__(self, item):
         return item in self.clients
@@ -491,6 +491,3 @@ class ClientPool:
 
         # run the clients
         self.eventloop.run_forever()
-
-        for client in self.clients:
-            client.disconnect()
