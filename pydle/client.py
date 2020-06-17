@@ -56,10 +56,10 @@ class BasicClient:
         )
         self.READ_TIMEOUT = value
 
-    def __init__(self, nickname, fallback_nicknames=[], username=None, realname=None,
+    def __init__(self, nickname, fallback_nicknames=None, username=None, realname=None,
                  eventloop=None, **kwargs):
         """ Create a client. """
-        self._nicknames = [nickname] + fallback_nicknames
+        self._nicknames = [nickname] + (fallback_nicknames or [])
         self.username = username or nickname.lower()
         self.realname = realname or nickname
         if eventloop:
@@ -149,12 +149,12 @@ class BasicClient:
         if expected and self.own_eventloop:
             self.connection.stop()
 
-    async def _connect(self, hostname, port, reconnect=False, channels=[],
+    async def _connect(self, hostname, port, reconnect=False, channels=None,
                        encoding=protocol.DEFAULT_ENCODING, source_address=None):
         """ Connect to IRC host. """
         # Create connection if we can't reuse it.
         if not reconnect or not self.connection:
-            self._autojoin_channels = channels
+            self._autojoin_channels = channels or []
             self.connection = connection.Connection(hostname, port, source_address=source_address,
                                                     eventloop=self.eventloop)
             self.encoding = encoding

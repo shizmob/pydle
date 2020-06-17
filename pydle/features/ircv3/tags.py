@@ -109,9 +109,9 @@ class TaggedMessage(rfc1459.RFC1459Message):
 
 
 class TaggedMessageSupport(rfc1459.RFC1459Support):
-    def _create_message(self, command, *params, tags={}, **kwargs):
+    def _create_message(self, command, *params, tags=None, **kwargs):
         message = super()._create_message(command, *params, **kwargs)
-        return TaggedMessage(tags=tags, **message._kw)
+        return TaggedMessage(tags=tags or {}, **message._kw)
 
     def _parse_message(self):
         sep = rfc1459.protocol.MINIMAL_LINE_SEPARATOR.encode(self.encoding)
