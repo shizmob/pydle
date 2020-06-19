@@ -179,6 +179,9 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         """ Maximum number of variable modes to change in a single MODE command. """
         self._mode_limit = int(value)
 
+    async def on_isupport_monitor(self, value):
+        self._monitor_limit = int(value)
+
     async def on_isupport_namesx(self, value):
         """ Let the server know we do in fact support NAMESX. Effectively the same as CAP multi-prefix. """
         await self.rawmsg('PROTOCTL', 'NAMESX')

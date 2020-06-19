@@ -38,7 +38,7 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
 
     def monitor(self, target):
         """ Start monitoring the online status of a user. Returns whether or not the server supports monitoring. """
-        if 'monitor-notify' in self._capabilities and not self.is_monitoring(target):
+        if 'MONITOR' in self._isupport and not self.is_monitoring(target):
             yield from self.rawmsg('MONITOR', '+', target)
             self._monitoring.add(target)
             return True
@@ -47,7 +47,7 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
 
     def unmonitor(self, target):
         """ Stop monitoring the online status of a user. Returns whether or not the server supports monitoring. """
-        if 'monitor-notify' in self._capabilities and self.is_monitoring(target):
+        if 'MONITOR' in self._isupport and self.is_monitoring(target):
             yield from self.rawmsg('MONITOR', '-', target)
             self._monitoring.remove(target)
             return True
