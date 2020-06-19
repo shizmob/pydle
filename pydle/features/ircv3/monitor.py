@@ -77,23 +77,33 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
 
     async def on_raw_730(self, message):
         """ Someone we are monitoring just came online. """
-        for nick in message.params[1].split(','):
-            self._create_user(nick)
+        for target in message.params[1].split(','):
+            nickname, metadata = self._parse_user(target)
+            self._sync_user(nickname, metadata)
             await self.on_user_online(nickname)
 
     async def on_raw_731(self, message):
         """ Someone we are monitoring got offline. """
-        for nick in message.params[1].split(','):
-            self._destroy_user(nick, monitor_override=True)
+        for target in message.params[1].split(','):
+            nickname, metadata = self._parse_user(target)
+            # May be monitoring a user we haven't seen yet
+            if nickname in self.users:
+                self._destroy_user(nickname, monitor_override=True)
             await self.on_user_offline(nickname)
 
     async def on_raw_732(self, message):
         """ List of users we're monitoring. """
-        self._monitoring.update(message.params[1].split(','))
+        for target in message.params[1].split(','):
+            nickname, metadata = self._parse_user(target)
+            self._monitoring.add(nickname)
 
     on_raw_733 = cap.CapabilityNegotiationSupport._ignored  # End of MONITOR list.
 
     async def on_raw_734(self, message):
         """ Monitor list is full, can't add target. """
         # Remove from monitoring list, not much else we can do.
-        self._monitoring.difference_update(message.params[1].split(','))
+        to_remove = set()
+        for target in message.params[1].split(','):
+            nickname, metadata = self._parse_user(target)
+            to_remove.add(nickname)
+        self._monitoring.difference_update(to_remove)
