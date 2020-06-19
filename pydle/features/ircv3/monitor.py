@@ -1,9 +1,9 @@
 ## monitor.py
 # Online status monitoring support.
-from . import cap
+from .. import isupport
 
 
-class MonitoringSupport(cap.CapabilityNegotiationSupport):
+class MonitoringSupport(isupport.ISUPPORTSupport):
     """ Support for monitoring the online/offline status of certain targets. """
 
     ## Internals.
@@ -97,7 +97,7 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
             nickname, metadata = self._parse_user(target)
             self._monitoring.add(nickname)
 
-    on_raw_733 = cap.CapabilityNegotiationSupport._ignored  # End of MONITOR list.
+    on_raw_733 = isupport.ISUPPORTSupport._ignored  # End of MONITOR list.
 
     async def on_raw_734(self, message):
         """ Monitor list is full, can't add target. """
