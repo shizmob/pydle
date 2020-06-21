@@ -42,8 +42,7 @@ class MonitoringSupport(isupport.ISUPPORTSupport):
             await self.rawmsg('MONITOR', '+', target)
             self._monitoring.add(target)
             return True
-        else:
-            return False
+        return False
 
     async def unmonitor(self, target):
         """ Stop monitoring the online status of a user. Returns whether or not the server supports monitoring. """
@@ -51,8 +50,7 @@ class MonitoringSupport(isupport.ISUPPORTSupport):
             await self.rawmsg('MONITOR', '-', target)
             self._monitoring.remove(target)
             return True
-        else:
-            return False
+        return False
 
     def is_monitoring(self, target):
         """ Return whether or not we are monitoring the target's online status. """
