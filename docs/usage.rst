@@ -220,7 +220,7 @@ the act of WHOISing will not block the entire program flow of the client.
           self.join('#kochira')
 
 
-      await def is_admin(self, nickname):
+      async def is_admin(self, nickname):
           """
           Check whether or not a user has administrative rights for this bot.
           This is a blocking function: use a coroutine to call it.
