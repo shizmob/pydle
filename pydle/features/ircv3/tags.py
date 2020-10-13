@@ -58,23 +58,28 @@ class TaggedMessage(rfc1459.RFC1459Message):
             raw_tags, message = message.split(' ', 1)
 
             for raw_tag in raw_tags.split(TAG_SEPARATOR):
+                value = None
                 if TAG_VALUE_SEPARATOR in raw_tag:
                     tag, value = raw_tag.split(TAG_VALUE_SEPARATOR, 1)
                 else:
+                    # Valueless or "missing" tag value
                     tag = raw_tag
+                if not value:
+                    # The tag value was either empty or missing. Per spec, they
+                    # must be treated the same.
                     value = True
+
                 # Parse escape sequences since IRC escapes != python escapes
+                if isinstance(value, str):
+                    # convert known escapes first
+                    for escape, replacement in TAG_CONVERSIONS.items():
+                        value = value.replace(escape, replacement)
 
-                # convert known escapes first
-                for escape, replacement in TAG_CONVERSIONS.items():
-                    value = value.replace(escape, replacement)
-
-                # convert other escape sequences based on the spec
-                pattern =re.compile(r"(\\[\s\S])+")
-                for match in pattern.finditer(value):
-                    escape = match.group()
-                    value = value.replace(escape, escape[1])
-
+                    # convert other escape sequences based on the spec
+                    pattern = re.compile(r"(\\[\s\S])+")
+                    for match in pattern.finditer(value):
+                        escape = match.group()
+                        value = value.replace(escape, escape[1])
 
                 # Finally: add constructed tag to the output object.
                 tags[tag] = value
