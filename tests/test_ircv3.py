@@ -9,6 +9,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.ircv3]
     "payload, expected",
     [
         (
+                rb'@empty=;missing :irc.example.com NOTICE #channel :Message',
+                {'empty': True, 'missing': True}
+        ),
+        (
                 rb"@+example=raw+:=,escaped\:\s\\ :irc.example.com NOTICE #channel :Message",
                 {"+example": """raw+:=,escaped; \\"""}
         ),
@@ -17,13 +21,12 @@ pytestmark = [pytest.mark.unit, pytest.mark.ircv3]
                 {"+example": "foobar"}
         ),
         (
-                rb'@msgid=796~1602221579~51;account=user123 :user123!user123@((ip) PRIVMSG #user123 :ping',
+                rb'@msgid=796~1602221579~51;account=user123 :user123!user123@(ip) PRIVMSG #user123 :ping',
                 {'msgid': '796~1602221579~51', 'account': 'user123'}
         ),
         (
                 rb'@inspircd.org/service;inspircd.org/bot :ChanServ!services@services.(domain) MODE #user123 +qo user123 :user123',
                 {"inspircd.org/service": True, r"inspircd.org/bot": True}
-
         )
     ]
 )
