@@ -53,7 +53,7 @@ In addition, it registers the `pydle.Client.on_ctcp(from, query, contents)` hook
 request, and a per-type hook in the form of `pydle.Client.on_ctcp_<type>(from, contents)`, which allows you to act upon CTCP
 requests of type `type`. `type` will always be lowercased. A few examples of `type` can be: `action`, `time`, `version`.
 
-Finally, it registers the `pydle.Client.on_ctcp_reply(from, queyr, contents)` hook, which acts similar to the above hook,
+Finally, it registers the `pydle.Client.on_ctcp_reply(from, query, contents)` hook, which acts similar to the above hook,
 except it is triggered when the client receives a CTCP response. It also registers `pydle.Client.on_ctcp_<type>_reply`, which
 works similar to the per-type hook described above.
 
