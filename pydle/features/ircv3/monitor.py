@@ -1,9 +1,9 @@
 ## monitor.py
 # Online status monitoring support.
-from . import cap
+from .. import isupport
 
 
-class MonitoringSupport(cap.CapabilityNegotiationSupport):
+class MonitoringSupport(isupport.ISUPPORTSupport):
     """ Support for monitoring the online/offline status of certain targets. """
 
     ## Internals.
@@ -36,23 +36,21 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
 
     ## API.
 
-    def monitor(self, target):
+    async def monitor(self, target):
         """ Start monitoring the online status of a user. Returns whether or not the server supports monitoring. """
-        if 'monitor-notify' in self._capabilities and not self.is_monitoring(target):
-            yield from self.rawmsg('MONITOR', '+', target)
+        if 'MONITOR' in self._isupport and not self.is_monitoring(target):
+            await self.rawmsg('MONITOR', '+', target)
             self._monitoring.add(target)
             return True
-        else:
-            return False
+        return False
 
-    def unmonitor(self, target):
+    async def unmonitor(self, target):
         """ Stop monitoring the online status of a user. Returns whether or not the server supports monitoring. """
-        if 'monitor-notify' in self._capabilities and self.is_monitoring(target):
-            yield from self.rawmsg('MONITOR', '-', target)
+        if 'MONITOR' in self._isupport and self.is_monitoring(target):
+            await self.rawmsg('MONITOR', '-', target)
             self._monitoring.remove(target)
             return True
-        else:
-            return False
+        return False
 
     def is_monitoring(self, target):
         """ Return whether or not we are monitoring the target's online status. """
@@ -77,23 +75,33 @@ class MonitoringSupport(cap.CapabilityNegotiationSupport):
 
     async def on_raw_730(self, message):
         """ Someone we are monitoring just came online. """
-        for nick in message.params[1].split(','):
-            self._create_user(nick)
+        for target in message.params[1].split(','):
+            nickname, metadata = self._parse_user(target)
+            self._sync_user(nickname, metadata)
             await self.on_user_online(nickname)
 
     async def on_raw_731(self, message):
         """ Someone we are monitoring got offline. """
-        for nick in message.params[1].split(','):
-            self._destroy_user(nick, monitor_override=True)
+        for target in message.params[1].split(','):
+            nickname, metadata = self._parse_user(target)
+            # May be monitoring a user we haven't seen yet
+            if nickname in self.users:
+                self._destroy_user(nickname, monitor_override=True)
             await self.on_user_offline(nickname)
 
     async def on_raw_732(self, message):
         """ List of users we're monitoring. """
-        self._monitoring.update(message.params[1].split(','))
+        for target in message.params[1].split(','):
+            nickname, metadata = self._parse_user(target)
+            self._monitoring.add(nickname)
 
-    on_raw_733 = cap.CapabilityNegotiationSupport._ignored  # End of MONITOR list.
+    on_raw_733 = isupport.ISUPPORTSupport._ignored  # End of MONITOR list.
 
     async def on_raw_734(self, message):
         """ Monitor list is full, can't add target. """
         # Remove from monitoring list, not much else we can do.
-        self._monitoring.difference_update(message.params[1].split(','))
+        to_remove = set()
+        for target in message.params[1].split(','):
+            nickname, metadata = self._parse_user(target)
+            to_remove.add(nickname)
+        self._monitoring.difference_update(to_remove)
