@@ -189,7 +189,7 @@ Fortunately, pydle utilizes asyncio coroutines_ which allow you to handle a bloc
 while still retaining the benefits of asynchronous program flow. Coroutines allow pydle to be notified when a blocking operation is done,
 and then resume execution of the calling function appropriately. That way, blocking operations do not block the entire program flow.
 
-In order for a function to be declared as a coroutine, it has to be declared as an ``async def`` function or decorated with the :meth:`asyncio.coroutine` decorator.
+In order for a function to be declared as a coroutine, it has to be declared as an ``async def`` function.
 It can then call functions that would normally block using Python's ``await`` operator.
 Since a function that calls a blocking function is itself blocking too, it has to be declared a coroutine as well.
 
