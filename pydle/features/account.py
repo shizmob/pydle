@@ -22,9 +22,8 @@ class AccountSupport(rfc1459.RFC1459Support):
         self.whois(new)
 
     ## IRC API.
-    @asyncio.coroutine
-    def whois(self, nickname):
-        info = yield from super().whois(nickname)
+    async def whois(self, nickname):
+        info = await super().whois(nickname)
         info.setdefault('account', None)
         info.setdefault('identified', False)
         return info
