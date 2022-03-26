@@ -20,6 +20,7 @@ class RplWhoisHostSupport(RFC1459Support):
 
     async def whois(self, nickname):
         info = await super().whois(nickname)
+        if info is None: return info
         info.setdefault("real_ip_address", None)
         info.setdefault("real_hostname", None)
         return info

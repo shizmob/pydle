@@ -19,7 +19,7 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
             account = self.users.get(user, {}).get('account', None)
             identified = self.users.get(user, {}).get('identified', False)
 
-        super()._rename_user(user, new)
+        await super()._rename_user(user, new)
 
         if self._capabilities.get('account-notify', False):
             await self._sync_user(new, {'account': account, 'identified': identified})

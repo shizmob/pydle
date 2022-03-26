@@ -58,6 +58,7 @@ class TLSSupport(rfc1459.RFC1459Support):
 
     async def whois(self, nickname):
         info = await super().whois(nickname)
+        if info is None: return info
         info.setdefault('secure', False)
         return info
 

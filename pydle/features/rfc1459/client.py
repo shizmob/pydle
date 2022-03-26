@@ -657,7 +657,7 @@ class RFC1459Support(BasicClient):
             self.nickname = new
 
         # Go through all user lists and replace.
-        self._rename_user(nick, new)
+        await self._rename_user(nick, new)
 
         # Call handler.
         await self.on_nick_change(nick, new)

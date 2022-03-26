@@ -16,7 +16,7 @@ class AccountSupport(rfc1459.RFC1459Support):
             })
 
     async def _rename_user(self, user, new):
-        super()._rename_user(user, new)
+        await super()._rename_user(user, new)
         # Unset account info to be certain until we get a new response.
         await self._sync_user(new, {'account': None, 'identified': False})
         await self.whois(new)
@@ -24,6 +24,7 @@ class AccountSupport(rfc1459.RFC1459Support):
     ## IRC API.
     async def whois(self, nickname):
         info = await super().whois(nickname)
+        if info is None: return info
         info.setdefault('account', None)
         info.setdefault('identified', False)
         return info
