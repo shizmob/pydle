@@ -24,7 +24,8 @@ class AccountSupport(rfc1459.RFC1459Support):
     ## IRC API.
     async def whois(self, nickname):
         info = await super().whois(nickname)
-        if info is None: return info
+        if info is None:
+            return info
         info.setdefault('account', None)
         info.setdefault('identified', False)
         return info
