@@ -60,11 +60,11 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
         if nick not in self.users:
             return
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
         if account == NO_ACCOUNT:
             self._sync_user(nick, { 'account': None, 'identified': False })
         else:
-            self._sync_user(nick, { 'account': account, 'identified': True })
+            await self._sync_user(nick, { 'account': account, 'identified': True })
 
     async def on_raw_away(self, message):
         """ Process AWAY messages. """
@@ -75,7 +75,7 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
         if nick not in self.users:
             return
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
         self.users[nick]['away'] = len(message.params) > 0
         self.users[nick]['away_message'] = message.params[0] if len(message.params) > 0 else None
 

@@ -719,7 +719,7 @@ class RFC1459Support(BasicClient):
         """ QUIT command. """
         nick, metadata = self._parse_user(message.source)
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
         if message.params:
             reason = message.params[0]
         else:
