@@ -12,7 +12,7 @@ NO_ACCOUNT = '*'
 class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account.AccountSupport, tls.TLSSupport):
     """ Support for IRCv3.1's base and optional extensions. """
 
-    def _rename_user(self, user, new):
+    async def _rename_user(self, user, new):
         # If the server supports account-notify, we will be told about the registration status changing.
         # As such, we can skip the song and dance pydle.features.account does.
         if self._capabilities.get('account-notify', False):
@@ -22,7 +22,7 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
         super()._rename_user(user, new)
 
         if self._capabilities.get('account-notify', False):
-            self._sync_user(new, {'account': account, 'identified': identified})
+            await self._sync_user(new, {'account': account, 'identified': identified})
 
     ## IRC callbacks.
 
@@ -85,7 +85,7 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
             nick, metadata = self._parse_user(message.source)
             channels, account, realname = message.params
 
-            self._sync_user(nick, metadata)
+            await self._sync_user(nick, metadata)
 
             # Emit a fake join message.
             fakemsg = self._create_message('JOIN', channels, source=message.source)

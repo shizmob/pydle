@@ -197,21 +197,21 @@ class BasicClient:
             'hostname': None
         }
 
-    def _sync_user(self, nick, metadata):
+    async def _sync_user(self, nick, metadata):
         # Create user in database.
         if nick not in self.users:
-            self._create_user(nick)
+            await self._create_user(nick)
             if nick not in self.users:
                 return
         self.users[nick].update(metadata)
 
-    def _rename_user(self, user, new):
+    async def _rename_user(self, user, new):
         if user in self.users:
             self.users[new] = self.users[user]
             self.users[new]['nickname'] = new
             del self.users[user]
         else:
-            self._create_user(new)
+            await self._create_user(new)
             if new not in self.users:
                 return
 

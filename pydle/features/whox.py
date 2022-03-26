@@ -25,10 +25,10 @@ class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
             # Find account name of person.
             pass
     
-    def _create_user(self, nickname):
+    async def _create_user(self, nickname):
         super()._create_user(nickname)
         if self.registered and 'WHOX' not in self._isupport:
-            self.whois(nickname)
+            await self.whois(nickname)
 
     async def on_raw_354(self, message):
         """ WHOX results have arrived. """
@@ -48,4 +48,4 @@ class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
             metadata['identified'] = True
             metadata['account'] = message.params[5]
 
-        self._sync_user(metadata['nickname'], metadata)
+        await self._sync_user(metadata['nickname'], metadata)
