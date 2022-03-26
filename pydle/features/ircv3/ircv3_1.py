@@ -62,7 +62,7 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
 
         await self._sync_user(nick, metadata)
         if account == NO_ACCOUNT:
-            self._sync_user(nick, { 'account': None, 'identified': False })
+            await self._sync_user(nick, { 'account': None, 'identified': False })
         else:
             await self._sync_user(nick, { 'account': account, 'identified': True })
 

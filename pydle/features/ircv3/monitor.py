@@ -77,7 +77,7 @@ class MonitoringSupport(isupport.ISUPPORTSupport):
         """ Someone we are monitoring just came online. """
         for target in message.params[1].split(','):
             nickname, metadata = self._parse_user(target)
-            self._sync_user(nickname, metadata)
+            await self._sync_user(nickname, metadata)
             await self.on_user_online(nickname)
 
     async def on_raw_731(self, message):

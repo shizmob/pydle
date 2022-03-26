@@ -61,7 +61,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
             visibility = None
 
         if target in self.users:
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
         await self.on_metadata(target, key, value, visibility=visibility)
 
     async def on_raw_760(self, message):
@@ -72,7 +72,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         if target not in self._pending['whois']:
             return
         if target in self.users:
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
 
         self._whois_info[target].setdefault('metadata', {})
         self._whois_info[target]['metadata'][key] = value
@@ -86,7 +86,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         if target not in self._pending['metadata']:
             return
         if target in self.users:
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
 
         self._metadata_info[target][key] = value
 
@@ -112,7 +112,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         if target not in self._pending['metadata']:
             return
         if target in self.users:
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
 
         self._metadata_queue.remove(target)
         del self._metadata_info[target]
