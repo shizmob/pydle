@@ -78,7 +78,7 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
                     'identified': True,
                     'account': message.tags['account']
                 }
-                self._sync_user(nick, metadata)
+                await self._sync_user(nick, metadata)
         await super().on_raw(message)
 
     async def on_raw_chghost(self, message):
@@ -95,4 +95,4 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
             'username': message.params[0],
             'hostname': message.params[1]
         }
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)

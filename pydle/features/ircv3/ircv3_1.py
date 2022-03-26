@@ -12,17 +12,17 @@ NO_ACCOUNT = '*'
 class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account.AccountSupport, tls.TLSSupport):
     """ Support for IRCv3.1's base and optional extensions. """
 
-    def _rename_user(self, user, new):
+    async def _rename_user(self, user, new):
         # If the server supports account-notify, we will be told about the registration status changing.
         # As such, we can skip the song and dance pydle.features.account does.
         if self._capabilities.get('account-notify', False):
             account = self.users.get(user, {}).get('account', None)
             identified = self.users.get(user, {}).get('identified', False)
 
-        super()._rename_user(user, new)
+        await super()._rename_user(user, new)
 
         if self._capabilities.get('account-notify', False):
-            self._sync_user(new, {'account': account, 'identified': identified})
+            await self._sync_user(new, {'account': account, 'identified': identified})
 
     ## IRC callbacks.
 
@@ -60,11 +60,11 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
         if nick not in self.users:
             return
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
         if account == NO_ACCOUNT:
-            self._sync_user(nick, { 'account': None, 'identified': False })
+            await self._sync_user(nick, { 'account': None, 'identified': False })
         else:
-            self._sync_user(nick, { 'account': account, 'identified': True })
+            await self._sync_user(nick, { 'account': account, 'identified': True })
 
     async def on_raw_away(self, message):
         """ Process AWAY messages. """
@@ -75,7 +75,7 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
         if nick not in self.users:
             return
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
         self.users[nick]['away'] = len(message.params) > 0
         self.users[nick]['away_message'] = message.params[0] if len(message.params) > 0 else None
 
@@ -85,7 +85,7 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
             nick, metadata = self._parse_user(message.source)
             channels, account, realname = message.params
 
-            self._sync_user(nick, metadata)
+            await self._sync_user(nick, metadata)
 
             # Emit a fake join message.
             fakemsg = self._create_message('JOIN', channels, source=message.source)
