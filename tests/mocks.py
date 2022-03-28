@@ -17,7 +17,7 @@ class MockServer:
 
     def __init__(self):
         self.connection = None
-        self.recvbuffer = ''
+        self.recvbuffer = ""
         self.msgbuffer = []
 
     def receive(self, *args, **kwargs):
@@ -34,7 +34,7 @@ class MockServer:
 
     def receiveddata(self, data):
         if data in self.recvbuffer:
-            self.recvbuffer.replace(data, '', 1)
+            self.recvbuffer.replace(data, "", 1)
             return True
         return False
 
@@ -47,7 +47,7 @@ class MockServer:
 
 
 class MockClient(pydle.client.BasicClient):
-    """ A client that subtitutes its own connection for a mock connection to MockServer. """
+    """A client that subtitutes its own connection for a mock connection to MockServer."""
 
     def __init__(self, *args, mock_server=None, **kwargs):
         self._mock_server = mock_server
@@ -62,10 +62,16 @@ class MockClient(pydle.client.BasicClient):
     def logger(self, val):
         pass
 
-    def _connect(self, hostname, port, *args, **kwargs):
-        self.connection = MockConnection(hostname, port, mock_client=self, mock_server=self._mock_server, eventloop=self.eventloop)
+    async def _connect(self, hostname, port, *args, **kwargs):
+        self.connection = MockConnection(
+            hostname,
+            port,
+            mock_client=self,
+            mock_server=self._mock_server,
+            eventloop=self.eventloop,
+        )
         self.connection.connect()
-        self.on_connect()
+        await self.on_connect()
 
     def raw(self, data):
         self.connection._mock_server.receivedata(data)
@@ -77,16 +83,16 @@ class MockClient(pydle.client.BasicClient):
         return MockMessage(*args, **kwargs)
 
     def _has_message(self):
-        return b'\r\n' in self._receive_buffer
+        return b"\r\n" in self._receive_buffer
 
     def _parse_message(self):
-        message, _, data = self._receive_buffer.partition(b'\r\n')
+        message, _, data = self._receive_buffer.partition(b"\r\n")
         self._receive_buffer = data
-        return MockMessage.parse(message + b'\r\n', encoding=self.encoding)
+        return MockMessage.parse(message + b"\r\n", encoding=self.encoding)
 
 
 class MockConnection(pydle.connection.Connection):
-    """ A mock connection between a client and a server. """
+    """A mock connection between a client and a server."""
 
     def __init__(self, *args, mock_client=None, mock_server=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -114,7 +120,7 @@ class MockConnection(pydle.connection.Connection):
 
 
 class MockEventLoop:
-    """ A mock event loop for use in testing. """
+    """A mock event loop for use in testing."""
 
     def __init__(self, *args, **kwargs):
         self._mock_timers = {}
@@ -162,7 +168,9 @@ class MockEventLoop:
             _delay = _delay.total_seconds()
 
         id = self._mock_periodical_id
-        timer = threading.Timer(_delay, self._do_schedule_periodically, (_f, _delay, id, _args, _kw))
+        timer = threading.Timer(
+            _delay, self._do_schedule_periodically, (_f, _delay, id, _args, _kw)
+        )
         timer.start()
 
         self._mock_timers[id] = timer
@@ -173,7 +181,9 @@ class MockEventLoop:
         if not self.is_scheduled(id):
             return
 
-        timer = threading.Timer(delay, self._do_schedule_periodically, (f, delay, id, args, kw))
+        timer = threading.Timer(
+            delay, self._do_schedule_periodically, (f, delay, id, args, kw)
+        )
         timer.start()
         self._mock_timers[id] = timer
         result = False
@@ -213,9 +223,21 @@ class MockMessage(pydle.protocol.Message):
         try:
             val = json.loads(message)
         except:
-            raise pydle.protocol.ProtocolViolation('Invalid JSON')
+            raise pydle.protocol.ProtocolViolation("Invalid JSON")
 
-        return MockMessage(val['command'], *val['params'], source=val['source'], **val['kw'])
+        return MockMessage(
+            val["command"], *val["params"], source=val["source"], **val["kw"]
+        )
 
     def construct(self):
-        return json.dumps({ 'command': self.command, 'params': self.params, 'source': self.source, 'kw': self.kw }) + '\r\n'
+        return (
+            json.dumps(
+                {
+                    "command": self.command,
+                    "params": self.params,
+                    "source": self.source,
+                    "kw": self.kw,
+                }
+            )
+            + "\r\n"
+        )

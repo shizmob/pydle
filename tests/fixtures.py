@@ -9,11 +9,13 @@ def with_client(*features, connected=True, **options):
         with_client.classes[features] = pydle.featurize(MockClient, *features)
 
     def inner(f):
-        def run():
+        async def run():
             server = MockServer()
-            client = with_client.classes[features]('TestcaseRunner', mock_server=server, **options)
+            client = with_client.classes[features](
+                "TestcaseRunner", mock_server=server, **options
+            )
             if connected:
-                client.connect('mock://local', 1337, eventloop=MockEventLoop())
+                await client.connect("mock://local", 1337, eventloop=MockEventLoop())
 
             try:
                 ret = f(client=client, server=server)
@@ -24,6 +26,8 @@ def with_client(*features, connected=True, **options):
 
         run.__name__ = f.__name__
         return run
+
     return inner
+
 
 with_client.classes = {}

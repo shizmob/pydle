@@ -1,4 +1,7 @@
 import time
+
+import pytest
+
 import pydle
 
 from pytest import raises, mark
@@ -10,47 +13,57 @@ pydle.client.PING_TIMEOUT = 10
 
 ## Initialization.
 
+
+@pytest.mark.asyncio
 @with_client(invalid_kwarg=False)
 def test_client_superfluous_arguments(server, client):
     assert client.logger.warning.called
 
 
 ## Connection.
-
+@pytest.mark.asyncio
 @with_client()
-def test_client_reconnect(server, client):
-    client.disconnect(expected=True)
+async def test_client_reconnect(server, client):
+    await client.disconnect(expected=True)
     assert not client.connected
 
-    client.connect(reconnect=True)
+    await client.connect(reconnect=True)
     assert client.connected
 
+
+@pytest.mark.asyncio
 @mark.slow
 @with_client()
-def test_client_unexpected_disconnect_reconnect(server, client):
+async def test_client_unexpected_disconnect_reconnect(server, client):
     client._reconnect_delay = Mock(return_value=0)
-    client.disconnect(expected=False)
+    await client.disconnect(expected=False)
     assert client._reconnect_delay.called
 
     time.sleep(0.1)
     assert client.connected
 
+
+@pytest.mark.asyncio
 @with_client()
-def test_client_unexpected_reconnect_give_up(server, client):
+async def test_client_unexpected_reconnect_give_up(server, client):
     client.RECONNECT_ON_ERROR = False
-    client.disconnect(expected=False)
+    await client.disconnect(expected=False)
     assert not client.connected
 
+
+@pytest.mark.asyncio
 @mark.slow
 @with_client()
-def test_client_unexpected_disconnect_reconnect_delay(server, client):
+async def test_client_unexpected_disconnect_reconnect_delay(server, client):
     client._reconnect_delay = Mock(return_value=1)
-    client.disconnect(expected=False)
+    await client.disconnect(expected=False)
 
     assert not client.connected
     time.sleep(1.1)
     assert client.connected
 
+
+@pytest.mark.asyncio
 @with_client()
 def test_client_reconnect_delay_calculation(server, client):
     client.RECONNECT_DELAYED = False
@@ -65,21 +78,27 @@ def test_client_reconnect_delay_calculation(server, client):
 
     assert client._reconnect_delay() == client.RECONNECT_DELAYS[-1]
 
+
+@pytest.mark.asyncio
 @with_client()
-def test_client_disconnect_on_connect(server, client):
+async def test_client_disconnect_on_connect(server, client):
     client.disconnect = Mock()
 
-    client.connect('mock://local', 1337)
+    await client.connect("mock://local", 1337)
     assert client.connected
     assert client.disconnect.called
 
-@with_client(connected=False)
-def test_client_connect_invalid_params(server, client):
-    with raises(ValueError):
-        client.connect()
-    with raises(ValueError):
-        client.connect(port=1337)
 
+@pytest.mark.asyncio
+@with_client(connected=False)
+async def test_client_connect_invalid_params(server, client):
+    with raises(ValueError):
+        await client.connect()
+    with raises(ValueError):
+        await client.connect(port=1337)
+
+
+@pytest.mark.asyncio
 @mark.slow
 @with_client()
 def test_client_timeout(server, client):
@@ -89,46 +108,52 @@ def test_client_timeout(server, client):
     assert client.on_data_error.called
     assert isinstance(client.on_data_error.call_args[0][0], TimeoutError)
 
+
+@pytest.mark.asyncio
 @with_client(connected=False)
-def test_client_server_tag(server, client):
+async def test_client_server_tag(server, client):
     ev = MockEventLoop()
     assert client.server_tag is None
 
-    client.connect('Mock.local', 1337, eventloop=ev)
-    assert client.server_tag == 'mock'
-    client.disconnect()
+    await client.connect("Mock.local", 1337, eventloop=ev)
+    assert client.server_tag == "mock"
+    await client.disconnect()
 
-    client.connect('irc.mock.local', 1337, eventloop=ev)
-    assert client.server_tag == 'mock'
-    client.disconnect()
+    await client.connect("irc.mock.local", 1337, eventloop=ev)
+    assert client.server_tag == "mock"
+    await client.disconnect()
 
-    client.connect('mock', 1337, eventloop=ev)
-    assert client.server_tag == 'mock'
-    client.disconnect()
+    await client.connect("mock", 1337, eventloop=ev)
+    assert client.server_tag == "mock"
+    await client.disconnect()
 
-    client.connect('127.0.0.1', 1337, eventloop=ev)
-    assert client.server_tag == '127.0.0.1'
+    await client.connect("127.0.0.1", 1337, eventloop=ev)
+    assert client.server_tag == "127.0.0.1"
 
-    client.network = 'MockNet'
-    assert client.server_tag == 'mocknet'
-    client.disconnect()
+    client.network = "MockNet"
+    assert client.server_tag == "mocknet"
+    await client.disconnect()
 
 
 ## Messages.
 
+
+@pytest.mark.asyncio
 @with_client()
 def test_client_message(server, client):
     client.on_raw_install = Mock()
-    server.send('INSTALL', 'gentoo')
+    server.send("INSTALL", "gentoo")
     assert client.on_raw_install.called
 
     message = client.on_raw_install.call_args[0][0]
     assert isinstance(message, pydle.protocol.Message)
-    assert message.command == 'INSTALL'
-    assert message.params == ('gentoo',)
+    assert message.command == "INSTALL"
+    assert message.params == ("gentoo",)
 
+
+@pytest.mark.asyncio
 @with_client()
 def test_client_unknown(server, client):
     client.on_unknown = Mock()
-    server.send('INSTALL', 'gentoo')
+    server.send("INSTALL", "gentoo")
     assert client.on_unknown.called

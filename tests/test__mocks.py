@@ -1,5 +1,8 @@
 import time
 import datetime
+
+import pytest
+
 import pydle
 
 from pytest import mark
@@ -23,12 +26,14 @@ class Passed:
 
 ## Client.
 
+
+@pytest.mark.asyncio
 @mark.meta
 @with_client(connected=False)
-def test_mock_client_connect(server, client):
+async def test_mock_client_connect(server, client):
     assert not client.connected
     client.on_connect = Mock()
-    client.connect('mock://local', 1337, eventloop=MockEventLoop())
+    await client.connect("mock://local", 1337, eventloop=MockEventLoop())
 
     assert client.connected
     assert client.on_connect.called
@@ -36,43 +41,49 @@ def test_mock_client_connect(server, client):
     client.disconnect()
     assert not client.connected
 
+
+@pytest.mark.asyncio
 @mark.meta
 @with_client()
 def test_mock_client_send(server, client):
-    client.raw('benis')
-    assert server.receiveddata('benis')
-    client.rawmsg('INSTALL', 'Gentoo')
-    assert server.received('INSTALL', 'Gentoo')
+    client.raw("benis")
+    assert server.receiveddata("benis")
+    client.rawmsg("INSTALL", "Gentoo")
+    assert server.received("INSTALL", "Gentoo")
 
+
+@pytest.mark.asyncio
 @mark.meta
 @with_client(pydle.features.RFC1459Support)
 def test_mock_client_receive(server, client):
     client.on_raw = Mock()
-    server.send('PING', 'test')
+    server.send("PING", "test")
     assert client.on_raw.called
 
     message = client.on_raw.call_args[0][0]
     assert isinstance(message, pydle.protocol.Message)
     assert message.source is None
-    assert message.command == 'PING'
-    assert message.params == ('test',)
+    assert message.command == "PING"
+    assert message.params == ("test",)
 
 
 ## Connection.
 
+
 @mark.meta
 def test_mock_connection_connect():
     serv = Mock()
-    conn = MockConnection('mock.local', port=1337, mock_server=serv)
+    conn = MockConnection("mock.local", port=1337, mock_server=serv)
 
     conn.connect()
     assert conn.connected
     assert serv.connection is conn
 
+
 @mark.meta
 def test_mock_connection_disconnect():
     serv = Mock()
-    conn = MockConnection('mock.local', port=1337, mock_server=serv)
+    conn = MockConnection("mock.local", port=1337, mock_server=serv)
 
     conn.connect()
     conn.disconnect()
@@ -80,6 +91,7 @@ def test_mock_connection_disconnect():
 
 
 ## Event loop.
+
 
 @mark.meta
 def test_mock_eventloop_schedule():
@@ -90,6 +102,7 @@ def test_mock_eventloop_schedule():
     assert passed
 
     ev.stop()
+
 
 @mark.meta
 @mark.slow
@@ -103,6 +116,7 @@ def test_mock_eventloop_schedule_in():
 
     ev.stop()
 
+
 @mark.meta
 @mark.slow
 def test_mock_eventloop_schedule_in_timedelta():
@@ -112,6 +126,7 @@ def test_mock_eventloop_schedule_in_timedelta():
     ev.schedule_in(datetime.timedelta(seconds=1), lambda: passed.set())
     time.sleep(1.1)
     assert passed
+
 
 @mark.meta
 @mark.slow
@@ -129,6 +144,7 @@ def test_mock_eventloop_schedule_periodically():
 
     ev.stop()
 
+
 @mark.meta
 @mark.slow
 def test_mock_eventloop_unschedule_in():
@@ -141,6 +157,7 @@ def test_mock_eventloop_unschedule_in():
     time.sleep(1.1)
     assert not passed
 
+
 @mark.meta
 @mark.slow
 def test_mock_eventloop_unschedule_periodically():
@@ -152,6 +169,7 @@ def test_mock_eventloop_unschedule_periodically():
 
     time.sleep(1.1)
     assert not passed
+
 
 @mark.meta
 @mark.slow
