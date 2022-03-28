@@ -14,23 +14,23 @@ def test_client_same_nick(server, client):
 
 @pytest.mark.asyncio
 @with_client()
-def test_user_creation(server, client):
-    client._create_user("WiZ")
+async def test_user_creation(server, client):
+    await client._create_user("WiZ")
     assert "WiZ" in client.users
     assert client.users["WiZ"]["nickname"] == "WiZ"
 
 
 @pytest.mark.asyncio
 @with_client()
-def test_user_invalid_creation(server, client):
-    client._create_user("irc.fbi.gov")
+async def test_user_invalid_creation(server, client):
+    await client._create_user("irc.fbi.gov")
     assert "irc.fbi.gov" not in client.users
 
 
 @pytest.mark.asyncio
 @with_client()
 async def test_user_renaming(server, client):
-    client._create_user("WiZ")
+    await client._create_user("WiZ")
     await client._rename_user("WiZ", "jilles")
 
     assert "WiZ" not in client.users
@@ -59,7 +59,7 @@ async def test_user_renaming_invalid_creation(server, client):
 @pytest.mark.asyncio
 @with_client()
 async def test_user_renaming_channel_users(server, client):
-    client._create_user("WiZ")
+    await client._create_user("WiZ")
     client._create_channel("#lobby")
     client.channels["#lobby"]["users"].add("WiZ")
 
@@ -70,8 +70,8 @@ async def test_user_renaming_channel_users(server, client):
 
 @pytest.mark.asyncio
 @with_client()
-def test_user_deletion(server, client):
-    client._create_user("WiZ")
+async def test_user_deletion(server, client):
+    await client._create_user("WiZ")
     client._destroy_user("WiZ")
 
     assert "WiZ" not in client.users
@@ -79,9 +79,9 @@ def test_user_deletion(server, client):
 
 @pytest.mark.asyncio
 @with_client()
-def test_user_channel_deletion(server, client):
+async def test_user_channel_deletion(server, client):
     client._create_channel("#lobby")
-    client._create_user("WiZ")
+    await client._create_user("WiZ")
     client.channels["#lobby"]["users"].add("WiZ")
 
     client._destroy_user("WiZ", "#lobby")
@@ -91,10 +91,10 @@ def test_user_channel_deletion(server, client):
 
 @pytest.mark.asyncio
 @with_client()
-def test_user_channel_incomplete_deletion(server, client):
+async def test_user_channel_incomplete_deletion(server, client):
     client._create_channel("#lobby")
     client._create_channel("#foo")
-    client._create_user("WiZ")
+    await client._create_user("WiZ")
     client.channels["#lobby"]["users"].add("WiZ")
     client.channels["#foo"]["users"].add("WiZ")
 
@@ -106,7 +106,7 @@ def test_user_channel_incomplete_deletion(server, client):
 @pytest.mark.asyncio
 @with_client()
 async def test_user_synchronization(server, client):
-    client._create_user("WiZ")
+    await client._create_user("WiZ")
     await client._sync_user("WiZ", {"hostname": "og.irc.developer"})
 
     assert client.users["WiZ"]["hostname"] == "og.irc.developer"
@@ -129,14 +129,14 @@ async def test_user_invalid_synchronization(server, client):
 @pytest.mark.asyncio
 @with_client()
 async def test_user_mask_format(server, client):
-    client._create_user("WiZ")
+    await client._create_user("WiZ")
     assert client._format_user_mask("WiZ") == "WiZ!*@*"
 
     await client._sync_user("WiZ", {"username": "wiz"})
     assert client._format_user_mask("WiZ") == "WiZ!wiz@*"
 
-    client._sync_user("WiZ", {"hostname": "og.irc.developer"})
+    await client._sync_user("WiZ", {"hostname": "og.irc.developer"})
     assert client._format_user_mask("WiZ") == "WiZ!wiz@og.irc.developer"
 
-    client._sync_user("WiZ", {"username": None})
+    await client._sync_user("WiZ", {"username": None})
     assert client._format_user_mask("WiZ") == "WiZ!*@og.irc.developer"

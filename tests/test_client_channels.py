@@ -46,9 +46,9 @@ def test_channel_destruction(server, client):
 
 @pytest.mark.asyncio
 @with_client()
-def test_channel_user_destruction(server, client):
+async def test_channel_user_destruction(server, client):
     client._create_channel("#pydle")
-    client._create_user("WiZ")
+    await client._create_user("WiZ")
     client.channels["#pydle"]["users"].add("WiZ")
 
     client._destroy_channel("#pydle")

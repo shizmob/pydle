@@ -38,9 +38,9 @@ class MockServer:
             return True
         return False
 
-    def send(self, *args, **kwargs):
+    async def send(self, *args, **kwargs):
         msg = self.connection._mock_client._create_message(*args, **kwargs)
-        self.connection._mock_client.on_raw(msg)
+        await self.connection._mock_client.on_raw(msg)
 
     def sendraw(self, data):
         self.connection._mock_client.on_data(data)

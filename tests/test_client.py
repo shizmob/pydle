@@ -140,9 +140,9 @@ async def test_client_server_tag(server, client):
 
 @pytest.mark.asyncio
 @with_client()
-def test_client_message(server, client):
+async def test_client_message(server, client):
     client.on_raw_install = Mock()
-    server.send("INSTALL", "gentoo")
+    await server.send("INSTALL", "gentoo")
     assert client.on_raw_install.called
 
     message = client.on_raw_install.call_args[0][0]
@@ -153,7 +153,7 @@ def test_client_message(server, client):
 
 @pytest.mark.asyncio
 @with_client()
-def test_client_unknown(server, client):
+async def test_client_unknown(server, client):
     client.on_unknown = Mock()
-    server.send("INSTALL", "gentoo")
+    await server.send("INSTALL", "gentoo")
     assert client.on_unknown.called
