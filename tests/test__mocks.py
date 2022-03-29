@@ -66,6 +66,7 @@ async def test_mock_client_receive(server, client):
 
 ## Connection.
 
+
 @pytest.mark.asyncio
 @mark.meta
 async def test_mock_connection_connect():
@@ -75,6 +76,7 @@ async def test_mock_connection_connect():
     await conn.connect()
     assert conn.connected
     assert serv.connection is conn
+
 
 @pytest.mark.asyncio
 @mark.meta
@@ -168,9 +170,10 @@ def test_mock_eventloop_unschedule_periodically():
     assert not passed
 
 
+@pytest.mark.asyncio
 @mark.meta
 @mark.slow
-def test_mock_eventloop_unschedule_periodically_after():
+async def test_mock_eventloop_unschedule_periodically_after():
     ev = MockEventLoop()
     passed = Passed()
 
@@ -180,6 +183,6 @@ def test_mock_eventloop_unschedule_periodically_after():
     assert passed
 
     passed.reset()
-    ev.unschedule(handle)
+    await ev.unschedule(handle)
     time.sleep(1.0)
     assert not passed

@@ -98,7 +98,7 @@ async def test_client_connect_invalid_params(server, client):
 @pytest.mark.asyncio
 @mark.slow
 @with_client()
-def test_client_timeout(server, client):
+async def test_client_timeout(server, client):
     client.on_data_error = Mock()
     time.sleep(pydle.client.PING_TIMEOUT + 1)
 

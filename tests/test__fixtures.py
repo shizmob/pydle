@@ -39,7 +39,7 @@ def test_fixtures_with_client_options(server, client):
 @pytest.mark.asyncio
 @mark.meta
 @with_client()
-def test_fixtures_with_client_connected(server, client):
+async def test_fixtures_with_client_connected(server, client):
     assert client.connected
     assert isinstance(client.eventloop, MockEventLoop)
     assert isinstance(client.connection, MockConnection)
