@@ -468,71 +468,54 @@ class RFC1459Support(BasicClient):
 
     async def on_invite(self, channel, by):
         """ Callback called when the client was invited into a channel by someone. """
-        pass
 
     async def on_user_invite(self, target, channel, by):
         """ Callback called when another user was invited into a channel by someone. """
-        pass
 
     async def on_join(self, channel, user):
         """ Callback called when a user, possibly the client, has joined the channel. """
-        pass
 
     async def on_kill(self, target, by, reason):
         """ Callback called when a user, possibly the client, was killed from the server. """
-        pass
 
     async def on_kick(self, channel, target, by, reason=None):
         """ Callback called when a user, possibly the client, was kicked from a channel. """
-        pass
 
     async def on_mode_change(self, channel, modes, by):
         """ Callback called when the mode on a channel was changed. """
-        pass
 
     async def on_user_mode_change(self, modes):
         """ Callback called when a user mode change occurred for the client. """
-        pass
 
     async def on_message(self, target, by, message):
         """ Callback called when the client received a message. """
-        pass
 
     async def on_channel_message(self, target, by, message):
         """ Callback received when the client received a message in a channel. """
-        pass
 
     async def on_private_message(self, target, by, message):
         """ Callback called when the client received a message in private. """
-        pass
 
     async def on_nick_change(self, old, new):
         """ Callback called when a user, possibly the client, changed their nickname. """
-        pass
 
     async def on_notice(self, target, by, message):
         """ Callback called when the client received a notice. """
-        pass
 
     async def on_channel_notice(self, target, by, message):
         """ Callback called when the client received a notice in a channel. """
-        pass
 
     async def on_private_notice(self, target, by, message):
         """ Callback called when the client received a notice in private. """
-        pass
 
     async def on_part(self, channel, user, message=None):
         """ Callback called when a user, possibly the client, left a channel. """
-        pass
 
     async def on_topic_change(self, channel, message, by):
         """ Callback called when the topic for a channel was changed. """
-        pass
 
     async def on_quit(self, user, message=None):
         """ Callback called when a user, possibly the client, left the network. """
-        pass
 
     ## Callback handlers.
 

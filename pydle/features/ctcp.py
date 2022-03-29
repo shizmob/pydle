@@ -21,7 +21,6 @@ class CTCPSupport(rfc1459.RFC1459Support):
         Client subclasses can override on_ctcp_<type> to be called when receiving a message of that specific CTCP type,
         in addition to this callback.
         """
-        pass
 
     async def on_ctcp_reply(self, by, target, what, response):
         """
@@ -29,7 +28,6 @@ class CTCPSupport(rfc1459.RFC1459Support):
         Client subclasses can override on_ctcp_<type>_reply to be called when receiving a reply of that specific CTCP type,
         in addition to this callback.
         """
-        pass
 
     async def on_ctcp_version(self, by, target, contents):
         """ Built-in CTCP version as some networks seem to require it. """

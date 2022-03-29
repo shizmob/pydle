@@ -13,7 +13,6 @@ DEFAULT_NICKNAME = '<unregistered>'
 
 class Error(Exception):
     """ Base class for all pydle errors. """
-    pass
 
 
 class NotInChannel(Error):
@@ -430,7 +429,6 @@ class BasicClient:
 
     async def _ignored(self, message):
         """ Ignore message. """
-        pass
 
     def __getattr__(self, attr):
         """ Return on_unknown or _ignored for unknown handlers, depending on the invocation type. """

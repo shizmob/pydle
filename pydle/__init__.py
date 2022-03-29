@@ -32,9 +32,7 @@ def featurize(*features):
 
 class Client(featurize(*features.ALL)):
     """ A fully featured IRC client. """
-    pass
 
 
 class MinimalClient(featurize(*features.LITE)):
     """ A cut-down, less-featured IRC client. """
-    pass
