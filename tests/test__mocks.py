@@ -1,11 +1,8 @@
 import time
 import datetime
-
 import pytest
-
-import pydle
-
 from pytest import mark
+import pydle
 from .fixtures import with_client
 from .mocks import Mock, MockEventLoop, MockConnection
 
@@ -45,8 +42,8 @@ async def test_mock_client_connect(server, client):
 @pytest.mark.asyncio
 @mark.meta
 @with_client()
-def test_mock_client_send(server, client):
-    client.raw("benis")
+async def test_mock_client_send(server, client):
+    await client.raw("benis")
     assert server.receiveddata("benis")
     client.rawmsg("INSTALL", "Gentoo")
     assert server.received("INSTALL", "Gentoo")
@@ -55,9 +52,9 @@ def test_mock_client_send(server, client):
 @pytest.mark.asyncio
 @mark.meta
 @with_client(pydle.features.RFC1459Support)
-def test_mock_client_receive(server, client):
+async def test_mock_client_receive(server, client):
     client.on_raw = Mock()
-    server.send("PING", "test")
+    await server.send("PING", "test")
     assert client.on_raw.called
 
     message = client.on_raw.call_args[0][0]
@@ -69,24 +66,24 @@ def test_mock_client_receive(server, client):
 
 ## Connection.
 
-
+@pytest.mark.asyncio
 @mark.meta
-def test_mock_connection_connect():
+async def test_mock_connection_connect():
     serv = Mock()
     conn = MockConnection("mock.local", port=1337, mock_server=serv)
 
-    conn.connect()
+    await conn.connect()
     assert conn.connected
     assert serv.connection is conn
 
-
+@pytest.mark.asyncio
 @mark.meta
-def test_mock_connection_disconnect():
+async def test_mock_connection_disconnect():
     serv = Mock()
     conn = MockConnection("mock.local", port=1337, mock_server=serv)
 
-    conn.connect()
-    conn.disconnect()
+    await conn.connect()
+    await conn.disconnect()
     assert not conn.connected
 
 
@@ -98,7 +95,7 @@ def test_mock_eventloop_schedule():
     ev = MockEventLoop()
     passed = Passed()
 
-    ev.schedule(lambda: passed.set())
+    ev.schedule(passed.set())
     assert passed
 
     ev.stop()
@@ -110,7 +107,7 @@ def test_mock_eventloop_schedule_in():
     ev = MockEventLoop()
     passed = Passed()
 
-    ev.schedule_in(1, lambda: passed.set())
+    ev.schedule_in(1, passed.set())
     time.sleep(1.1)
     assert passed
 
@@ -123,7 +120,7 @@ def test_mock_eventloop_schedule_in_timedelta():
     ev = MockEventLoop()
     passed = Passed()
 
-    ev.schedule_in(datetime.timedelta(seconds=1), lambda: passed.set())
+    ev.schedule_in(datetime.timedelta(seconds=1), passed.set())
     time.sleep(1.1)
     assert passed
 
@@ -134,7 +131,7 @@ def test_mock_eventloop_schedule_periodically():
     ev = MockEventLoop()
     passed = Passed()
 
-    ev.schedule_periodically(1, lambda: passed.set())
+    ev.schedule_periodically(1, passed.set())
     time.sleep(1.1)
     assert passed
 
@@ -151,7 +148,7 @@ def test_mock_eventloop_unschedule_in():
     ev = MockEventLoop()
     passed = Passed()
 
-    handle = ev.schedule_in(1, lambda: passed.set())
+    handle = ev.schedule_in(1, passed.set())
     ev.unschedule(handle)
 
     time.sleep(1.1)
@@ -164,7 +161,7 @@ def test_mock_eventloop_unschedule_periodically():
     ev = MockEventLoop()
     passed = Passed()
 
-    handle = ev.schedule_periodically(1, lambda: passed.set())
+    handle = ev.schedule_periodically(1, passed.set())
     ev.unschedule(handle)
 
     time.sleep(1.1)
@@ -177,7 +174,7 @@ def test_mock_eventloop_unschedule_periodically_after():
     ev = MockEventLoop()
     passed = Passed()
 
-    handle = ev.schedule_periodically(1, lambda: passed.set())
+    handle = ev.schedule_periodically(1, passed.set())
 
     time.sleep(1.1)
     assert passed

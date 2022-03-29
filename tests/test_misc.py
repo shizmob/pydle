@@ -7,7 +7,7 @@ But we want to hit them anyways
 from pydle.protocol import identifierify
 
 
-async def test_identifierify():
+def test_identifierify():
     good_name = identifierify("MyVerySimpleName")
     bad_name = identifierify("I'mASpec!äl/Name!_")
     assert good_name == "myverysimplename"

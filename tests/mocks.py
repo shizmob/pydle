@@ -70,13 +70,13 @@ class MockClient(pydle.client.BasicClient):
             mock_server=self._mock_server,
             eventloop=self.eventloop,
         )
-        self.connection.connect()
+        await self.connection.connect()
         await self.on_connect()
 
-    def raw(self, data):
+    async def raw(self, data):
         self.connection._mock_server.receivedata(data)
 
-    def rawmsg(self, *args, **kwargs):
+    async def rawmsg(self, *args, **kwargs):
         self.connection._mock_server.receive(*args, **kwargs)
 
     def _create_message(self, *args, **kwargs):
@@ -110,11 +110,11 @@ class MockConnection(pydle.connection.Connection):
     def connected(self):
         return self._mock_connected
 
-    def connect(self, *args, **kwargs):
+    async def connect(self, *args, **kwargs):
         self._mock_server.connection = self
         self._mock_connected = True
 
-    def disconnect(self, *args, **kwargs):
+    async def disconnect(self, *args, **kwargs):
         self._mock_server.connection = None
         self._mock_connected = False
 
@@ -191,7 +191,7 @@ class MockEventLoop:
         try:
             result = f(*args, **kw)
         finally:
-            if result == False:
+            if result is False:
                 self.unschedule(id)
 
     def is_scheduled(self, handle):

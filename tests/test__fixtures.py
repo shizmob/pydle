@@ -1,8 +1,6 @@
 import pytest
-
-import pydle
-
 from pytest import mark
+import pydle
 from .fixtures import with_client
 from .mocks import MockClient, MockServer, MockConnection, MockEventLoop
 
