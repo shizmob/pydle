@@ -1,9 +1,9 @@
 ## tags.py
 # Tagged message support.
+import re
 import pydle.client
 import pydle.protocol
 from pydle.features import rfc1459
-import re
 
 TAG_INDICATOR = '@'
 TAG_SEPARATOR = ';'

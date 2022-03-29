@@ -1,5 +1,6 @@
 ## ctcp.py
 # Client-to-Client-Protocol (CTCP) support.
+import pydle
 import pydle.protocol
 from pydle.features import rfc1459
 from pydle import client
@@ -31,7 +32,6 @@ class CTCPSupport(rfc1459.RFC1459Support):
 
     async def on_ctcp_version(self, by, target, contents):
         """ Built-in CTCP version as some networks seem to require it. """
-        import pydle
 
         version = '{name} v{ver}'.format(name=pydle.__name__, ver=pydle.__version__)
         await self.ctcp_reply(by, 'VERSION', version)

@@ -1,11 +1,11 @@
+# noinspection PyUnresolvedReferences
+from asyncio import coroutine, Future
+from functools import cmp_to_key
 from . import connection, protocol, client, features
-
 from .client import Error, NotInChannel, AlreadyInChannel, BasicClient, ClientPool
 from .features.ircv3.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as CAPABILITY_FAILED, \
     NEGOTIATED as CAPABILITY_NEGOTIATED
 
-# noinspection PyUnresolvedReferences
-from asyncio import coroutine, Future
 
 __name__ = 'pydle'
 __version__ = '0.9.4rc1'
@@ -15,12 +15,11 @@ __license__ = 'BSD'
 
 def featurize(*features):
     """ Put features into proper MRO order. """
-    from functools import cmp_to_key
 
     def compare_subclass(left, right):
         if issubclass(left, right):
             return -1
-        elif issubclass(right, left):
+        if issubclass(right, left):
             return 1
         return 0
 

@@ -2,15 +2,11 @@
 ## irccat.py
 # Simple threaded irccat implementation, using pydle.
 import sys
-import os
-import threading
 import logging
 import asyncio
-from asyncio.streams import FlowControlMixin
 
 from .. import Client, __version__
 from . import _args
-import asyncio
 
 
 class IRCCat(Client):

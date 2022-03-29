@@ -1,7 +1,6 @@
 ## account.py
 # Account system support.
 from pydle.features import rfc1459
-import asyncio
 
 class AccountSupport(rfc1459.RFC1459Support):
 

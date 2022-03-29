@@ -178,8 +178,7 @@ class RFC1459Support(BasicClient):
         # Wat.
         if allow_everything and range >= 4:
             return '*'
-        else:
-            return host
+        return host
 
     ## Connection.
 

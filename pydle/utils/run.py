@@ -1,7 +1,6 @@
 ## run.py
 # Run client.
 import asyncio
-import pydle
 from . import _args
 
 def main():

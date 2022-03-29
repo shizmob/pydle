@@ -3,9 +3,8 @@
 import asyncio
 import logging
 from asyncio import new_event_loop, gather, get_event_loop, sleep
-
-from . import connection, protocol
 import warnings
+from . import connection, protocol
 
 __all__ = ['Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient', 'ClientPool']
 DEFAULT_NICKNAME = '<unregistered>'
@@ -166,10 +165,8 @@ class BasicClient:
         if self.RECONNECT_ON_ERROR and self.RECONNECT_DELAYED:
             if self._reconnect_attempts >= len(self.RECONNECT_DELAYS):
                 return self.RECONNECT_DELAYS[-1]
-            else:
-                return self.RECONNECT_DELAYS[self._reconnect_attempts]
-        else:
-            return 0
+            return self.RECONNECT_DELAYS[self._reconnect_attempts]
+        return 0
 
     ## Internal database management.
 
@@ -296,8 +293,7 @@ class BasicClient:
                         tag = host
 
             return tag
-        else:
-            return None
+        return None
 
     ## IRC API.
 
@@ -439,9 +435,8 @@ class BasicClient:
                 # In that case, return the method that logs and possibly acts on unknown messages.
                 return self.on_unknown
             # Are we in an existing handler calling super()?
-            else:
-                # Just ignore it, then.
-                return self._ignored
+            # Just ignore it, then.
+            return self._ignored
 
         # This isn't a handler, just raise an error.
         raise AttributeError(attr)
