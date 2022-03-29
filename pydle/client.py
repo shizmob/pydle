@@ -415,7 +415,7 @@ class BasicClient:
             self._handler_top_level = False
 
             await handler(message)
-        except:
+        except Exception:  # fixme: This should be a more specific exception but I don't know what could be raised here
             self.logger.exception('Failed to execute %s handler.', method)
 
     async def on_unknown(self, message):

@@ -17,7 +17,7 @@ class IRCCat(Client):
         self.async_stdin = None
 
     async def _send(self, data):
-        await super(IRCCat, self)._send(data)
+        await super()._send(data)
 
     async def process_stdin(self):
         """ Yes. """

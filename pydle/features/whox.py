@@ -24,7 +24,7 @@ class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
         else:
             # Find account name of person.
             pass
-    
+
     async def _create_user(self, nickname):
         super()._create_user(nickname)
         if self.registered and 'WHOX' not in self._isupport:

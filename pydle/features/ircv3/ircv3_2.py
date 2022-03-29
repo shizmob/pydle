@@ -20,7 +20,7 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
     async def on_capability_cap_notify_available(self, value):
         """ Take note of new or removed capabilities. """
         return True
-    
+
     async def on_capability_chghost_available(self, value):
         """ Server reply to indicate a user we are in a common channel with changed user and/or host. """
         return True

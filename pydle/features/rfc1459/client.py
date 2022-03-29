@@ -375,7 +375,7 @@ class RFC1459Support(BasicClient):
         """
         if not self.is_channel(channel):
             raise ValueError('Not a channel: {}'.format(channel))
-        elif not self.in_channel(channel):
+        if not self.in_channel(channel):
             raise NotInChannel(channel)
 
         await self.rawmsg('TOPIC', channel, topic)

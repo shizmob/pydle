@@ -55,9 +55,9 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
 
         # And have callbacks update other internals.
         for entry, value in isupport.items():
-            if value != False:
+            if value is not False:
                 # A value of True technically means there was no value supplied; correct this for callbacks.
-                if value == True:
+                if value is True:
                     value = None
 
                 method = 'on_isupport_' + pydle.protocol.identifierify(entry)
