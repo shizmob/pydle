@@ -45,7 +45,7 @@ async def test_mock_client_connect(server, client):
 async def test_mock_client_send(server, client):
     await client.raw("benis")
     assert server.receiveddata("benis")
-    client.rawmsg("INSTALL", "Gentoo")
+    await client.rawmsg("INSTALL", "Gentoo")
     assert server.received("INSTALL", "Gentoo")
 
 
@@ -54,7 +54,7 @@ async def test_mock_client_send(server, client):
 @with_client(pydle.features.RFC1459Support)
 async def test_mock_client_receive(server, client):
     client.on_raw = Mock()
-    await server.send("PING", "test")
+    server.send("PING", "test")
     assert client.on_raw.called
 
     message = client.on_raw.call_args[0][0]
@@ -97,7 +97,7 @@ def test_mock_eventloop_schedule():
     ev = MockEventLoop()
     passed = Passed()
 
-    ev.schedule(passed.set())
+    ev.schedule(lambda: passed.set())
     assert passed
 
     ev.stop()
@@ -133,7 +133,7 @@ def test_mock_eventloop_schedule_periodically():
     ev = MockEventLoop()
     passed = Passed()
 
-    ev.schedule_periodically(1, passed.set())
+    ev.schedule_periodically(1, lambda: passed.set())
     time.sleep(1.1)
     assert passed
 
@@ -150,7 +150,7 @@ def test_mock_eventloop_unschedule_in():
     ev = MockEventLoop()
     passed = Passed()
 
-    handle = ev.schedule_in(1, passed.set())
+    handle = ev.schedule_in(1, lambda: passed.set())
     ev.unschedule(handle)
 
     time.sleep(1.1)
@@ -163,26 +163,25 @@ def test_mock_eventloop_unschedule_periodically():
     ev = MockEventLoop()
     passed = Passed()
 
-    handle = ev.schedule_periodically(1, passed.set())
+    handle = ev.schedule_periodically(1, lambda: passed.set())
     ev.unschedule(handle)
 
     time.sleep(1.1)
     assert not passed
 
 
-@pytest.mark.asyncio
 @mark.meta
 @mark.slow
-async def test_mock_eventloop_unschedule_periodically_after():
+def test_mock_eventloop_unschedule_periodically_after():
     ev = MockEventLoop()
     passed = Passed()
 
-    handle = ev.schedule_periodically(1, passed.set())
+    handle = ev.schedule_periodically(1, lambda: passed.set())
 
     time.sleep(1.1)
     assert passed
 
     passed.reset()
-    await ev.unschedule(handle)
+    ev.unschedule(handle)
     time.sleep(1.0)
     assert not passed

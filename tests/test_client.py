@@ -2,8 +2,8 @@ import time
 import pytest
 from pytest import raises, mark
 import pydle
-from .mocks import Mock, MockEventLoop
 from .fixtures import with_client
+from .mocks import Mock, MockEventLoop
 
 pydle.client.PING_TIMEOUT = 10
 
