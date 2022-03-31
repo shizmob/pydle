@@ -5,6 +5,7 @@ import functools
 import logging
 import pydle
 
+
 def client_from_args(name, description, default_nick='Bot', cls=pydle.Client):
     # Parse some arguments.
     parser = argparse.ArgumentParser(name, description=description, add_help=False,

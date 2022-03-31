@@ -4,10 +4,11 @@ from pydle.features import account, tls
 from . import cap
 from . import sasl
 
-__all__ = [ 'IRCv3_1Support' ]
+__all__ = ['IRCv3_1Support']
 
 
 NO_ACCOUNT = '*'
+
 
 class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account.AccountSupport, tls.TLSSupport):
     """ Support for IRCv3.1's base and optional extensions. """
@@ -26,26 +27,30 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
 
     ## IRC callbacks.
 
-    async def on_capability_account_notify_available(self, value):
+    @staticmethod
+    async def on_capability_account_notify_available(value):
         """ Take note of user account changes. """
         return True
 
-    async def on_capability_away_notify_available(self, value):
+    @staticmethod
+    async def on_capability_away_notify_available(value):
         """ Take note of AWAY messages. """
         return True
 
-    async def on_capability_extended_join_available(self, value):
+    @staticmethod
+    async def on_capability_extended_join_available(value):
         """ Take note of user account and realname on JOIN. """
         return True
 
-    async def on_capability_multi_prefix_available(self, value):
+    @staticmethod
+    async def on_capability_multi_prefix_available(value):
         """ Thanks to how underlying client code works we already support multiple prefixes. """
         return True
 
-    async def on_capability_tls_available(self, value):
+    @staticmethod
+    async def on_capability_tls_available(value):
         """ We never need to request this explicitly. """
         return False
-
 
     ## Message handlers.
 
@@ -62,9 +67,9 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
 
         await self._sync_user(nick, metadata)
         if account == NO_ACCOUNT:
-            await self._sync_user(nick, { 'account': None, 'identified': False })
+            await self._sync_user(nick, {'account': None, 'identified': False})
         else:
-            await self._sync_user(nick, { 'account': account, 'identified': True })
+            await self._sync_user(nick, {'account': account, 'identified': True})
 
     async def on_raw_away(self, message):
         """ Process AWAY messages. """

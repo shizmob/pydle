@@ -114,7 +114,7 @@ class BasicClient:
 
         # Disconnect from current connection.
         if self.connected:
-            await self.disconnect(expected=True)
+            await self.disconnect()
 
         # Reset attributes and connect.
         if not reconnect:
@@ -241,7 +241,8 @@ class BasicClient:
         return self._format_host_mask(user['nickname'], user['username'] or '*',
                                       user['hostname'] or '*')
 
-    def _format_host_mask(self, nick, user, host):
+    @staticmethod
+    def _format_host_mask(nick, user, host):
         return '{n}!{u}@{h}'.format(n=nick, u=user, h=host)
 
     ## IRC helpers.
@@ -367,7 +368,7 @@ class BasicClient:
                 try:
                     await self.rawmsg("PING", self.server_tag)
                     data = await self.connection.recv(timeout=self.READ_TIMEOUT)
-                except (asyncio.TimeoutError, ConnectionResetError) as e:
+                except (asyncio.TimeoutError, ConnectionResetError):
                     data = None
 
             if not data:

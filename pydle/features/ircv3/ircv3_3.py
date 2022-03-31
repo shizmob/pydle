@@ -2,7 +2,7 @@
 # IRCv3.3 support (in progress).
 from . import ircv3_2
 
-__all__ = [ 'IRCv3_3Support' ]
+__all__ = ['IRCv3_3Support']
 
 
 class IRCv3_3Support(ircv3_2.IRCv3_2Support):
@@ -10,6 +10,7 @@ class IRCv3_3Support(ircv3_2.IRCv3_2Support):
 
     ## IRC callbacks.
 
-    async def on_capability_message_tags_available(self, value):
+    @staticmethod
+    async def on_capability_message_tags_available(value):
         """ Indicate that we can in fact parse arbitrary tags. """
         return True

@@ -15,7 +15,7 @@ class MonitoringSupport(isupport.ISUPPORTSupport):
     def _destroy_user(self, nickname, channel=None, monitor_override=False):
         # Override _destroy_user to not remove user if they are being monitored by us.
         if channel:
-            channels = [ self.channels[channel] ]
+            channels = [self.channels[channel]]
         else:
             channels = self.channels.values()
 
@@ -32,7 +32,6 @@ class MonitoringSupport(isupport.ISUPPORTSupport):
         # Remove the user.
         if (monitor_override or not self.is_monitoring(nickname)) and (not channel or not any(nickname in ch['users'] for ch in self.channels.values())):
             del self.users[nickname]
-
 
     ## API.
 
@@ -56,7 +55,6 @@ class MonitoringSupport(isupport.ISUPPORTSupport):
         """ Return whether or not we are monitoring the target's online status. """
         return target in self._monitoring
 
-
     ## Callbacks.
 
     async def on_user_online(self, nickname):
@@ -65,10 +63,10 @@ class MonitoringSupport(isupport.ISUPPORTSupport):
     async def on_user_offline(self, nickname):
         """ Callback called when a monitored users goes offline. """
 
-
     ## Message handlers.
 
-    async def on_capability_monitor_notify_available(self, value):
+    @staticmethod
+    async def on_capability_monitor_notify_available(value):
         return True
 
     async def on_raw_730(self, message):

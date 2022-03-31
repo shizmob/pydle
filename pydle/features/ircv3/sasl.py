@@ -11,7 +11,7 @@ except ImportError:
 
 from . import cap
 
-__all__ = [ 'SASLSupport' ]
+__all__ = ['SASLSupport']
 
 
 RESPONSE_LIMIT = 400
@@ -38,7 +38,6 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         self._sasl_timer = None
         self._sasl_challenge = b''
         self._sasl_mechanisms = None
-
 
     ## SASL functionality.
 
@@ -102,7 +101,6 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         if to_send == 0:
             await self.rawmsg('AUTHENTICATE', EMPTY_MESSAGE)
 
-
     ## Capability callbacks.
 
     async def on_capability_sasl_available(self, value):
@@ -149,7 +147,6 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         # Tell caller we need more time, and to not end capability negotiation just yet.
         return cap.NEGOTIATING
 
-
     ## Message handlers.
 
     async def on_raw_authenticate(self, message):
@@ -171,8 +168,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
             # Response not done yet. Restart timer.
             self._sasl_timer = self.eventloop.call_later(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
 
-
-    on_raw_900 = cap.CapabilityNegotiationSupport._ignored # You are now logged in as...
+    on_raw_900 = cap.CapabilityNegotiationSupport._ignored  # You are now logged in as...
 
     async def on_raw_903(self, message):
         """ SASL authentication successful. """
@@ -186,5 +182,5 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         """ Authentication failed. Abort SASL. """
         await self._sasl_abort()
 
-    on_raw_906 = cap.CapabilityNegotiationSupport._ignored # Completed registration while authenticating/registration aborted.
-    on_raw_907 = cap.CapabilityNegotiationSupport._ignored # Already authenticated over SASL.
+    on_raw_906 = cap.CapabilityNegotiationSupport._ignored  # Completed registration while authenticating/registration aborted.
+    on_raw_907 = cap.CapabilityNegotiationSupport._ignored  # Already authenticated over SASL.

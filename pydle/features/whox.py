@@ -6,6 +6,7 @@ NO_ACCOUNT = '0'
 # Maximum of 3 characters because Charybdis stupidity. The ASCII values of 'pydle' added together.
 WHOX_IDENTIFIER = '542'
 
+
 class WHOXSupport(isupport.ISUPPORTSupport, account.AccountSupport):
 
     ## Overrides.

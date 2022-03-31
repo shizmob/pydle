@@ -26,7 +26,6 @@ class Message:
         """ Parse data into IRC message. Return a Message instance or raise an error. """
         raise NotImplementedError()
 
-
     @abstractmethod
     def construct(self, force=False):
         """ Convert message into raw IRC command. If `force` is True, don't attempt to check message validity. """
@@ -36,6 +35,7 @@ class Message:
         return self.construct()
 
 ## Misc.
+
 
 def identifierify(name):
     """ Clean up name so it works for a Python identifier. """

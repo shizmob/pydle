@@ -41,16 +41,15 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
     async def clear_metadata(self, target):
         await self.rawmsg('METADATA', target, 'CLEAR')
 
-
     ## Callbacks.
 
     async def on_metadata(self, target, key, value, visibility=None):
         pass
 
-
     ## Message handlers.
 
-    async def on_capability_metadata_notify_available(self, value):
+    @staticmethod
+    async def on_capability_metadata_notify_available(value):
         return True
 
     async def on_raw_metadata(self, message):

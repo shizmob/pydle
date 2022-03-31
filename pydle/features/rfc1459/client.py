@@ -110,8 +110,7 @@ class RFC1459Support(BasicClient):
         if data:
             nickname, username, host = parsing.parse_user(data)
 
-            metadata = {}
-            metadata['nickname'] = nickname
+            metadata = {'nickname': nickname}
             if username:
                 metadata['username'] = username
             if host:
@@ -130,7 +129,8 @@ class RFC1459Support(BasicClient):
             current = self.channels[channel]['modes']
         return parsing.parse_modes(modes, current, behaviour=self._channel_modes_behaviour)
 
-    def _format_host_range(self, host, range, allow_everything=False):
+    @staticmethod
+    def _format_host_range(host, range, allow_everything=False):
         # IPv4?
         try:
             addr = ipaddress.IPv4Network(host, strict=False)
@@ -324,7 +324,7 @@ class RFC1459Support(BasicClient):
             message = self.DEFAULT_QUIT_MESSAGE
 
         await self.rawmsg('QUIT', message)
-        await self.disconnect(expected=True)
+        await self.disconnect()
 
     async def cycle(self, channel):
         """ Rejoin channel. """
@@ -529,7 +529,7 @@ class RFC1459Support(BasicClient):
     async def on_raw_invite(self, message):
         """ INVITE command. """
         nick, metadata = self._parse_user(message.source)
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
 
         target, channel = message.params
         target, metadata = self._parse_user(target)
@@ -565,7 +565,7 @@ class RFC1459Support(BasicClient):
     async def on_raw_kick(self, message):
         """ KICK command. """
         kicker, kickermeta = self._parse_user(message.source)
-        self._sync_user(kicker, kickermeta)
+        await self._sync_user(kicker, kickermeta)
 
         if len(message.params) > 2:
             channels, targets, reason = message.params
@@ -578,7 +578,7 @@ class RFC1459Support(BasicClient):
 
         for channel, target in itertools.product(channels, targets):
             target, targetmeta = self._parse_user(target)
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
 
             if self.is_same_nick(target, self.nickname):
                 self._destroy_channel(channel)
@@ -595,9 +595,9 @@ class RFC1459Support(BasicClient):
         target, targetmeta = self._parse_user(message.params[0])
         reason = message.params[1]
 
-        self._sync_user(target, targetmeta)
+        await self._sync_user(target, targetmeta)
         if by in self.users:
-            self._sync_user(by, bymeta)
+            await self._sync_user(by, bymeta)
 
         await self.on_kill(target, by, reason)
         if self.is_same_nick(self.nickname, target):
@@ -713,14 +713,14 @@ class RFC1459Support(BasicClient):
             self._destroy_user(nick)
         # Else, we quit.
         elif self.connected:
-            await self.disconnect(expected=True)
+            await self.disconnect()
 
     async def on_raw_topic(self, message):
         """ TOPIC command. """
         setter, settermeta = self._parse_user(message.source)
         target, topic = message.params
 
-        self._sync_user(setter, settermeta)
+        await self._sync_user(setter, settermeta)
 
         # Update topic in our own channel list.
         if self.in_channel(target):
@@ -767,7 +767,7 @@ class RFC1459Support(BasicClient):
         }
 
         if nickname in self.users:
-            self._sync_user(nickname, info)
+            await self._sync_user(nickname, info)
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
