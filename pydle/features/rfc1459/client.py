@@ -129,8 +129,7 @@ class RFC1459Support(BasicClient):
             current = self.channels[channel]['modes']
         return parsing.parse_modes(modes, current, behaviour=self._channel_modes_behaviour)
 
-    @staticmethod
-    def _format_host_range(host, range, allow_everything=False):
+    def _format_host_range(self, host, range, allow_everything=False):
         # IPv4?
         try:
             addr = ipaddress.IPv4Network(host, strict=False)
@@ -546,7 +545,7 @@ class RFC1459Support(BasicClient):
     async def on_raw_invite(self, message):
         """ INVITE command. """
         nick, metadata = self._parse_user(message.source)
-        await self._sync_user(nick, metadata)
+        self._sync_user(nick, metadata)
 
         target, channel = message.params
         target, metadata = self._parse_user(target)
@@ -582,7 +581,7 @@ class RFC1459Support(BasicClient):
     async def on_raw_kick(self, message):
         """ KICK command. """
         kicker, kickermeta = self._parse_user(message.source)
-        await self._sync_user(kicker, kickermeta)
+        self._sync_user(kicker, kickermeta)
 
         if len(message.params) > 2:
             channels, targets, reason = message.params
@@ -595,7 +594,7 @@ class RFC1459Support(BasicClient):
 
         for channel, target in itertools.product(channels, targets):
             target, targetmeta = self._parse_user(target)
-            await self._sync_user(target, targetmeta)
+            self._sync_user(target, targetmeta)
 
             if self.is_same_nick(target, self.nickname):
                 self._destroy_channel(channel)
@@ -612,9 +611,9 @@ class RFC1459Support(BasicClient):
         target, targetmeta = self._parse_user(message.params[0])
         reason = message.params[1]
 
-        await self._sync_user(target, targetmeta)
+        self._sync_user(target, targetmeta)
         if by in self.users:
-            await self._sync_user(by, bymeta)
+            self._sync_user(by, bymeta)
 
         await self.on_kill(target, by, reason)
         if self.is_same_nick(self.nickname, target):
@@ -636,7 +635,7 @@ class RFC1459Support(BasicClient):
                 await self.on_mode_change(target, modes, nick)
         else:
             target, targetmeta = self._parse_user(target)
-            await self._sync_user(target, targetmeta)
+            self._sync_user(target, targetmeta)
 
             # Update own modes.
             if self.is_same_nick(self.nickname, nick):

@@ -12,6 +12,7 @@ DEFAULT_NICKNAME = '<unregistered>'
 
 class Error(Exception):
     """ Base class for all pydle errors. """
+    ...
 
 
 class NotInChannel(Error):
@@ -241,8 +242,7 @@ class BasicClient:
         return self._format_host_mask(user['nickname'], user['username'] or '*',
                                       user['hostname'] or '*')
 
-    @staticmethod
-    def _format_host_mask(nick, user, host):
+    def _format_host_mask(self, nick, user, host):
         return '{n}!{u}@{h}'.format(n=nick, u=user, h=host)
 
     ## IRC helpers.
@@ -426,6 +426,7 @@ class BasicClient:
 
     async def _ignored(self, message):
         """ Ignore message. """
+        ...
 
     def __getattr__(self, attr):
         """ Return on_unknown or _ignored for unknown handlers, depending on the invocation type. """

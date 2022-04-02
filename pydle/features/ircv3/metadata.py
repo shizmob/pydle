@@ -48,8 +48,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
     ## Message handlers.
 
-    @staticmethod
-    async def on_capability_metadata_notify_available(value):
+    async def on_capability_metadata_notify_available(self, value):
         return True
 
     async def on_raw_metadata(self, message):
@@ -121,12 +120,16 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
     async def on_raw_766(self, message):
         """ Unknown metadata key. """
+        ...
 
     async def on_raw_767(self, message):
         """ Invalid metadata key. """
+        ...
 
     async def on_raw_768(self, message):
         """ Metadata key not set. """
+        ...
 
     async def on_raw_769(self, message):
         """ Metadata permission denied. """
+        ...

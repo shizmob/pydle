@@ -40,8 +40,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
         # Register as usual.
         await super()._register()
 
-    @staticmethod
-    def _capability_normalize(cap):
+    def _capability_normalize(self, cap):
         cap = cap.lstrip(PREFIXES).lower()
         if CAPABILITY_VALUE_DIVIDER in cap:
             cap, _, value = cap.partition(CAPABILITY_VALUE_DIVIDER)
