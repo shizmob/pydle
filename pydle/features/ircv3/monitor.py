@@ -65,8 +65,7 @@ class MonitoringSupport(isupport.ISUPPORTSupport):
 
     ## Message handlers.
 
-    @staticmethod
-    async def on_capability_monitor_notify_available(value):
+    async def on_capability_monitor_notify_available(self, value):
         return True
 
     async def on_raw_730(self, message):

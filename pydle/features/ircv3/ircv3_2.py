@@ -13,33 +13,27 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
 
     ## IRC callbacks.
 
-    @staticmethod
-    async def on_capability_account_tag_available(value):
+    async def on_capability_account_tag_available(self, value):
         """ Add an account message tag to user messages. """
         return True
 
-    @staticmethod
-    async def on_capability_cap_notify_available(value):
+    async def on_capability_cap_notify_available(self, value):
         """ Take note of new or removed capabilities. """
         return True
 
-    @staticmethod
-    async def on_capability_chghost_available(value):
+    async def on_capability_chghost_available(self, value):
         """ Server reply to indicate a user we are in a common channel with changed user and/or host. """
         return True
 
-    @staticmethod
-    async def on_capability_echo_message_available(value):
+    async def on_capability_echo_message_available(self, value):
         """ Echo PRIVMSG and NOTICEs back to client. """
         return True
 
-    @staticmethod
-    async def on_capability_invite_notify_available(value):
+    async def on_capability_invite_notify_available(self, value):
         """ Broadcast invite messages to certain other clients. """
         return True
 
-    @staticmethod
-    async def on_capability_userhost_in_names_available(value):
+    async def on_capability_userhost_in_names_available(self, value):
         """ Show full user!nick@host in NAMES list. We already parse it like that. """
         return True
 
