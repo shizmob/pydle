@@ -635,7 +635,7 @@ class RFC1459Support(BasicClient):
                 await self.on_mode_change(target, modes, nick)
         else:
             target, targetmeta = self._parse_user(target)
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
 
             # Update own modes.
             if self.is_same_nick(self.nickname, nick):
@@ -736,7 +736,7 @@ class RFC1459Support(BasicClient):
         setter, settermeta = self._parse_user(message.source)
         target, topic = message.params
 
-        await self._sync_user(setter, settermeta)
+        self._sync_user(setter, settermeta)
 
         # Update topic in our own channel list.
         if self.in_channel(target):
@@ -783,7 +783,7 @@ class RFC1459Support(BasicClient):
         }
 
         if nickname in self.users:
-            await self._sync_user(nickname, info)
+            self._sync_user(nickname, info)
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
