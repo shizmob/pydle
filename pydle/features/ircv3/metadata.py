@@ -102,6 +102,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
     async def on_raw_764(self, message):
         """ Metadata limit reached. """
+        ...
 
     async def on_raw_765(self, message):
         """ Invalid metadata target. """

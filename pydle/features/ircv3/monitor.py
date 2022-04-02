@@ -59,9 +59,11 @@ class MonitoringSupport(isupport.ISUPPORTSupport):
 
     async def on_user_online(self, nickname):
         """ Callback called when a monitored user appears online. """
+        ...
 
     async def on_user_offline(self, nickname):
         """ Callback called when a monitored users goes offline. """
+        ...
 
     ## Message handlers.
 
