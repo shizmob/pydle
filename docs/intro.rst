@@ -4,7 +4,7 @@ Introduction to pydle
 
 What is pydle?
 --------------
-pydle is an IRC library for Python 3.5 through Python 3.9.
+pydle is an IRC library for Python 3.5 through 3.9.
 
 Although old and dated on some fronts, IRC is still used by a variety of communities as the real-time communication method of choice,
 and the most popular IRC networks can still count on tens of thousands of users at any point during the day.
