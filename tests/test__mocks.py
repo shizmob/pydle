@@ -4,7 +4,7 @@ import pytest
 from pytest import mark
 import pydle
 from .fixtures import with_client
-from .mocks import Mock, MockEventLoop, MockConnection
+from .mocks import Mock, MockConnection
 
 
 class Passed:
@@ -30,7 +30,7 @@ class Passed:
 async def test_mock_client_connect(server, client):
     assert not client.connected
     client.on_connect = Mock()
-    await client.connect("mock://local", 1337, eventloop=MockEventLoop())
+    await client.connect("mock://local", 1337)
 
     assert client.connected
     assert client.on_connect.called
@@ -87,101 +87,3 @@ async def test_mock_connection_disconnect():
     await conn.connect()
     await conn.disconnect()
     assert not conn.connected
-
-
-## Event loop.
-
-
-@mark.meta
-def test_mock_eventloop_schedule():
-    ev = MockEventLoop()
-    passed = Passed()
-
-    ev.schedule(lambda: passed.set())
-    assert passed
-
-    ev.stop()
-
-
-@mark.meta
-@mark.slow
-def test_mock_eventloop_schedule_in():
-    ev = MockEventLoop()
-    passed = Passed()
-
-    ev.schedule_in(1, passed.set())
-    time.sleep(1.1)
-    assert passed
-
-    ev.stop()
-
-
-@mark.meta
-@mark.slow
-def test_mock_eventloop_schedule_in_timedelta():
-    ev = MockEventLoop()
-    passed = Passed()
-
-    ev.schedule_in(datetime.timedelta(seconds=1), passed.set())
-    time.sleep(1.1)
-    assert passed
-
-
-@mark.meta
-@mark.slow
-def test_mock_eventloop_schedule_periodically():
-    ev = MockEventLoop()
-    passed = Passed()
-
-    ev.schedule_periodically(1, lambda: passed.set())
-    time.sleep(1.1)
-    assert passed
-
-    passed.reset()
-    time.sleep(1)
-    assert passed
-
-    ev.stop()
-
-
-@mark.meta
-@mark.slow
-def test_mock_eventloop_unschedule_in():
-    ev = MockEventLoop()
-    passed = Passed()
-
-    handle = ev.schedule_in(1, lambda: passed.set())
-    ev.unschedule(handle)
-
-    time.sleep(1.1)
-    assert not passed
-
-
-@mark.meta
-@mark.slow
-def test_mock_eventloop_unschedule_periodically():
-    ev = MockEventLoop()
-    passed = Passed()
-
-    handle = ev.schedule_periodically(1, lambda: passed.set())
-    ev.unschedule(handle)
-
-    time.sleep(1.1)
-    assert not passed
-
-
-@mark.meta
-@mark.slow
-def test_mock_eventloop_unschedule_periodically_after():
-    ev = MockEventLoop()
-    passed = Passed()
-
-    handle = ev.schedule_periodically(1, lambda: passed.set())
-
-    time.sleep(1.1)
-    assert passed
-
-    passed.reset()
-    ev.unschedule(handle)
-    time.sleep(1.0)
-    assert not passed

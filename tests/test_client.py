@@ -3,7 +3,7 @@ import pytest
 from pytest import raises, mark
 import pydle
 from .fixtures import with_client
-from .mocks import Mock, MockEventLoop
+from .mocks import Mock
 
 pydle.client.PING_TIMEOUT = 10
 
@@ -109,22 +109,21 @@ async def test_client_timeout(server, client):
 @pytest.mark.asyncio
 @with_client(connected=False)
 async def test_client_server_tag(server, client):
-    ev = MockEventLoop()
     assert client.server_tag is None
 
-    await client.connect("Mock.local", 1337, eventloop=ev)
+    await client.connect("Mock.local", 1337)
     assert client.server_tag == "mock"
     await client.disconnect()
 
-    await client.connect("irc.mock.local", 1337, eventloop=ev)
+    await client.connect("irc.mock.local", 1337)
     assert client.server_tag == "mock"
     await client.disconnect()
 
-    await client.connect("mock", 1337, eventloop=ev)
+    await client.connect("mock", 1337)
     assert client.server_tag == "mock"
     await client.disconnect()
 
-    await client.connect("127.0.0.1", 1337, eventloop=ev)
+    await client.connect("127.0.0.1", 1337)
     assert client.server_tag == "127.0.0.1"
 
     client.network = "MockNet"

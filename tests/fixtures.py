@@ -1,5 +1,5 @@
 import pydle
-from .mocks import MockServer, MockClient, MockEventLoop
+from .mocks import MockServer, MockClient
 
 
 def with_client(*features, connected=True, **options):
@@ -15,7 +15,7 @@ def with_client(*features, connected=True, **options):
                 "TestcaseRunner", mock_server=server, **options
             )
             if connected:
-                await client.connect("mock://local", 1337, eventloop=MockEventLoop())
+                await client.connect("mock://local", 1337)
 
             try:
                 ret = f(client=client, server=server)

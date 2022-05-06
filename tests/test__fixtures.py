@@ -2,7 +2,7 @@ import pytest
 from pytest import mark
 import pydle
 from .fixtures import with_client
-from .mocks import MockClient, MockServer, MockConnection, MockEventLoop
+from .mocks import MockClient, MockServer, MockConnection
 
 
 @pytest.mark.asyncio
@@ -41,7 +41,7 @@ def test_fixtures_with_client_options(server, client):
 @with_client()
 async def test_fixtures_with_client_connected(server, client):
     assert client.connected
-    assert isinstance(client.eventloop, MockEventLoop)
+    assert isinstance(client.eventloop)
     assert isinstance(client.connection, MockConnection)
-    assert isinstance(client.connection.eventloop, MockEventLoop)
+    assert isinstance(client.connection.eventloop)
     assert client.eventloop is client.connection.eventloop
