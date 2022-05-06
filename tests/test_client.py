@@ -100,7 +100,7 @@ async def test_client_connect_invalid_params(server, client):
 @with_client()
 async def test_client_timeout(server, client):
     client.on_data_error = Mock()
-    time.sleep(pydle.client.PING_TIMEOUT + 1)
+    time.sleep(pydle.client.BasicClient.READ_TIMEOUT + 1)
 
     assert client.on_data_error.called
     assert isinstance(client.on_data_error.call_args[0][0], TimeoutError)

@@ -1,5 +1,3 @@
-import time
-import datetime
 import pytest
 from pytest import mark
 import pydle

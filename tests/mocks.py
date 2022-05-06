@@ -1,5 +1,3 @@
-import threading
-import datetime
 import json
 import pydle
 

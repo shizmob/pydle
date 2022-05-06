@@ -1,7 +1,6 @@
 import pytest
 
 import pydle
-from .mocks import MockClient
 from .fixtures import with_client
 
 
