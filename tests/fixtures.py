@@ -17,13 +17,6 @@ def with_client(*features, connected=True, **options):
             if connected:
                 await client.connect("mock://local", 1337)
 
-            try:
-                ret = f(client=client, server=server)
-                return ret
-            finally:
-                if client.eventloop:
-                    client.eventloop.stop()
-
         run.__name__ = f.__name__
         return run
 
