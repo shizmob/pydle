@@ -4,7 +4,7 @@ import copy
 import datetime
 import ipaddress
 import itertools
-
+import asyncio
 from pydle.client import BasicClient, NotInChannel, AlreadyInChannel
 from . import parsing, protocol
 
@@ -58,6 +58,21 @@ class RFC1459Support(BasicClient):
         self.motd = None
         self.channels = parsing.NormalizingDict(self.channels, case_mapping=self._case_mapping)
         self.users = parsing.NormalizingDict(self.users, case_mapping=self._case_mapping)
+
+        # List.
+        self.all_channels = []
+        self._list_ready = False
+        self._list_client = []
+        self._list_channel = []
+        self._list_count = []
+        self._list_topic = []
+
+    async def channel_list(self):
+        await self.rawmsg("LIST")
+        while not self._list_ready:
+            await asyncio.sleep(1)
+        self._list_ready = False
+        return self.all_channels
 
     def _reset_connection_attributes(self):
         super()._reset_connection_attributes()
@@ -868,6 +883,40 @@ class RFC1459Support(BasicClient):
 
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
+
+    async def on_raw_321(self, message):
+        """RPL_LISTSTART, an OPTIONAL indication a LIST is starting."""
+        pass
+
+    async def on_raw_322(self, message):
+        """RPL_LIST, the list of channels from the server"""
+        # The * channel doesn't exist but some IRCds return * as the server itself.
+        if message.params[1] != "*":
+            self._list_client.append(message.params[0])
+            self._list_channel.append(message.params[1])
+            self._list_count.append(message.params[2])
+            self._list_topic.append(message.params[3])
+
+    async def on_raw_323(self, message):
+        """RPL_LISTEND, end of the channel list"""
+        self.all_channels = []
+
+        for counter, channel in enumerate(self._list_channel):
+            channel_dict = {
+            "client": self._list_client[counter],
+            "channel": self._list_channel[counter],
+            "client_count": self._list_count[counter],
+            "topic": self._list_topic[counter],
+            }
+            self.all_channels.append(channel_dict)
+
+        # Clear the supporting lists
+        self._list_client = []
+        self._list_channel = []
+        self._list_count = []
+        self._list_topic = []
+
+        self._list_ready = True
 
     async def on_raw_324(self, message):
         """ Channel mode. """
