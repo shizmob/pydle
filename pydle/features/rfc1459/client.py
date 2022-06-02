@@ -60,7 +60,7 @@ class RFC1459Support(BasicClient):
         self.users = parsing.NormalizingDict(self.users, case_mapping=self._case_mapping)
 
         # List.
-        self.all_channels = []
+        self._all_channels = []
         self._list_ready = False
         self._list_client = []
         self._list_channel = []
@@ -68,11 +68,15 @@ class RFC1459Support(BasicClient):
         self._list_topic = []
 
     async def channel_list(self):
+        # Call the LIST
         await self.rawmsg("LIST")
+        # LIST may take a few moments to complete.
+        # Let's wait for it to be complete without blocking the rest of Pydle
         while not self._list_ready:
             await asyncio.sleep(1)
+        # Reset the List Ready Indicator
         self._list_ready = False
-        return self.all_channels
+        return self._all_channels
 
     def _reset_connection_attributes(self):
         super()._reset_connection_attributes()
@@ -899,23 +903,24 @@ class RFC1459Support(BasicClient):
 
     async def on_raw_323(self, message):
         """RPL_LISTEND, end of the channel list"""
-        self.all_channels = []
-
+        # Clear the old list.
+        self._all_channels = []
+        # Build the LIST response dict
         for counter, channel in enumerate(self._list_channel):
             channel_dict = {
-            "client": self._list_client[counter],
-            "channel": self._list_channel[counter],
-            "client_count": self._list_count[counter],
-            "topic": self._list_topic[counter],
+                "client": self._list_client[counter],
+                "channel": self._list_channel[counter],
+                "client_count": self._list_count[counter],
+                "topic": self._list_topic[counter],
             }
-            self.all_channels.append(channel_dict)
+            self._all_channels.append(channel_dict)
 
         # Clear the supporting lists
         self._list_client = []
         self._list_channel = []
         self._list_count = []
         self._list_topic = []
-
+        # Mark the list as ready
         self._list_ready = True
 
     async def on_raw_324(self, message):
