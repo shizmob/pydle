@@ -889,7 +889,7 @@ class RFC1459Support(BasicClient):
 
     async def on_raw_321(self, message):
         """RPL_LISTSTART, an OPTIONAL indication a LIST is starting."""
-        pass
+        ...
 
     async def on_raw_322(self, message):
         """RPL_LIST, the list of channels from the server"""
@@ -918,8 +918,9 @@ class RFC1459Support(BasicClient):
         self._list_channel = []
         self._list_count = []
         self._list_topic = []
-        future = await self._list_query.get()
-        future.set_result(self.all_channels)
+        if not self._list_query.empty():
+            future = await self._list_query.get()
+            future.set_result(self.all_channels)
 
     async def on_raw_324(self, message):
         """ Channel mode. """
