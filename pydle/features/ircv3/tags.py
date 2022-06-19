@@ -62,7 +62,9 @@ class TaggedMessage(rfc1459.RFC1459Message):
                     tag, value = raw_tag.split(TAG_VALUE_SEPARATOR, 1)
                 else:
                     tag = raw_tag
-                    value = True
+                    # Implementations MUST interpret empty tag values (e.g. foo=)
+                    # as equivalent to missing tag values (e.g. foo)
+                    value = ""
                 # Parse escape sequences since IRC escapes != python escapes
 
                 # convert known escapes first
