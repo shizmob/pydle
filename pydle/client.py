@@ -5,6 +5,8 @@ import logging
 from asyncio import new_event_loop, gather, get_event_loop, sleep
 import warnings
 from . import connection, protocol
+import inspect
+import functools
 
 __all__ = ['Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient', 'ClientPool']
 DEFAULT_NICKNAME = '<unregistered>'
