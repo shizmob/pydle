@@ -445,6 +445,24 @@ class BasicClient:
         # This isn't a handler, just raise an error.
         raise AttributeError(attr)
 
+    # Bonus features
+    def event(self, func):
+        """
+        Registers the specified `func` to handle events of the same name.
+
+        The func will always be called with, at least, the bot's `self` instance.
+
+        Returns decorated func, unmodified.
+        """
+        if not func.__name__.startswith("on_"):
+            raise NameError("Event handlers must start with 'on_'.")
+
+        if not inspect.iscoroutinefunction(func):
+            raise AssertionError("Wrapped function {!r} must be an `async def` function.".format(func))
+        setattr(self, func.__name__, functools.partial(func, self))
+
+        return func
+
 
 class ClientPool:
     """ A pool of clients that are ran and handled in parallel. """
