@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pydle"
-version = "1.0.0.a1"
+version = "0.10.0"
 description = "A compact, flexible, and standards-abiding IRC library for python3."
 authors = ["Shiz <hi@shiz.me>"]
 repository = "https://github.com/Shizmob/pydle"
