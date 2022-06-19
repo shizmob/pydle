@@ -26,6 +26,9 @@ Basic Usage
 
 From there, you can `import pydle` and subclass `pydle.Client` for your own functionality.
 
+> To enable SSL support, install the `sasl` extra.
+> `pip install pydle[sasl]`
+
 Setting a nickname and starting a connection over TLS:
 ```python
 import pydle
