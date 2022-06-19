@@ -5,8 +5,7 @@ import collections
 import pydle.protocol
 from pydle.features import rfc1459
 
-__all__ = [ 'ISUPPORTSupport' ]
-
+__all__ = ['ISUPPORTSupport']
 
 FEATURE_DISABLED_PREFIX = '-'
 BAN_EXCEPT_MODE = 'e'
@@ -32,7 +31,6 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
         if 'INVEX' in self._isupport:
             self.channels[channel]['inviteexceptlist'] = None
 
-
     ## Command handlers.
 
     async def on_raw_005(self, message):
@@ -55,15 +53,14 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
 
         # And have callbacks update other internals.
         for entry, value in isupport.items():
-            if value != False:
+            if value is not False:
                 # A value of True technically means there was no value supplied; correct this for callbacks.
-                if value == True:
+                if value is True:
                     value = None
 
                 method = 'on_isupport_' + pydle.protocol.identifierify(entry)
                 if hasattr(self, method):
                     await getattr(self, method)(value)
-
 
     ## ISUPPORT handlers.
 
@@ -96,23 +93,23 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
 
     async def on_isupport_chanmodes(self, value):
         """ Valid channel modes and their behaviour. """
-        list, param, param_set, noparams = [ set(modes) for modes in value.split(',')[:4] ]
+        list, param, param_set, noparams = [set(modes) for modes in value.split(',')[:4]]
         self._channel_modes.update(set(value.replace(',', '')))
 
         # The reason we have to do it like this is because other ISUPPORTs (e.g. PREFIX) may update these values as well.
-        if not rfc1459.protocol.BEHAVIOUR_LIST in self._channel_modes_behaviour:
+        if rfc1459.protocol.BEHAVIOUR_LIST not in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST] = set()
         self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_LIST].update(list)
 
-        if not rfc1459.protocol.BEHAVIOUR_PARAMETER in self._channel_modes_behaviour:
+        if rfc1459.protocol.BEHAVIOUR_PARAMETER not in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER] = set()
         self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER].update(param)
 
-        if not rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET in self._channel_modes_behaviour:
+        if rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET not in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET] = set()
         self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER_ON_SET].update(param_set)
 
-        if not rfc1459.protocol.BEHAVIOUR_NO_PARAMETER in self._channel_modes_behaviour:
+        if rfc1459.protocol.BEHAVIOUR_NO_PARAMETER not in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_NO_PARAMETER] = set()
         self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_NO_PARAMETER].update(noparams)
 
@@ -205,7 +202,7 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
 
         # Update valid channel modes and their behaviour as CHANMODES doesn't include PREFIX modes.
         self._channel_modes.update(set(modes))
-        if not rfc1459.protocol.BEHAVIOUR_PARAMETER in self._channel_modes_behaviour:
+        if rfc1459.protocol.BEHAVIOUR_PARAMETER not in self._channel_modes_behaviour:
             self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER] = set()
         self._channel_modes_behaviour[rfc1459.protocol.BEHAVIOUR_PARAMETER].update(set(modes))
 

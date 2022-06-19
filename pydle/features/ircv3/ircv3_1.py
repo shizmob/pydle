@@ -4,10 +4,11 @@ from pydle.features import account, tls
 from . import cap
 from . import sasl
 
-__all__ = [ 'IRCv3_1Support' ]
+__all__ = ['IRCv3_1Support']
 
 
 NO_ACCOUNT = '*'
+
 
 class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account.AccountSupport, tls.TLSSupport):
     """ Support for IRCv3.1's base and optional extensions. """
@@ -46,7 +47,6 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
         """ We never need to request this explicitly. """
         return False
 
-
     ## Message handlers.
 
     async def on_raw_account(self, message):
@@ -62,9 +62,9 @@ class IRCv3_1Support(sasl.SASLSupport, cap.CapabilityNegotiationSupport, account
 
         await self._sync_user(nick, metadata)
         if account == NO_ACCOUNT:
-            await self._sync_user(nick, { 'account': None, 'identified': False })
+            await self._sync_user(nick, {'account': None, 'identified': False})
         else:
-            await self._sync_user(nick, { 'account': account, 'identified': True })
+            await self._sync_user(nick, {'account': account, 'identified': True})
 
     async def on_raw_away(self, message):
         """ Process AWAY messages. """

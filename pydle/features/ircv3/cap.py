@@ -4,7 +4,7 @@
 import pydle.protocol
 from pydle.features import rfc1459
 
-__all__ = [ 'CapabilityNegotiationSupport', 'NEGOTIATED', 'NEGOTIATING', 'FAILED' ]
+__all__ = ['CapabilityNegotiationSupport', 'NEGOTIATED', 'NEGOTIATING', 'FAILED']
 
 
 DISABLED_PREFIX = '-'
@@ -49,7 +49,6 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
 
         return cap, value
 
-
     ## API.
 
     async def _capability_negotiated(self, capab):
@@ -58,7 +57,6 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
 
         if not self._capabilities_requested and not self._capabilities_negotiating:
             await self.rawmsg('CAP', 'END')
-
 
     ## Message handlers.
 
@@ -107,7 +105,7 @@ class CapabilityNegotiationSupport(rfc1459.RFC1459Support):
 
     async def on_raw_cap_list(self, params):
         """ Update active capabilities. """
-        self._capabilities = { capab: False for capab in self._capabilities }
+        self._capabilities = {capab: False for capab in self._capabilities}
 
         for capab in params[0].split():
             capab, value = self._capability_normalize(capab)

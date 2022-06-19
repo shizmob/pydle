@@ -53,7 +53,6 @@ class TLSSupport(rfc1459.RFC1459Support):
         # Connect.
         await self.connection.connect()
 
-
     ## API.
 
     async def whois(self, nickname):
@@ -62,7 +61,6 @@ class TLSSupport(rfc1459.RFC1459Support):
             return info
         info.setdefault('secure', False)
         return info
-
 
     ## Message callbacks.
 

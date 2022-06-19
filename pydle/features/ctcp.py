@@ -1,9 +1,10 @@
 ## ctcp.py
 # Client-to-Client-Protocol (CTCP) support.
+import pydle
 import pydle.protocol
 from pydle.features import rfc1459
 from pydle import client
-__all__ = [ 'CTCPSupport' ]
+__all__ = ['CTCPSupport']
 
 
 CTCP_DELIMITER = '\x01'
@@ -21,7 +22,7 @@ class CTCPSupport(rfc1459.RFC1459Support):
         Client subclasses can override on_ctcp_<type> to be called when receiving a message of that specific CTCP type,
         in addition to this callback.
         """
-        pass
+        ...
 
     async def on_ctcp_reply(self, by, target, what, response):
         """
@@ -29,15 +30,13 @@ class CTCPSupport(rfc1459.RFC1459Support):
         Client subclasses can override on_ctcp_<type>_reply to be called when receiving a reply of that specific CTCP type,
         in addition to this callback.
         """
-        pass
+        ...
 
     async def on_ctcp_version(self, by, target, contents):
         """ Built-in CTCP version as some networks seem to require it. """
-        import pydle
 
         version = '{name} v{ver}'.format(name=pydle.__name__, ver=pydle.__version__)
         await self.ctcp_reply(by, 'VERSION', version)
-
 
     ## IRC API.
 
@@ -54,7 +53,6 @@ class CTCPSupport(rfc1459.RFC1459Support):
             raise client.NotInChannel(target)
 
         await self.notice(target, construct_ctcp(query, response))
-
 
     ## Handler overrides.
 
@@ -75,7 +73,6 @@ class CTCPSupport(rfc1459.RFC1459Support):
             await self.on_ctcp(nick, target, type, contents)
         else:
             await super().on_raw_privmsg(message)
-
 
     async def on_raw_notice(self, message):
         """ Modify NOTICE to redirect CTCP messages. """
@@ -102,6 +99,7 @@ def is_ctcp(message):
     """ Check if message follows the CTCP format. """
     return message.startswith(CTCP_DELIMITER) and message.endswith(CTCP_DELIMITER)
 
+
 def construct_ctcp(*parts):
     """ Construct CTCP message. """
     message = ' '.join(parts)
@@ -110,6 +108,7 @@ def construct_ctcp(*parts):
     message = message.replace('\r', CTCP_ESCAPE_CHAR + 'r')
     message = message.replace(CTCP_ESCAPE_CHAR, CTCP_ESCAPE_CHAR + CTCP_ESCAPE_CHAR)
     return CTCP_DELIMITER + message + CTCP_DELIMITER
+
 
 def parse_ctcp(query):
     """ Strip and de-quote CTCP messages. """

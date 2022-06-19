@@ -4,6 +4,7 @@ import collections.abc
 import pydle.protocol
 from . import protocol
 
+
 class RFC1459Message(pydle.protocol.Message):
     def __init__(self, command, params, source=None, _raw=None, _valid=True, **kw):
         self._kw = kw
@@ -48,7 +49,7 @@ class RFC1459Message(pydle.protocol.Message):
         if message.startswith(':'):
             parts = protocol.ARGUMENT_SEPARATOR.split(message[1:], 2)
         else:
-            parts = [ None ] + protocol.ARGUMENT_SEPARATOR.split(message, 1)
+            parts = [None] + protocol.ARGUMENT_SEPARATOR.split(message, 1)
 
         if len(parts) == 3:
             source, command, raw_params = parts
@@ -67,12 +68,12 @@ class RFC1459Message(pydle.protocol.Message):
 
         # Only parameter is a 'trailing' sentence.
         if raw_params.startswith(protocol.TRAILING_PREFIX):
-            params = [ raw_params[len(protocol.TRAILING_PREFIX):] ]
+            params = [raw_params[len(protocol.TRAILING_PREFIX):]]
         # We have a sentence in our parameters.
         elif ' ' + protocol.TRAILING_PREFIX in raw_params:
             index = raw_params.find(' ' + protocol.TRAILING_PREFIX)
 
-             # Get all single-word parameters.
+            # Get all single-word parameters.
             params = protocol.ARGUMENT_SEPARATOR.split(raw_params[:index].rstrip(' '))
             # Extract last parameter as sentence
             params.append(raw_params[index + len(protocol.TRAILING_PREFIX) + 1:])
@@ -145,6 +146,7 @@ def normalize(input, case_mapping=protocol.DEFAULT_CASE_MAPPING):
 
     return input
 
+
 class NormalizingDict(collections.abc.MutableMapping):
     """ A dict that normalizes entries according to the given case mapping. """
     def __init__(self, *args, case_mapping):
@@ -195,6 +197,7 @@ def parse_user(raw):
         nick, user = raw.split(protocol.USER_SEPARATOR)
 
     return nick, user, host
+
 
 def parse_modes(modes, current, behaviour):
     """ Parse mode change string(s) and return updated dictionary. """

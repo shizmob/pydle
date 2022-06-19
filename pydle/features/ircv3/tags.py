@@ -1,9 +1,9 @@
 ## tags.py
 # Tagged message support.
+import re
 import pydle.client
 import pydle.protocol
 from pydle.features import rfc1459
-import re
 
 TAG_INDICATOR = '@'
 TAG_SEPARATOR = ';'
@@ -98,7 +98,7 @@ class TaggedMessage(rfc1459.RFC1459Message):
         if self.tags:
             raw_tags = []
             for tag, value in self.tags.items():
-                if value == True:
+                if value is True:
                     raw_tags.append(tag)
                 else:
                     raw_tags.append(tag + TAG_VALUE_SEPARATOR + value)
