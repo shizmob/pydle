@@ -117,7 +117,7 @@ class BasicClient:
 
         # Disconnect from current connection.
         if self.connected:
-            await self.disconnect()
+            await self.disconnect(expected=True)
 
         # Reset attributes and connect.
         if not reconnect:

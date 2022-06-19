@@ -323,7 +323,7 @@ class RFC1459Support(BasicClient):
             message = self.DEFAULT_QUIT_MESSAGE
 
         await self.rawmsg('QUIT', message)
-        await self.disconnect()
+        await self.disconnect(expected=True)
 
     async def cycle(self, channel):
         """ Rejoin channel. """
