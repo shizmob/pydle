@@ -2,6 +2,12 @@ pydle
 =====
 Python IRC library.
 -------------------
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/Pydle)
+![Read the Docs](https://img.shields.io/readthedocs/pydle)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+![GitHub](https://img.shields.io/github/license/Shizmob/pydle)
+![PyPI](https://img.shields.io/pypi/v/pydle)
+[![Downloads](https://pepy.tech/badge/pylint)](https://pepy.tech/project/pylint)
 
 pydle is a compact, flexible and standards-abiding IRC library for Python 3.5 through 3.9.
 
