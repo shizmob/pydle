@@ -34,13 +34,13 @@ class TLSSupport(rfc1459.RFC1459Support):
                 port = rfc1459.protocol.DEFAULT_PORT
         return await super().connect(hostname, port, tls=tls, **kwargs)
 
-    async def _connect(self, hostname, port, reconnect=False, password=None, encoding=pydle.protocol.DEFAULT_ENCODING, channels=[], tls=False, tls_verify=False, source_address=None):
+    async def _connect(self, hostname, port, reconnect=False, password=None, encoding=pydle.protocol.DEFAULT_ENCODING, channels=None, tls=False, tls_verify=False, source_address=None):
         """ Connect to IRC server, optionally over TLS. """
         self.password = password
 
         # Create connection if we can't reuse it.
         if not reconnect:
-            self._autojoin_channels = channels
+            self._autojoin_channels = channels or []
             self.connection = connection.Connection(hostname, port,
                 source_address=source_address,
                 tls=tls, tls_verify=tls_verify,
@@ -53,14 +53,14 @@ class TLSSupport(rfc1459.RFC1459Support):
         # Connect.
         await self.connection.connect()
 
-
     ## API.
 
     async def whois(self, nickname):
         info = await super().whois(nickname)
+        if info is None:
+            return info
         info.setdefault('secure', False)
         return info
-
 
     ## Message callbacks.
 

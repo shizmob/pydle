@@ -7,6 +7,8 @@ from .tls import TLSSupport
 from .isupport import ISUPPORTSupport
 from .whox import WHOXSupport
 from .ircv3 import IRCv3Support, IRCv3_1Support, IRCv3_2Support
+from .rpl_whoishost import RplWhoisHostSupport
 
-ALL = [ IRCv3Support, WHOXSupport, ISUPPORTSupport, CTCPSupport, AccountSupport, TLSSupport, RFC1459Support ]
-LITE = [ WHOXSupport, ISUPPORTSupport, CTCPSupport, TLSSupport, RFC1459Support ]
+ALL = [IRCv3Support, WHOXSupport, ISUPPORTSupport, CTCPSupport, AccountSupport, TLSSupport, RFC1459Support,
+       RplWhoisHostSupport]
+LITE = [WHOXSupport, ISUPPORTSupport, CTCPSupport, TLSSupport, RFC1459Support]

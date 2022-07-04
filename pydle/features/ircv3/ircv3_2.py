@@ -5,7 +5,7 @@ from . import tags
 from . import monitor
 from . import metadata
 
-__all__ = [ 'IRCv3_2Support' ]
+__all__ = ['IRCv3_2Support']
 
 
 class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.TaggedMessageSupport, ircv3_1.IRCv3_1Support):
@@ -20,7 +20,7 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
     async def on_capability_cap_notify_available(self, value):
         """ Take note of new or removed capabilities. """
         return True
-    
+
     async def on_capability_chghost_available(self, value):
         """ Server reply to indicate a user we are in a common channel with changed user and/or host. """
         return True
@@ -45,8 +45,6 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
         """ Let the server know that we support UHNAMES using the old ISUPPORT method, for legacy support. """
         await self.rawmsg('PROTOCTL', 'UHNAMES')
 
-
-
     ## API overrides.
 
     async def message(self, target, message):
@@ -67,7 +65,6 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
             else:
                 await self.on_private_notice(target, self.nickname, message)
 
-
     ## Message handlers.
 
     async def on_raw(self, message):
@@ -78,7 +75,7 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
                     'identified': True,
                     'account': message.tags['account']
                 }
-                self._sync_user(nick, metadata)
+                await self._sync_user(nick, metadata)
         await super().on_raw(message)
 
     async def on_raw_chghost(self, message):
@@ -95,4 +92,4 @@ class IRCv3_2Support(metadata.MetadataSupport, monitor.MonitoringSupport, tags.T
             'username': message.params[0],
             'hostname': message.params[1]
         }
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)

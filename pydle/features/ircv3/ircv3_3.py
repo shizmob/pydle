@@ -2,7 +2,7 @@
 # IRCv3.3 support (in progress).
 from . import ircv3_2
 
-__all__ = [ 'IRCv3_3Support' ]
+__all__ = ['IRCv3_3Support']
 
 
 class IRCv3_3Support(ircv3_2.IRCv3_2Support):

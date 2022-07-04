@@ -84,8 +84,8 @@ class RFC1459Support(BasicClient):
                 'away_message': None,
             })
 
-    def _rename_user(self, user, new):
-        super()._rename_user(user, new)
+    async def _rename_user(self, user, new):
+        await super()._rename_user(user, new)
 
         # Rename in mode lists, too.
         for ch in self.channels.values():
@@ -110,8 +110,7 @@ class RFC1459Support(BasicClient):
         if data:
             nickname, username, host = parsing.parse_user(data)
 
-            metadata = {}
-            metadata['nickname'] = nickname
+            metadata = {'nickname': nickname}
             if username:
                 metadata['username'] = username
             if host:
@@ -178,8 +177,7 @@ class RFC1459Support(BasicClient):
         # Wat.
         if allow_everything and range >= 4:
             return '*'
-        else:
-            return host
+        return host
 
     ## Connection.
 
@@ -376,7 +374,7 @@ class RFC1459Support(BasicClient):
         """
         if not self.is_channel(channel):
             raise ValueError('Not a channel: {}'.format(channel))
-        elif not self.in_channel(channel):
+        if not self.in_channel(channel):
             raise NotInChannel(channel)
 
         await self.rawmsg('TOPIC', channel, topic)
@@ -468,71 +466,71 @@ class RFC1459Support(BasicClient):
 
     async def on_invite(self, channel, by):
         """ Callback called when the client was invited into a channel by someone. """
-        pass
+        ...
 
     async def on_user_invite(self, target, channel, by):
         """ Callback called when another user was invited into a channel by someone. """
-        pass
+        ...
 
     async def on_join(self, channel, user):
         """ Callback called when a user, possibly the client, has joined the channel. """
-        pass
+        ...
 
     async def on_kill(self, target, by, reason):
         """ Callback called when a user, possibly the client, was killed from the server. """
-        pass
+        ...
 
     async def on_kick(self, channel, target, by, reason=None):
         """ Callback called when a user, possibly the client, was kicked from a channel. """
-        pass
+        ...
 
     async def on_mode_change(self, channel, modes, by):
         """ Callback called when the mode on a channel was changed. """
-        pass
+        ...
 
     async def on_user_mode_change(self, modes):
         """ Callback called when a user mode change occurred for the client. """
-        pass
+        ...
 
     async def on_message(self, target, by, message):
         """ Callback called when the client received a message. """
-        pass
+        ...
 
     async def on_channel_message(self, target, by, message):
         """ Callback received when the client received a message in a channel. """
-        pass
+        ...
 
     async def on_private_message(self, target, by, message):
         """ Callback called when the client received a message in private. """
-        pass
+        ...
 
     async def on_nick_change(self, old, new):
         """ Callback called when a user, possibly the client, changed their nickname. """
-        pass
+        ...
 
     async def on_notice(self, target, by, message):
         """ Callback called when the client received a notice. """
-        pass
+        ...
 
     async def on_channel_notice(self, target, by, message):
         """ Callback called when the client received a notice in a channel. """
-        pass
+        ...
 
     async def on_private_notice(self, target, by, message):
         """ Callback called when the client received a notice in private. """
-        pass
+        ...
 
     async def on_part(self, channel, user, message=None):
         """ Callback called when a user, possibly the client, left a channel. """
-        pass
+        ...
 
     async def on_topic_change(self, channel, message, by):
         """ Callback called when the topic for a channel was changed. """
-        pass
+        ...
 
     async def on_quit(self, user, message=None):
         """ Callback called when a user, possibly the client, left the network. """
-        pass
+        ...
 
     ## Callback handlers.
 
@@ -547,7 +545,7 @@ class RFC1459Support(BasicClient):
     async def on_raw_invite(self, message):
         """ INVITE command. """
         nick, metadata = self._parse_user(message.source)
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
 
         target, channel = message.params
         target, metadata = self._parse_user(target)
@@ -560,7 +558,7 @@ class RFC1459Support(BasicClient):
     async def on_raw_join(self, message):
         """ JOIN command. """
         nick, metadata = self._parse_user(message.source)
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
 
         channels = message.params[0].split(',')
         if self.is_same_nick(self.nickname, nick):
@@ -583,7 +581,7 @@ class RFC1459Support(BasicClient):
     async def on_raw_kick(self, message):
         """ KICK command. """
         kicker, kickermeta = self._parse_user(message.source)
-        self._sync_user(kicker, kickermeta)
+        await self._sync_user(kicker, kickermeta)
 
         if len(message.params) > 2:
             channels, targets, reason = message.params
@@ -596,7 +594,7 @@ class RFC1459Support(BasicClient):
 
         for channel, target in itertools.product(channels, targets):
             target, targetmeta = self._parse_user(target)
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
 
             if self.is_same_nick(target, self.nickname):
                 self._destroy_channel(channel)
@@ -613,9 +611,9 @@ class RFC1459Support(BasicClient):
         target, targetmeta = self._parse_user(message.params[0])
         reason = message.params[1]
 
-        self._sync_user(target, targetmeta)
+        await self._sync_user(target, targetmeta)
         if by in self.users:
-            self._sync_user(by, bymeta)
+            await self._sync_user(by, bymeta)
 
         await self.on_kill(target, by, reason)
         if self.is_same_nick(self.nickname, target):
@@ -628,7 +626,7 @@ class RFC1459Support(BasicClient):
         nick, metadata = self._parse_user(message.source)
         target, modes = message.params[0], message.params[1:]
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
         if self.is_channel(target):
             if self.in_channel(target):
                 # Parse modes.
@@ -637,7 +635,7 @@ class RFC1459Support(BasicClient):
                 await self.on_mode_change(target, modes, nick)
         else:
             target, targetmeta = self._parse_user(target)
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
 
             # Update own modes.
             if self.is_same_nick(self.nickname, nick):
@@ -650,14 +648,14 @@ class RFC1459Support(BasicClient):
         nick, metadata = self._parse_user(message.source)
         new = message.params[0]
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
         # Acknowledgement of nickname change: set it internally, too.
         # Alternatively, we were force nick-changed. Nothing much we can do about it.
         if self.is_same_nick(self.nickname, nick):
             self.nickname = new
 
         # Go through all user lists and replace.
-        self._rename_user(nick, new)
+        await self._rename_user(nick, new)
 
         # Call handler.
         await self.on_nick_change(nick, new)
@@ -667,7 +665,7 @@ class RFC1459Support(BasicClient):
         nick, metadata = self._parse_user(message.source)
         target, message = message.params
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
 
         await self.on_notice(target, nick, message)
         if self.is_channel(target):
@@ -684,7 +682,7 @@ class RFC1459Support(BasicClient):
         else:
             reason = None
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
         if self.is_same_nick(self.nickname, nick):
             # We left the channel. Remove from channel list. :(
             for channel in channels:
@@ -707,7 +705,7 @@ class RFC1459Support(BasicClient):
         nick, metadata = self._parse_user(message.source)
         target, message = message.params
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
 
         await self.on_message(target, nick, message)
         if self.is_channel(target):
@@ -719,7 +717,7 @@ class RFC1459Support(BasicClient):
         """ QUIT command. """
         nick, metadata = self._parse_user(message.source)
 
-        self._sync_user(nick, metadata)
+        await self._sync_user(nick, metadata)
         if message.params:
             reason = message.params[0]
         else:
@@ -731,14 +729,14 @@ class RFC1459Support(BasicClient):
             self._destroy_user(nick)
         # Else, we quit.
         elif self.connected:
-            await self.disconnect(expected=True)
+            await self.disconnect()
 
     async def on_raw_topic(self, message):
         """ TOPIC command. """
         setter, settermeta = self._parse_user(message.source)
         target, topic = message.params
 
-        self._sync_user(setter, settermeta)
+        await self._sync_user(setter, settermeta)
 
         # Update topic in our own channel list.
         if self.in_channel(target):
@@ -785,7 +783,7 @@ class RFC1459Support(BasicClient):
         }
 
         if nickname in self.users:
-            self._sync_user(nickname, info)
+            await self._sync_user(nickname, info)
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
@@ -798,7 +796,7 @@ class RFC1459Support(BasicClient):
             'realname': realname
         }
 
-        self._sync_user(nickname, info)
+        await self._sync_user(nickname, info)
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
@@ -926,7 +924,7 @@ class RFC1459Support(BasicClient):
             if not nick:
                 # nonsense nickname
                 continue
-            self._sync_user(nick, metadata)
+            await self._sync_user(nick, metadata)
 
             # Get prefixes.
             prefixes = set(entry.replace(safe_entry, ''))

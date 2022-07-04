@@ -3,9 +3,10 @@
 import asyncio
 import logging
 from asyncio import new_event_loop, gather, get_event_loop, sleep
-
-from . import connection, protocol
 import warnings
+from . import connection, protocol
+import inspect
+import functools
 
 __all__ = ['Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient', 'ClientPool']
 DEFAULT_NICKNAME = '<unregistered>'
@@ -13,7 +14,7 @@ DEFAULT_NICKNAME = '<unregistered>'
 
 class Error(Exception):
     """ Base class for all pydle errors. """
-    pass
+    ...
 
 
 class NotInChannel(Error):
@@ -56,10 +57,10 @@ class BasicClient:
         )
         self.READ_TIMEOUT = value
 
-    def __init__(self, nickname, fallback_nicknames=[], username=None, realname=None,
+    def __init__(self, nickname, fallback_nicknames=None, username=None, realname=None,
                  eventloop=None, **kwargs):
         """ Create a client. """
-        self._nicknames = [nickname] + fallback_nicknames
+        self._nicknames = [nickname] + (fallback_nicknames or [])
         self.username = username or nickname.lower()
         self.realname = realname or nickname
         if eventloop:
@@ -149,12 +150,12 @@ class BasicClient:
         if expected and self.own_eventloop:
             self.connection.stop()
 
-    async def _connect(self, hostname, port, reconnect=False, channels=[],
+    async def _connect(self, hostname, port, reconnect=False, channels=None,
                        encoding=protocol.DEFAULT_ENCODING, source_address=None):
         """ Connect to IRC host. """
         # Create connection if we can't reuse it.
         if not reconnect or not self.connection:
-            self._autojoin_channels = channels
+            self._autojoin_channels = channels or []
             self.connection = connection.Connection(hostname, port, source_address=source_address,
                                                     eventloop=self.eventloop)
             self.encoding = encoding
@@ -167,10 +168,8 @@ class BasicClient:
         if self.RECONNECT_ON_ERROR and self.RECONNECT_DELAYED:
             if self._reconnect_attempts >= len(self.RECONNECT_DELAYS):
                 return self.RECONNECT_DELAYS[-1]
-            else:
-                return self.RECONNECT_DELAYS[self._reconnect_attempts]
-        else:
-            return 0
+            return self.RECONNECT_DELAYS[self._reconnect_attempts]
+        return 0
 
     ## Internal database management.
 
@@ -197,21 +196,21 @@ class BasicClient:
             'hostname': None
         }
 
-    def _sync_user(self, nick, metadata):
+    async def _sync_user(self, nick, metadata):
         # Create user in database.
         if nick not in self.users:
-            self._create_user(nick)
+            await self._create_user(nick)
             if nick not in self.users:
                 return
         self.users[nick].update(metadata)
 
-    def _rename_user(self, user, new):
+    async def _rename_user(self, user, new):
         if user in self.users:
             self.users[new] = self.users[user]
             self.users[new]['nickname'] = new
             del self.users[user]
         else:
-            self._create_user(new)
+            await self._create_user(new)
             if new not in self.users:
                 return
 
@@ -297,8 +296,7 @@ class BasicClient:
                         tag = host
 
             return tag
-        else:
-            return None
+        return None
 
     ## IRC API.
 
@@ -372,7 +370,7 @@ class BasicClient:
                 try:
                     await self.rawmsg("PING", self.server_tag)
                     data = await self.connection.recv(timeout=self.READ_TIMEOUT)
-                except (asyncio.TimeoutError, ConnectionResetError) as e:
+                except (asyncio.TimeoutError, ConnectionResetError):
                     data = None
 
             if not data:
@@ -430,7 +428,7 @@ class BasicClient:
 
     async def _ignored(self, message):
         """ Ignore message. """
-        pass
+        ...
 
     def __getattr__(self, attr):
         """ Return on_unknown or _ignored for unknown handlers, depending on the invocation type. """
@@ -441,12 +439,29 @@ class BasicClient:
                 # In that case, return the method that logs and possibly acts on unknown messages.
                 return self.on_unknown
             # Are we in an existing handler calling super()?
-            else:
-                # Just ignore it, then.
-                return self._ignored
+            # Just ignore it, then.
+            return self._ignored
 
         # This isn't a handler, just raise an error.
         raise AttributeError(attr)
+
+    # Bonus features
+    def event(self, func):
+        """
+        Registers the specified `func` to handle events of the same name.
+
+        The func will always be called with, at least, the bot's `self` instance.
+
+        Returns decorated func, unmodified.
+        """
+        if not func.__name__.startswith("on_"):
+            raise NameError("Event handlers must start with 'on_'.")
+
+        if not inspect.iscoroutinefunction(func):
+            raise AssertionError("Wrapped function {!r} must be an `async def` function.".format(func))
+        setattr(self, func.__name__, functools.partial(func, self))
+
+        return func
 
 
 class ClientPool:

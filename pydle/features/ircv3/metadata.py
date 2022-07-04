@@ -41,12 +41,10 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
     async def clear_metadata(self, target):
         await self.rawmsg('METADATA', target, 'CLEAR')
 
-
     ## Callbacks.
 
     async def on_metadata(self, target, key, value, visibility=None):
         pass
-
 
     ## Message handlers.
 
@@ -61,7 +59,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
             visibility = None
 
         if target in self.users:
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
         await self.on_metadata(target, key, value, visibility=visibility)
 
     async def on_raw_760(self, message):
@@ -72,7 +70,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         if target not in self._pending['whois']:
             return
         if target in self.users:
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
 
         self._whois_info[target].setdefault('metadata', {})
         self._whois_info[target]['metadata'][key] = value
@@ -86,7 +84,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         if target not in self._pending['metadata']:
             return
         if target in self.users:
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
 
         self._metadata_info[target][key] = value
 
@@ -103,7 +101,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
     async def on_raw_764(self, message):
         """ Metadata limit reached. """
-        pass
+        ...
 
     async def on_raw_765(self, message):
         """ Invalid metadata target. """
@@ -112,7 +110,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         if target not in self._pending['metadata']:
             return
         if target in self.users:
-            self._sync_user(target, targetmeta)
+            await self._sync_user(target, targetmeta)
 
         self._metadata_queue.remove(target)
         del self._metadata_info[target]
@@ -122,16 +120,16 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
     async def on_raw_766(self, message):
         """ Unknown metadata key. """
-        pass
+        ...
 
     async def on_raw_767(self, message):
         """ Invalid metadata key. """
-        pass
+        ...
 
     async def on_raw_768(self, message):
         """ Metadata key not set. """
-        pass
+        ...
 
     async def on_raw_769(self, message):
         """ Metadata permission denied. """
-        pass
+        ...

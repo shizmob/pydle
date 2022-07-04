@@ -3,7 +3,7 @@ pydle
 Python IRC library.
 -------------------
 
-pydle is a compact, flexible and standards-abiding IRC library for Python 3.5+.
+pydle is a compact, flexible and standards-abiding IRC library for Python 3.5 through 3.9.
 
 Features
 --------
@@ -25,6 +25,9 @@ Basic Usage
 `pip install pydle`
 
 From there, you can `import pydle` and subclass `pydle.Client` for your own functionality.
+
+> To enable SSL support, install the `sasl` extra.
+> `pip install pydle[sasl]`
 
 Setting a nickname and starting a connection over TLS:
 ```python
@@ -103,7 +106,7 @@ class Client(MyBase):
 
 **Q: How do I...?**
 
-Stop! Read the [documentation](http://pydle.readthedocs.org) first. If you're still in need of support, join us on IRC! We hang at `#kochira` on `irc.freenode.net`. If someone is around, they'll most likely gladly help you.
+Stop! Read the [documentation](http://pydle.readthedocs.org) first. If you're still in need of support, join us on IRC! We hang at `#pydle` on `irc.libera.chat`. If someone is around, they'll most likely gladly help you.
 
 License
 -------

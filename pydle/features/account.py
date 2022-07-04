@@ -1,7 +1,7 @@
 ## account.py
 # Account system support.
 from pydle.features import rfc1459
-import asyncio
+
 
 class AccountSupport(rfc1459.RFC1459Support):
 
@@ -15,16 +15,17 @@ class AccountSupport(rfc1459.RFC1459Support):
                 'identified': False
             })
 
-    def _rename_user(self, user, new):
-        super()._rename_user(user, new)
+    async def _rename_user(self, user, new):
+        await super()._rename_user(user, new)
         # Unset account info to be certain until we get a new response.
-        self._sync_user(new, {'account': None, 'identified': False})
-        self.whois(new)
+        await self._sync_user(new, {'account': None, 'identified': False})
+        await self.whois(new)
 
     ## IRC API.
-    @asyncio.coroutine
-    def whois(self, nickname):
-        info = yield from super().whois(nickname)
+    async def whois(self, nickname):
+        info = await super().whois(nickname)
+        if info is None:
+            return info
         info.setdefault('account', None)
         info.setdefault('identified', False)
         return info
@@ -39,7 +40,7 @@ class AccountSupport(rfc1459.RFC1459Support):
         }
 
         if nickname in self.users:
-            self._sync_user(nickname, info)
+            await self._sync_user(nickname, info)
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
 
@@ -52,6 +53,6 @@ class AccountSupport(rfc1459.RFC1459Support):
         }
 
         if nickname in self.users:
-            self._sync_user(nickname, info)
+            await self._sync_user(nickname, info)
         if nickname in self._pending['whois']:
             self._whois_info[nickname].update(info)
