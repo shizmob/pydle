@@ -5,25 +5,18 @@ import pydle.client
 import pydle.protocol
 from pydle.features import rfc1459
 
-TAG_INDICATOR = '@'
-TAG_SEPARATOR = ';'
-TAG_VALUE_SEPARATOR = '='
+TAG_INDICATOR = "@"
+TAG_SEPARATOR = ";"
+TAG_VALUE_SEPARATOR = "="
 TAGGED_MESSAGE_LENGTH_LIMIT = 1024
 
-TAG_CONVERSIONS = {
-    r"\:": ';',
-    r"\s": ' ',
-    r"\\": '\\',
-    r"\r": '\r',
-    r"\n": '\n'
-}
+TAG_CONVERSIONS = {r"\:": ";", r"\s": " ", r"\\": "\\", r"\r": "\r", r"\n": "\n"}
 
 
 class TaggedMessage(rfc1459.RFC1459Message):
-
     def __init__(self, tags=None, **kw):
         super().__init__(**kw)
-        self._kw['tags'] = tags
+        self._kw["tags"] = tags
         self.__dict__.update(self._kw)
 
     @classmethod
@@ -46,16 +39,16 @@ class TaggedMessage(rfc1459.RFC1459Message):
 
         # Strip message separator.
         if message.endswith(rfc1459.protocol.LINE_SEPARATOR):
-            message = message[:-len(rfc1459.protocol.LINE_SEPARATOR)]
+            message = message[: -len(rfc1459.protocol.LINE_SEPARATOR)]
         elif message.endswith(rfc1459.protocol.MINIMAL_LINE_SEPARATOR):
-            message = message[:-len(rfc1459.protocol.MINIMAL_LINE_SEPARATOR)]
+            message = message[: -len(rfc1459.protocol.MINIMAL_LINE_SEPARATOR)]
         raw = message
 
         # Parse tags.
         tags = {}
         if message.startswith(TAG_INDICATOR):
-            message = message[len(TAG_INDICATOR):]
-            raw_tags, message = message.split(' ', 1)
+            message = message[len(TAG_INDICATOR) :]
+            raw_tags, message = message.split(" ", 1)
 
             for raw_tag in raw_tags.split(TAG_SEPARATOR):
                 value = None
@@ -86,7 +79,9 @@ class TaggedMessage(rfc1459.RFC1459Message):
 
         # Parse rest of message.
         message = super().parse(message.lstrip().encode(encoding), encoding=encoding)
-        return TaggedMessage(_raw=raw, _valid=message._valid and valid, tags=tags, **message._kw)
+        return TaggedMessage(
+            _raw=raw, _valid=message._valid and valid, tags=tags, **message._kw
+        )
 
     def construct(self, force=False):
         """
@@ -103,13 +98,15 @@ class TaggedMessage(rfc1459.RFC1459Message):
                 else:
                     raw_tags.append(tag + TAG_VALUE_SEPARATOR + value)
 
-            message = TAG_INDICATOR + TAG_SEPARATOR.join(raw_tags) + ' ' + message
+            message = TAG_INDICATOR + TAG_SEPARATOR.join(raw_tags) + " " + message
 
         if len(message) > TAGGED_MESSAGE_LENGTH_LIMIT and not force:
             raise protocol.ProtocolViolation(
-                'The constructed message is too long. ({len} > {maxlen})'.format(len=len(message),
-                                                                                 maxlen=TAGGED_MESSAGE_LENGTH_LIMIT),
-                message=message)
+                "The constructed message is too long. ({len} > {maxlen})".format(
+                    len=len(message), maxlen=TAGGED_MESSAGE_LENGTH_LIMIT
+                ),
+                message=message,
+            )
         return message
 
 

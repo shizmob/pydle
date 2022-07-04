@@ -3,12 +3,12 @@ import os.path as path
 import ssl
 import sys
 
-__all__ = ['Connection']
+__all__ = ["Connection"]
 
 DEFAULT_CA_PATHS = {
-    'linux': '/etc/ssl/certs',
-    'linux2': '/etc/ssl/certs',
-    'freebsd': '/etc/ssl/certs'
+    "linux": "/etc/ssl/certs",
+    "linux2": "/etc/ssl/certs",
+    "freebsd": "/etc/ssl/certs",
 }
 
 MESSAGE_THROTTLE_TRESHOLD = 3
@@ -16,12 +16,23 @@ MESSAGE_THROTTLE_DELAY = 2
 
 
 class Connection:
-    """ A TCP connection over the IRC protocol. """
+    """A TCP connection over the IRC protocol."""
+
     CONNECT_TIMEOUT = 10
 
-    def __init__(self, hostname, port, tls=False, tls_verify=True, tls_certificate_file=None,
-                 tls_certificate_keyfile=None, tls_certificate_password=None, ping_timeout=240,
-                 source_address=None, eventloop=None):
+    def __init__(
+        self,
+        hostname,
+        port,
+        tls=False,
+        tls_verify=True,
+        tls_certificate_file=None,
+        tls_certificate_keyfile=None,
+        tls_certificate_password=None,
+        ping_timeout=240,
+        source_address=None,
+        eventloop=None,
+    ):
         self.hostname = hostname
         self.port = port
         self.source_address = source_address
@@ -39,7 +50,7 @@ class Connection:
         self.eventloop = eventloop or asyncio.new_event_loop()
 
     async def connect(self):
-        """ Connect to target. """
+        """Connect to target."""
         self.tls_context = None
 
         if self.tls:
@@ -50,32 +61,37 @@ class Connection:
             port=self.port,
             local_addr=self.source_address,
             ssl=self.tls_context,
-            loop=self.eventloop
+            loop=self.eventloop,
         )
 
     def create_tls_context(self):
-        """ Transform our regular socket into a TLS socket. """
+        """Transform our regular socket into a TLS socket."""
         # Create context manually, as we're going to set our own options.
         tls_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
 
         # Load client/server certificate.
         if self.tls_certificate_file:
-            tls_context.load_cert_chain(self.tls_certificate_file, self.tls_certificate_keyfile,
-                                        password=self.tls_certificate_password)
+            tls_context.load_cert_chain(
+                self.tls_certificate_file,
+                self.tls_certificate_keyfile,
+                password=self.tls_certificate_password,
+            )
 
         # Set some relevant options:
         # - No server should use SSLv2 or SSLv3 any more, they are outdated and full of security holes. (RFC6176, RFC7568)
         # - Disable compression in order to counter the CRIME attack. (https://en.wikipedia.org/wiki/CRIME_%28security_exploit%29)
         # - Disable session resumption to maintain perfect forward secrecy. (https://timtaubert.de/blog/2014/11/the-sad-state-of-server-side-tls-session-resumption-implementations/)
-        for opt in ['NO_SSLv2', 'NO_SSLv3', 'NO_COMPRESSION', 'NO_TICKET']:
-            if hasattr(ssl, 'OP_' + opt):
-                tls_context.options |= getattr(ssl, 'OP_' + opt)
+        for opt in ["NO_SSLv2", "NO_SSLv3", "NO_COMPRESSION", "NO_TICKET"]:
+            if hasattr(ssl, "OP_" + opt):
+                tls_context.options |= getattr(ssl, "OP_" + opt)
 
         # Set TLS verification options.
         if self.tls_verify:
             # Load certificate verification paths.
             tls_context.set_default_verify_paths()
-            if sys.platform in DEFAULT_CA_PATHS and path.isdir(DEFAULT_CA_PATHS[sys.platform]):
+            if sys.platform in DEFAULT_CA_PATHS and path.isdir(
+                DEFAULT_CA_PATHS[sys.platform]
+            ):
                 tls_context.load_verify_locations(capath=DEFAULT_CA_PATHS[sys.platform])
 
             # If we want to verify the TLS connection, we first need a certicate.
@@ -89,7 +105,7 @@ class Connection:
         return tls_context
 
     async def disconnect(self):
-        """ Disconnect from target. """
+        """Disconnect from target."""
         if not self.connected:
             return
 
@@ -99,15 +115,15 @@ class Connection:
 
     @property
     def connected(self):
-        """ Whether this connection is... connected to something. """
+        """Whether this connection is... connected to something."""
         return self.reader is not None and self.writer is not None
 
     def stop(self):
-        """ Stop event loop. """
+        """Stop event loop."""
         self.eventloop.call_soon(self.eventloop.stop)
 
     async def send(self, data):
-        """ Add data to send queue. """
+        """Add data to send queue."""
         self.writer.write(data)
         await self.writer.drain()
 
