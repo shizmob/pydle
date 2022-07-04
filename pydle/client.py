@@ -8,24 +8,25 @@ from . import connection, protocol
 import inspect
 import functools
 
-__all__ = ['Error', 'AlreadyInChannel', 'NotInChannel', 'BasicClient', 'ClientPool']
-DEFAULT_NICKNAME = '<unregistered>'
+__all__ = ["Error", "AlreadyInChannel", "NotInChannel", "BasicClient", "ClientPool"]
+DEFAULT_NICKNAME = "<unregistered>"
 
 
 class Error(Exception):
-    """ Base class for all pydle errors. """
+    """Base class for all pydle errors."""
+
     ...
 
 
 class NotInChannel(Error):
     def __init__(self, channel):
-        super().__init__('Not in channel: {}'.format(channel))
+        super().__init__("Not in channel: {}".format(channel))
         self.channel = channel
 
 
 class AlreadyInChannel(Error):
     def __init__(self, channel):
-        super().__init__('Already in channel: {}'.format(channel))
+        super().__init__("Already in channel: {}".format(channel))
         self.channel = channel
 
 
@@ -34,6 +35,7 @@ class BasicClient:
     Base IRC client class.
     This class on its own is not complete: in order to be able to run properly, _has_message, _parse_message and _create_message have to be overloaded.
     """
+
     READ_TIMEOUT = 300
     RECONNECT_ON_ERROR = True
     RECONNECT_MAX_ATTEMPTS = 3
@@ -45,7 +47,7 @@ class BasicClient:
         warnings.warn(
             "PING_TIMEOUT has been moved to READ_TIMEOUT and may be removed in a future version. "
             "Please migrate to READ_TIMEOUT.",
-            DeprecationWarning
+            DeprecationWarning,
         )
         return self.READ_TIMEOUT
 
@@ -53,13 +55,20 @@ class BasicClient:
     def PING_TIMEOUT(self, value):
         warnings.warn(
             "PING_TIMEOUT has been moved to READ_TIMEOUT and may be removed in a future version",
-            DeprecationWarning
+            DeprecationWarning,
         )
         self.READ_TIMEOUT = value
 
-    def __init__(self, nickname, fallback_nicknames=None, username=None, realname=None,
-                 eventloop=None, **kwargs):
-        """ Create a client. """
+    def __init__(
+        self,
+        nickname,
+        fallback_nicknames=None,
+        username=None,
+        realname=None,
+        eventloop=None,
+        **kwargs
+    ):
+        """Create a client."""
         self._nicknames = [nickname] + (fallback_nicknames or [])
         self.username = username or nickname.lower()
         self.realname = realname or nickname
@@ -73,16 +82,16 @@ class BasicClient:
         self._reset_attributes()
 
         if kwargs:
-            self.logger.warning('Unused arguments: %s', ', '.join(kwargs.keys()))
+            self.logger.warning("Unused arguments: %s", ", ".join(kwargs.keys()))
 
     def _reset_attributes(self):
-        """ Reset attributes. """
+        """Reset attributes."""
         # Record-keeping.
         self.channels = {}
         self.users = {}
 
         # Low-level data stuff.
-        self._receive_buffer = b''
+        self._receive_buffer = b""
         self._pending = {}
         self._handler_top_level = False
 
@@ -94,7 +103,7 @@ class BasicClient:
         self.network = None
 
     def _reset_connection_attributes(self):
-        """ Reset connection attributes. """
+        """Reset connection attributes."""
         self.connection = None
         self.encoding = None
         self._autojoin_channels = []
@@ -103,7 +112,7 @@ class BasicClient:
     ## Connection.
 
     def run(self, *args, **kwargs):
-        """ Connect and run bot in event loop. """
+        """Connect and run bot in event loop."""
         self.eventloop.run_until_complete(self.connect(*args, **kwargs))
         try:
             self.eventloop.run_forever()
@@ -111,9 +120,9 @@ class BasicClient:
             self.eventloop.stop()
 
     async def connect(self, hostname=None, port=None, reconnect=False, **kwargs):
-        """ Connect to IRC server. """
+        """Connect to IRC server."""
         if (not hostname or not port) and not reconnect:
-            raise ValueError('Have to specify hostname and port if not reconnecting.')
+            raise ValueError("Have to specify hostname and port if not reconnecting.")
 
         # Disconnect from current connection.
         if self.connected:
@@ -126,12 +135,14 @@ class BasicClient:
 
         # Set logger name.
         if self.server_tag:
-            self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
+            self.logger = logging.getLogger(
+                self.__class__.__name__ + ":" + self.server_tag
+            )
 
         self.eventloop.create_task(self.handle_forever())
 
     async def disconnect(self, expected=True):
-        """ Disconnect from server. """
+        """Disconnect from server."""
         if self.connected:
             # Schedule disconnect.
             await self._disconnect(expected)
@@ -150,21 +161,29 @@ class BasicClient:
         if expected and self.own_eventloop:
             self.connection.stop()
 
-    async def _connect(self, hostname, port, reconnect=False, channels=None,
-                       encoding=protocol.DEFAULT_ENCODING, source_address=None):
-        """ Connect to IRC host. """
+    async def _connect(
+        self,
+        hostname,
+        port,
+        reconnect=False,
+        channels=None,
+        encoding=protocol.DEFAULT_ENCODING,
+        source_address=None,
+    ):
+        """Connect to IRC host."""
         # Create connection if we can't reuse it.
         if not reconnect or not self.connection:
             self._autojoin_channels = channels or []
-            self.connection = connection.Connection(hostname, port, source_address=source_address,
-                                                    eventloop=self.eventloop)
+            self.connection = connection.Connection(
+                hostname, port, source_address=source_address, eventloop=self.eventloop
+            )
             self.encoding = encoding
 
         # Connect.
         await self.connection.connect()
 
     def _reconnect_delay(self):
-        """ Calculate reconnection delay. """
+        """Calculate reconnection delay."""
         if self.RECONNECT_ON_ERROR and self.RECONNECT_DELAYED:
             if self._reconnect_attempts >= len(self.RECONNECT_DELAYS):
                 return self.RECONNECT_DELAYS[-1]
@@ -175,25 +194,25 @@ class BasicClient:
 
     def _create_channel(self, channel):
         self.channels[channel] = {
-            'users': set(),
+            "users": set(),
         }
 
     def _destroy_channel(self, channel):
         # Copy set to prevent a runtime error when destroying the user.
-        for user in set(self.channels[channel]['users']):
+        for user in set(self.channels[channel]["users"]):
             self._destroy_user(user, channel)
         del self.channels[channel]
 
     def _create_user(self, nickname):
         # Servers are NOT users.
-        if not nickname or '.' in nickname:
+        if not nickname or "." in nickname:
             return
 
         self.users[nickname] = {
-            'nickname': nickname,
-            'username': None,
-            'realname': None,
-            'hostname': None
+            "nickname": nickname,
+            "username": None,
+            "realname": None,
+            "hostname": None,
         }
 
     async def _sync_user(self, nick, metadata):
@@ -207,7 +226,7 @@ class BasicClient:
     async def _rename_user(self, user, new):
         if user in self.users:
             self.users[new] = self.users[user]
-            self.users[new]['nickname'] = new
+            self.users[new]["nickname"] = new
             del self.users[user]
         else:
             await self._create_user(new)
@@ -216,9 +235,9 @@ class BasicClient:
 
         for ch in self.channels.values():
             # Rename user in channel list.
-            if user in ch['users']:
-                ch['users'].discard(user)
-                ch['users'].add(new)
+            if user in ch["users"]:
+                ch["users"].discard(user)
+                ch["users"].add(new)
 
     def _destroy_user(self, nickname, channel=None):
         if channel:
@@ -228,48 +247,53 @@ class BasicClient:
 
         for ch in channels:
             # Remove from nicklist.
-            ch['users'].discard(nickname)
+            ch["users"].discard(nickname)
 
         # If we're not in any common channels with the user anymore, we have no reliable way to keep their info up-to-date.
         # Remove the user.
-        if not channel or not any(nickname in ch['users'] for ch in self.channels.values()):
+        if not channel or not any(
+            nickname in ch["users"] for ch in self.channels.values()
+        ):
             del self.users[nickname]
 
     def _parse_user(self, data):
-        """ Parse user and return nickname, metadata tuple. """
+        """Parse user and return nickname, metadata tuple."""
         raise NotImplementedError()
 
     def _format_user_mask(self, nickname):
-        user = self.users.get(nickname, {"nickname": nickname, "username": "*", "hostname": "*"})
-        return self._format_host_mask(user['nickname'], user['username'] or '*',
-                                      user['hostname'] or '*')
+        user = self.users.get(
+            nickname, {"nickname": nickname, "username": "*", "hostname": "*"}
+        )
+        return self._format_host_mask(
+            user["nickname"], user["username"] or "*", user["hostname"] or "*"
+        )
 
     def _format_host_mask(self, nick, user, host):
-        return '{n}!{u}@{h}'.format(n=nick, u=user, h=host)
+        return "{n}!{u}@{h}".format(n=nick, u=user, h=host)
 
     ## IRC helpers.
 
     def is_channel(self, chan):
-        """ Check if given argument is a channel name or not. """
+        """Check if given argument is a channel name or not."""
         return True
 
     def in_channel(self, channel):
-        """ Check if we are currently in the given channel. """
+        """Check if we are currently in the given channel."""
         return channel in self.channels.keys()
 
     def is_same_nick(self, left, right):
-        """ Check if given nicknames are equal. """
+        """Check if given nicknames are equal."""
         return left == right
 
     def is_same_channel(self, left, right):
-        """ Check if given channel names are equal. """
+        """Check if given channel names are equal."""
         return left == right
 
     ## IRC attributes.
 
     @property
     def connected(self):
-        """ Whether or not we are connected. """
+        """Whether or not we are connected."""
         return self.connection and self.connection.connected
 
     @property
@@ -281,13 +305,13 @@ class BasicClient:
                 tag = self.connection.hostname.lower()
 
                 # Remove hostname prefix.
-                if tag.startswith('irc.'):
+                if tag.startswith("irc."):
                     tag = tag[4:]
 
                 # Check if host is either an FQDN or IPv4.
-                if '.' in tag:
+                if "." in tag:
                     # Attempt to cut off TLD.
-                    host, suffix = tag.rsplit('.', 1)
+                    host, suffix = tag.rsplit(".", 1)
 
                     # Make sure we aren't cutting off the last octet of an IPv4.
                     try:
@@ -301,18 +325,18 @@ class BasicClient:
     ## IRC API.
 
     async def raw(self, message):
-        """ Send raw command. """
+        """Send raw command."""
         await self._send(message)
 
     async def rawmsg(self, command, *args, **kwargs):
-        """ Send raw message. """
+        """Send raw message."""
         message = str(self._create_message(command, *args, **kwargs))
         await self._send(message)
 
     ## Overloadable callbacks.
 
     async def on_connect(self):
-        """ Callback called when the client has connected successfully. """
+        """Callback called when the client has connected successfully."""
         # Reset reconnect attempts.
         self._reconnect_attempts = 0
 
@@ -320,27 +344,31 @@ class BasicClient:
         if not expected:
             # Unexpected disconnect. Reconnect?
             if self.RECONNECT_ON_ERROR and (
-                    self.RECONNECT_MAX_ATTEMPTS is None or self._reconnect_attempts < self.RECONNECT_MAX_ATTEMPTS):
+                self.RECONNECT_MAX_ATTEMPTS is None
+                or self._reconnect_attempts < self.RECONNECT_MAX_ATTEMPTS
+            ):
                 # Calculate reconnect delay.
                 delay = self._reconnect_delay()
                 self._reconnect_attempts += 1
 
                 if delay > 0:
                     self.logger.error(
-                        'Unexpected disconnect. Attempting to reconnect within %s seconds.', delay)
+                        "Unexpected disconnect. Attempting to reconnect within %s seconds.",
+                        delay,
+                    )
                 else:
-                    self.logger.error('Unexpected disconnect. Attempting to reconnect.')
+                    self.logger.error("Unexpected disconnect. Attempting to reconnect.")
 
                 # Wait and reconnect.
                 await sleep(delay)
                 await self.connect(reconnect=True)
             else:
-                self.logger.error('Unexpected disconnect. Giving up.')
+                self.logger.error("Unexpected disconnect. Giving up.")
 
     ## Message dispatch.
 
     def _has_message(self):
-        """ Whether or not we have messages available for processing. """
+        """Whether or not we have messages available for processing."""
         raise NotImplementedError()
 
     def _create_message(self, command, *params, **kwargs):
@@ -355,17 +383,18 @@ class BasicClient:
         if isinstance(input, str):
             input = input.encode(self.encoding)
 
-        self.logger.debug('>> %s', input.decode(self.encoding))
+        self.logger.debug(">> %s", input.decode(self.encoding))
         await self.connection.send(input)
 
     async def handle_forever(self):
-        """ Handle data forever. """
+        """Handle data forever."""
         while self.connected:
             try:
                 data = await self.connection.recv(timeout=self.READ_TIMEOUT)
             except asyncio.TimeoutError:
                 self.logger.warning(
-                    '>> Receive timeout reached, sending ping to check connection state...')
+                    ">> Receive timeout reached, sending ping to check connection state..."
+                )
 
                 try:
                     await self.rawmsg("PING", self.server_tag)
@@ -382,7 +411,7 @@ class BasicClient:
     ## Raw message handlers.
 
     async def on_data(self, data):
-        """ Handle received data. """
+        """Handle received data."""
         self._receive_buffer += data
 
         while self._has_message():
@@ -390,17 +419,19 @@ class BasicClient:
             self.eventloop.create_task(self.on_raw(message))
 
     async def on_data_error(self, exception):
-        """ Handle error. """
-        self.logger.error('Encountered error on socket.',
-                          exc_info=(type(exception), exception, None))
+        """Handle error."""
+        self.logger.error(
+            "Encountered error on socket.", exc_info=(type(exception), exception, None)
+        )
         await self.disconnect(expected=False)
 
     async def on_raw(self, message):
-        """ Handle a single message. """
-        self.logger.debug('<< %s', message._raw)
+        """Handle a single message."""
+        self.logger.debug("<< %s", message._raw)
         if not message._valid:
-            self.logger.warning('Encountered strictly invalid IRC message from server: %s',
-                                message._raw)
+            self.logger.warning(
+                "Encountered strictly invalid IRC message from server: %s", message._raw
+            )
 
         if isinstance(message.command, int):
             cmd = str(message.command).zfill(3)
@@ -408,7 +439,7 @@ class BasicClient:
             cmd = message.command
 
         # Invoke dispatcher, if we have one.
-        method = 'on_raw_' + cmd.lower()
+        method = "on_raw_" + cmd.lower()
         try:
             # Set _top_level so __getattr__() can decide whether to return on_unknown or _ignored for unknown handlers.
             # The reason for this is that features can always call super().on_raw_* safely and thus don't need to care for other features,
@@ -419,21 +450,25 @@ class BasicClient:
 
             await handler(message)
         except:
-            self.logger.exception('Failed to execute %s handler.', method)
+            self.logger.exception("Failed to execute %s handler.", method)
 
     async def on_unknown(self, message):
-        """ Unknown command. """
-        self.logger.warning('Unknown command: [%s] %s %s', message.source, message.command,
-                            message.params)
+        """Unknown command."""
+        self.logger.warning(
+            "Unknown command: [%s] %s %s",
+            message.source,
+            message.command,
+            message.params,
+        )
 
     async def _ignored(self, message):
-        """ Ignore message. """
+        """Ignore message."""
         ...
 
     def __getattr__(self, attr):
-        """ Return on_unknown or _ignored for unknown handlers, depending on the invocation type. """
+        """Return on_unknown or _ignored for unknown handlers, depending on the invocation type."""
         # Is this a raw handler?
-        if attr.startswith('on_raw_'):
+        if attr.startswith("on_raw_"):
             # Are we in on_raw() trying to find any message handler?
             if self._handler_top_level:
                 # In that case, return the method that logs and possibly acts on unknown messages.
@@ -458,14 +493,16 @@ class BasicClient:
             raise NameError("Event handlers must start with 'on_'.")
 
         if not inspect.iscoroutinefunction(func):
-            raise AssertionError("Wrapped function {!r} must be an `async def` function.".format(func))
+            raise AssertionError(
+                "Wrapped function {!r} must be an `async def` function.".format(func)
+            )
         setattr(self, func.__name__, functools.partial(func, self))
 
         return func
 
 
 class ClientPool:
-    """ A pool of clients that are ran and handled in parallel. """
+    """A pool of clients that are ran and handled in parallel."""
 
     def __init__(self, clients=None, eventloop=None):
         self.eventloop = eventloop if eventloop else new_event_loop()
@@ -473,7 +510,7 @@ class ClientPool:
         self.connect_args = {}
 
     def connect(self, client: BasicClient, *args, **kwargs):
-        """ Add client to pool. """
+        """Add client to pool."""
         self.clients.add(client)
         self.connect_args[client] = (args, kwargs)
         # hack the clients event loop to use the pools own event loop
@@ -481,10 +518,12 @@ class ClientPool:
         # necessary to run multiple clients in the same thread via the pool
 
     def disconnect(self, client):
-        """ Remove client from pool. """
+        """Remove client from pool."""
         self.clients.remove(client)
         del self.connect_args[client]
-        asyncio.run_coroutine_threadsafe(client.disconnect(expected=True), self.eventloop)
+        asyncio.run_coroutine_threadsafe(
+            client.disconnect(expected=True), self.eventloop
+        )
 
     def __contains__(self, item):
         return item in self.clients
@@ -492,7 +531,7 @@ class ClientPool:
     ## High-level.
 
     def handle_forever(self):
-        """ Main loop of the pool: handle clients forever, until the event loop is stopped. """
+        """Main loop of the pool: handle clients forever, until the event loop is stopped."""
         # container for all the client connection coros
         connection_list = []
         for client in self.clients:

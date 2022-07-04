@@ -1,6 +1,6 @@
 from . import cap
 
-VISIBLITY_ALL = '*'
+VISIBLITY_ALL = "*"
 
 
 class MetadataSupport(cap.CapabilityNegotiationSupport):
@@ -10,7 +10,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
     def _reset_attributes(self):
         super()._reset_attributes()
 
-        self._pending['metadata'] = {}
+        self._pending["metadata"] = {}
         self._metadata_info = {}
         self._metadata_queue = []
 
@@ -23,23 +23,23 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
             metadata = await self.get_metadata('#foo')
         """
-        if target not in self._pending['metadata']:
-            await self.rawmsg('METADATA', target, 'LIST')
+        if target not in self._pending["metadata"]:
+            await self.rawmsg("METADATA", target, "LIST")
 
             self._metadata_queue.append(target)
             self._metadata_info[target] = {}
-            self._pending['metadata'][target] = self.eventloop.create_future()
+            self._pending["metadata"][target] = self.eventloop.create_future()
 
-        return self._pending['metadata'][target]
+        return self._pending["metadata"][target]
 
     async def set_metadata(self, target, key, value):
-        await self.rawmsg('METADATA', target, 'SET', key, value)
+        await self.rawmsg("METADATA", target, "SET", key, value)
 
     async def unset_metadata(self, target, key):
-        await self.rawmsg('METADATA', target, 'SET', key)
+        await self.rawmsg("METADATA", target, "SET", key)
 
     async def clear_metadata(self, target):
-        await self.rawmsg('METADATA', target, 'CLEAR')
+        await self.rawmsg("METADATA", target, "CLEAR")
 
     ## Callbacks.
 
@@ -52,7 +52,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         return True
 
     async def on_raw_metadata(self, message):
-        """ Metadata event. """
+        """Metadata event."""
         target, targetmeta = self._parse_user(message.params[0])
         key, visibility, value = message.params[1:4]
         if visibility == VISIBLITY_ALL:
@@ -63,25 +63,25 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         await self.on_metadata(target, key, value, visibility=visibility)
 
     async def on_raw_760(self, message):
-        """ Metadata key/value for whois. """
+        """Metadata key/value for whois."""
         target, targetmeta = self._parse_user(message.params[0])
         key, _, value = message.params[1:4]
 
-        if target not in self._pending['whois']:
+        if target not in self._pending["whois"]:
             return
         if target in self.users:
             await self._sync_user(target, targetmeta)
 
-        self._whois_info[target].setdefault('metadata', {})
-        self._whois_info[target]['metadata'][key] = value
+        self._whois_info[target].setdefault("metadata", {})
+        self._whois_info[target]["metadata"][key] = value
 
     async def on_raw_761(self, message):
-        """ Metadata key/value. """
+        """Metadata key/value."""
         target, targetmeta = self._parse_user(message.params[0])
         key, visibility = message.params[1:3]
         value = message.params[3] if len(message.params) > 3 else None
 
-        if target not in self._pending['metadata']:
+        if target not in self._pending["metadata"]:
             return
         if target in self.users:
             await self._sync_user(target, targetmeta)
@@ -89,25 +89,25 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         self._metadata_info[target][key] = value
 
     async def on_raw_762(self, message):
-        """ End of metadata. """
+        """End of metadata."""
         # No way to figure out whose query this belongs to, so make a best guess
         # it was the first one.
         if not self._metadata_queue:
             return
         nickname = self._metadata_queue.pop()
 
-        future = self._pending['metadata'].pop(nickname)
+        future = self._pending["metadata"].pop(nickname)
         future.set_result(self._metadata_info.pop(nickname))
 
     async def on_raw_764(self, message):
-        """ Metadata limit reached. """
+        """Metadata limit reached."""
         ...
 
     async def on_raw_765(self, message):
-        """ Invalid metadata target. """
+        """Invalid metadata target."""
         target, targetmeta = self._parse_user(message.params[0])
 
-        if target not in self._pending['metadata']:
+        if target not in self._pending["metadata"]:
             return
         if target in self.users:
             await self._sync_user(target, targetmeta)
@@ -115,21 +115,21 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
         self._metadata_queue.remove(target)
         del self._metadata_info[target]
 
-        future = self._pending['metadata'].pop(target)
+        future = self._pending["metadata"].pop(target)
         future.set_result(None)
 
     async def on_raw_766(self, message):
-        """ Unknown metadata key. """
+        """Unknown metadata key."""
         ...
 
     async def on_raw_767(self, message):
-        """ Invalid metadata key. """
+        """Invalid metadata key."""
         ...
 
     async def on_raw_768(self, message):
-        """ Metadata key not set. """
+        """Metadata key not set."""
         ...
 
     async def on_raw_769(self, message):
-        """ Metadata permission denied. """
+        """Metadata permission denied."""
         ...
