@@ -1,3 +1,5 @@
+import asyncio
+
 from . import cap
 
 VISIBLITY_ALL = '*'
@@ -28,7 +30,7 @@ class MetadataSupport(cap.CapabilityNegotiationSupport):
 
             self._metadata_queue.append(target)
             self._metadata_info[target] = {}
-            self._pending['metadata'][target] = self.eventloop.create_future()
+            self._pending['metadata'][target] = asyncio.get_event_loop().create_future()
 
         return self._pending['metadata'][target]
 
