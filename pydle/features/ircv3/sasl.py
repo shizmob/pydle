@@ -1,5 +1,6 @@
 ## sasl.py
 # SASL authentication support. Currently we only support PLAIN authentication.
+import asyncio
 import base64
 from functools import partial
 
@@ -47,7 +48,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
         await self.rawmsg('AUTHENTICATE', mechanism)
         # create a partial, required for our callback to get the kwarg
         _sasl_partial = partial(self._sasl_abort, timeout=True)
-        self._sasl_timer = self.eventloop.call_later(self.SASL_TIMEOUT, _sasl_partial)
+        self._sasl_timer = asyncio.get_event_loop().call_later(self.SASL_TIMEOUT, _sasl_partial)
 
     async def _sasl_abort(self, timeout=False):
         """ Abort SASL authentication. """
@@ -166,7 +167,7 @@ class SASLSupport(cap.CapabilityNegotiationSupport):
             await self._sasl_respond()
         else:
             # Response not done yet. Restart timer.
-            self._sasl_timer = self.eventloop.call_later(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
+            self._sasl_timer = asyncio.get_event_loop().call_later(self.SASL_TIMEOUT, self._sasl_abort(timeout=True))
 
     on_raw_900 = cap.CapabilityNegotiationSupport._ignored  # You are now logged in as...
 

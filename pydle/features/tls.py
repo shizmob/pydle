@@ -46,8 +46,7 @@ class TLSSupport(rfc1459.RFC1459Support):
                 tls=tls, tls_verify=tls_verify,
                 tls_certificate_file=self.tls_client_cert,
                 tls_certificate_keyfile=self.tls_client_cert_key,
-                tls_certificate_password=self.tls_client_cert_password,
-                eventloop=self.eventloop)
+                tls_certificate_password=self.tls_client_cert_password)
             self.encoding = encoding
 
         # Connect.

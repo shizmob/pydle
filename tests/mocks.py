@@ -66,7 +66,6 @@ class MockClient(pydle.client.BasicClient):
             port,
             mock_client=self,
             mock_server=self._mock_server,
-            eventloop=self.eventloop,
         )
         await self.connection.connect()
         await self.on_connect()

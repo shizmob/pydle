@@ -2,7 +2,7 @@
 # Basic IRC client implementation.
 import asyncio
 import logging
-from asyncio import new_event_loop, gather, get_event_loop, sleep
+from asyncio import gather, sleep
 import warnings
 from . import connection, protocol
 import inspect
@@ -58,17 +58,11 @@ class BasicClient:
         self.READ_TIMEOUT = value
 
     def __init__(self, nickname, fallback_nicknames=None, username=None, realname=None,
-                 eventloop=None, **kwargs):
+                 **kwargs):
         """ Create a client. """
         self._nicknames = [nickname] + (fallback_nicknames or [])
         self.username = username or nickname.lower()
         self.realname = realname or nickname
-        if eventloop:
-            self.eventloop = eventloop
-        else:
-            self.eventloop = get_event_loop()
-
-        self.own_eventloop = not eventloop
         self._reset_connection_attributes()
         self._reset_attributes()
 
@@ -104,11 +98,7 @@ class BasicClient:
 
     def run(self, *args, **kwargs):
         """ Connect and run bot in event loop. """
-        self.eventloop.run_until_complete(self.connect(*args, **kwargs))
-        try:
-            self.eventloop.run_forever()
-        finally:
-            self.eventloop.stop()
+        asyncio.run(self.connect(*args, **kwargs))
 
     async def connect(self, hostname=None, port=None, reconnect=False, **kwargs):
         """ Connect to IRC server. """
@@ -128,7 +118,7 @@ class BasicClient:
         if self.server_tag:
             self.logger = logging.getLogger(self.__class__.__name__ + ':' + self.server_tag)
 
-        self.eventloop.create_task(self.handle_forever())
+        asyncio.create_task(self.handle_forever())
 
     async def disconnect(self, expected=True):
         """ Disconnect from server. """
@@ -146,18 +136,13 @@ class BasicClient:
         # Callback.
         await self.on_disconnect(expected)
 
-        # Shut down event loop.
-        if expected and self.own_eventloop:
-            self.connection.stop()
-
     async def _connect(self, hostname, port, reconnect=False, channels=None,
                        encoding=protocol.DEFAULT_ENCODING, source_address=None):
         """ Connect to IRC host. """
         # Create connection if we can't reuse it.
         if not reconnect or not self.connection:
             self._autojoin_channels = channels or []
-            self.connection = connection.Connection(hostname, port, source_address=source_address,
-                                                    eventloop=self.eventloop)
+            self.connection = connection.Connection(hostname, port, source_address=source_address)
             self.encoding = encoding
 
         # Connect.
@@ -387,7 +372,7 @@ class BasicClient:
 
         while self._has_message():
             message = self._parse_message()
-            self.eventloop.create_task(self.on_raw(message))
+            asyncio.create_task(self.on_raw(message))
 
     async def on_data_error(self, exception):
         """ Handle error. """
@@ -467,8 +452,7 @@ class BasicClient:
 class ClientPool:
     """ A pool of clients that are ran and handled in parallel. """
 
-    def __init__(self, clients=None, eventloop=None):
-        self.eventloop = eventloop if eventloop else new_event_loop()
+    def __init__(self, clients=None):
         self.clients = set(clients or [])
         self.connect_args = {}
 
@@ -476,15 +460,12 @@ class ClientPool:
         """ Add client to pool. """
         self.clients.add(client)
         self.connect_args[client] = (args, kwargs)
-        # hack the clients event loop to use the pools own event loop
-        client.eventloop = self.eventloop
-        # necessary to run multiple clients in the same thread via the pool
 
     def disconnect(self, client):
         """ Remove client from pool. """
         self.clients.remove(client)
         del self.connect_args[client]
-        asyncio.run_coroutine_threadsafe(client.disconnect(expected=True), self.eventloop)
+        asyncio.run_coroutine_threadsafe(client.disconnect(expected=True))
 
     def __contains__(self, item):
         return item in self.clients
@@ -499,10 +480,7 @@ class ClientPool:
             args, kwargs = self.connect_args[client]
             connection_list.append(client.connect(*args, **kwargs))
         # single future for executing the connections
-        connections = gather(*connection_list, loop=self.eventloop)
+        connections = gather(*connection_list)
 
         # run the connections
-        self.eventloop.run_until_complete(connections)
-
-        # run the clients
-        self.eventloop.run_forever()
+        asyncio.run(connections)

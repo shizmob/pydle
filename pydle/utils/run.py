@@ -6,9 +6,7 @@ from . import _args
 
 def main():
     client, connect = _args.client_from_args('pydle', description='pydle IRC library.')
-    loop = asyncio.get_event_loop()
-    asyncio.ensure_future(connect(), loop=loop)
-    loop.run_forever()
+    asyncio.run(connect())
 
 
 if __name__ == '__main__':

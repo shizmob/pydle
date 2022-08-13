@@ -8,7 +8,7 @@ authors = [
 repository = "https://github.com/Shizmob/pydle"
 keywords = ["irc", "library","python3","compact","flexible"]
 license = "BSD"
-requires-python = ">= 3.6"
+requires-python = ">= 3.7"
 
 [project.optional-dependencies]
 sasl = [
