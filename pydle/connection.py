@@ -102,7 +102,7 @@ class Connection:
 
     def stop(self):
         """ Stop connection. """
-        asyncio.run(self.disconnect())
+        asyncio.create_task(self.disconnect())
 
     async def send(self, data):
         """ Add data to send queue. """
