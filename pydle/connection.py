@@ -21,7 +21,7 @@ class Connection:
 
     def __init__(self, hostname, port, tls=False, tls_verify=True, tls_certificate_file=None,
                  tls_certificate_keyfile=None, tls_certificate_password=None, ping_timeout=240,
-                 source_address=None, eventloop=None):
+                 source_address=None):
         self.hostname = hostname
         self.port = port
         self.source_address = source_address
@@ -36,7 +36,6 @@ class Connection:
 
         self.reader = None
         self.writer = None
-        self.eventloop = eventloop or asyncio.new_event_loop()
 
     async def connect(self):
         """ Connect to target. """
@@ -49,8 +48,7 @@ class Connection:
             host=self.hostname,
             port=self.port,
             local_addr=self.source_address,
-            ssl=self.tls_context,
-            loop=self.eventloop
+            ssl=self.tls_context
         )
 
     def create_tls_context(self):
@@ -103,8 +101,8 @@ class Connection:
         return self.reader is not None and self.writer is not None
 
     def stop(self):
-        """ Stop event loop. """
-        self.eventloop.call_soon(self.eventloop.stop)
+        """ Stop connection. """
+        asyncio.create_task(self.disconnect())
 
     async def send(self, data):
         """ Add data to send queue. """

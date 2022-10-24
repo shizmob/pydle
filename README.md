@@ -3,7 +3,7 @@ pydle
 Python IRC library.
 -------------------
 
-pydle is a compact, flexible and standards-abiding IRC library for Python 3.6 through 3.9.
+pydle is a compact, flexible and standards-abiding IRC library for Python 3.7 through 3.10.
 
 Features
 --------
@@ -65,9 +65,7 @@ Furthermore, since pydle is simply `asyncio`-based, you can run the client in yo
 import asyncio
 
 client = MyOwnBot('MyBot')
-loop = asyncio.get_event_loop()
-asyncio.ensure_future(client.connect('irc.rizon.net', tls=True, tls_verify=False), loop=loop)
-loop.run_forever()
+asyncio.run(client.connect('irc.rizon.net', tls=True, tls_verify=False))
 ```
 
 

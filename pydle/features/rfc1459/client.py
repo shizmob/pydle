@@ -1,5 +1,6 @@
 ## rfc1459.py
 # Basic RFC1459 stuff.
+import asyncio
 import copy
 import datetime
 import ipaddress
@@ -398,7 +399,7 @@ class RFC1459Support(BasicClient):
         # We just check if there's a space in the nickname -- if there is,
         # then we immediately set the future's result to None and don't bother checking.
         if protocol.ARGUMENT_SEPARATOR.search(nickname) is not None:
-            result = self.eventloop.create_future()
+            result = asyncio.get_event_loop().create_future()
             result.set_result(None)
             return result
 
@@ -412,7 +413,7 @@ class RFC1459Support(BasicClient):
             }
 
             # Create a future for when the WHOIS requests succeeds.
-            self._pending['whois'][nickname] = self.eventloop.create_future()
+            self._pending['whois'][nickname] = asyncio.get_event_loop().create_future()
 
         return await self._pending['whois'][nickname]
 
@@ -425,7 +426,7 @@ class RFC1459Support(BasicClient):
         """
         # Same treatment as nicknames in whois.
         if protocol.ARGUMENT_SEPARATOR.search(nickname) is not None:
-            result = self.eventloop.create_future()
+            result = asyncio.get_event_loop().create_future()
             result.set_result(None)
             return result
 
@@ -434,7 +435,7 @@ class RFC1459Support(BasicClient):
             self._whowas_info[nickname] = {}
 
             # Create a future for when the WHOWAS requests succeeds.
-            self._pending['whowas'][nickname] = self.eventloop.create_future()
+            self._pending['whowas'][nickname] = asyncio.get_event_loop().create_future()
 
         return await self._pending['whowas'][nickname]
 
