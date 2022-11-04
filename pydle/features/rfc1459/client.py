@@ -914,10 +914,10 @@ class RFC1459Support(BasicClient):
             self.all_channels.append(channel_dict)
 
         # Clear the supporting lists
-        self._list_client = []
-        self._list_channel = []
-        self._list_count = []
-        self._list_topic = []
+        self._list_client.clear()
+        self._list_channel.clear()
+        self._list_count.clear()
+        self._list_topic.clear()
         if not self._list_query.empty():
             future = await self._list_query.get()
             future.set_result(self.all_channels)
