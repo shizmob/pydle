@@ -3,7 +3,7 @@ pydle
 Python IRC library.
 -------------------
 
-pydle is a compact, flexible and standards-abiding IRC library for Python 3.5 through 3.9.
+pydle is a compact, flexible and standards-abiding IRC library for Python 3.6 through 3.9.
 
 Features
 --------

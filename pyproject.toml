@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pydle"
-version = "1.0.0"
+version = "1.0.1"
 description = "A compact, flexible, and standards-abiding IRC library for python3."
 authors = ["Shiz <hi@shiz.me>"]
 repository = "https://github.com/Shizmob/pydle"
@@ -8,7 +8,7 @@ keywords = ["irc", "library","python3","compact","flexible"]
 license = "BSD"
 
 [tool.poetry.dependencies]
-python = ">=3.6;<3.10"
+python = ">=3.6,<3.10"
 
 [tool.poetry.dependencies.pure-sasl]
 version = "^0.6.2"
