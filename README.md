@@ -106,7 +106,7 @@ class Client(MyBase):
 
 **Q: How do I...?**
 
-Stop! Read the [documentation](http://pydle.readthedocs.org) first. If you're still in need of support, join us on IRC! We hang at `#pydle` on `irc.libera.chat`. If someone is around, they'll most likely gladly help you.
+Stop! Read the [documentation](http://pydle.readthedocs.org) first. If you're still in need of support, please [raise a new issue](https://github.com/Shizmob/pydle/issues/new) in this repository!
 
 License
 -------
