@@ -3,9 +3,12 @@ name = "pydle"
 version = "1.0.1"
 description = "A compact, flexible, and standards-abiding IRC library for python3."
 authors = ["Shiz <hi@shiz.me>"]
+maintainers = ["Joshua Salzedo  <joshuasalzedo@gmail.com>",]
 repository = "https://github.com/Shizmob/pydle"
 keywords = ["irc", "library","python3","compact","flexible"]
-license = "BSD"
+license = "BSD-3-Clause"
+readme = "README.md"
+documentation = "https://pydle.readthedocs.io/"
 
 [tool.poetry.dependencies]
 python = ">=3.6,<3.10"
