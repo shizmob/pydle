@@ -8,8 +8,8 @@ from .features.ircv3.cap import NEGOTIATING as CAPABILITY_NEGOTIATING, FAILED as
 
 
 __name__ = 'pydle'
-__version__ = '0.9.4rc1'
-__version_info__ = (0, 9, 4)
+__version__ = '1.0.1'
+__version_info__ = (1, 0, 1)
 __license__ = 'BSD'
 
 
