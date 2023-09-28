@@ -174,7 +174,8 @@ class ISUPPORTSupport(rfc1459.RFC1459Support):
 
     async def on_isupport_modes(self, value):
         """ Maximum number of variable modes to change in a single MODE command. """
-        self._mode_limit = int(value)
+        if value is not None: 
+            self._mode_limit = int(value)
 
     async def on_isupport_monitor(self, value):
         self._monitor_limit = int(value)
