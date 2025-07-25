@@ -54,7 +54,7 @@ class Connection:
     def create_tls_context(self):
         """ Transform our regular socket into a TLS socket. """
         # Create context manually, as we're going to set our own options.
-        tls_context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        tls_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
         # Load client/server certificate.
         if self.tls_certificate_file:
