@@ -98,7 +98,9 @@ class BasicClient:
 
     def run(self, *args, **kwargs):
         """ Connect and run bot in event loop. """
-        asyncio.run(self.connect(*args, **kwargs))
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.connect(*args, **kwargs))
+        loop.run_forever()
 
     async def connect(self, hostname=None, port=None, reconnect=False, **kwargs):
         """ Connect to IRC server. """
