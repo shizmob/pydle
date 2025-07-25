@@ -83,6 +83,10 @@ class Connection:
             tls_context.check_hostname = True
 
             # We don't check for revocation, because that's impractical still (https://www.imperialviolet.org/2012/02/05/crlsets.html)
+        else:
+            tls_context.check_hostname = False
+            tls_context.verify_mode = ssl.CERT_NONE
+
 
         return tls_context
 
