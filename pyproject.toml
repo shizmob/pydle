@@ -17,6 +17,8 @@ sasl = [
 dev = [
     "sphinx-rtd-theme~=1.0.0",
     "Sphinx~=5.0.2",
+    "pytest",
+    "pytest-asyncio",
 ]
 
 [project.scripts]

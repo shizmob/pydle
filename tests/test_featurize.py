@@ -6,9 +6,9 @@ from .fixtures import with_client
 
 def with_errorcheck_client(*features):
     def inner(f):
-        def run():
+        async def run():
             try:
-                return with_client(*features, connected=False)(f)()
+                return await with_client(*features, connected=False)(f)()
             except TypeError as e:
                 assert False, e
 
