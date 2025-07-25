@@ -250,7 +250,7 @@ the act of WHOISing will not block the entire program flow of the client.
                   self.message(target, '{source}: You are not an administrator.', source=source)
 
 Writing your own blocking operation that can work with coroutines is trivial:
-Simply use the existing asyncio apis: https://docs.python.org/3.7/library/asyncio-task.html#coroutines-and-tasks
+Simply use the existing asyncio apis: https://docs.python.org/3.10/library/asyncio-task.html#coroutines-and-tasks
 
 
 

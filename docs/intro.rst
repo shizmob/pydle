@@ -4,7 +4,7 @@ Introduction to pydle
 
 What is pydle?
 --------------
-pydle is an IRC library for Python 3.7 through 3.10.
+pydle is a compact, flexible and standards-abiding IRC library for Python 3.10+.
 
 Although old and dated on some fronts, IRC is still used by a variety of communities as the real-time communication method of choice,
 and the most popular IRC networks can still count on tens of thousands of users at any point during the day.
@@ -35,8 +35,9 @@ All dependencies can be installed using the standard package manager for Python,
 
 Compatibility
 -------------
-pydle works in any interpreter that implements Python 3.7-3.10. Although mainly tested in CPython_, the standard Python implementation,
-there is no reason why pydle itself should not work in alternative implementations like PyPy_, as long as they support the Python 3.7 language requirements.
+pydle works in any interpreter that implements Python 3.10+. Although mainly tested in CPython_, the standard Python implementation,
+there is no reason why pydle itself should not work in alternative implementations like PyPy_, as long as they support the Python 3.10 language requirements.
+For Python 3.9 and older, one can use the 1.0 releases.
 
 .. _CPython: https://python.org
 .. _PyPy: http://pypy.org
