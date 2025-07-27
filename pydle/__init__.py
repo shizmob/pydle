@@ -1,3 +1,21 @@
+__all__ = [
+    "AlreadyInChannel",
+    "BasicClient",
+    "CAPABILITY_FAILED",
+    "CAPABILITY_NEGOTIATED",
+    "CAPABILITY_NEGOTIATING",
+    "Client",
+    "ClientPool",
+    "Error",
+    "MinimalClient",
+    "NotInChannel",
+    "client",
+    "connection",
+    "features",
+    "featurize",
+    "protocol",
+]
+
 from functools import cmp_to_key
 
 from . import client, connection, features, protocol

@@ -22,6 +22,12 @@ jobs:
     - run: uv sync --all-extras
     - run: uv run pytest
 
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: astral-sh/ruff-action@v3
+
   ruff-format:
     runs-on: ubuntu-latest
     steps:

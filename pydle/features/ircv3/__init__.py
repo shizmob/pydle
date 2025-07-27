@@ -1,3 +1,22 @@
+__all__ = [
+    "CapabilityNegotiationSupport",
+    "IRCv3Support",
+    "IRCv3_1Support",
+    "IRCv3_2Support",
+    "IRCv3_3Support",
+    "MetadataSupport",
+    "MonitoringSupport",
+    "SASLSupport",
+    "TaggedMessageSupport",
+    "cap",
+    "ircv3_1",
+    "ircv3_2",
+    "ircv3_3",
+    "monitor",
+    "sasl",
+    "tags",
+]
+
 ## IRCv3.1 support.
 from . import cap, sasl, ircv3_1
 

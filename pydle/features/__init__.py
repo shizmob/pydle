@@ -1,3 +1,25 @@
+__all__ = [
+    "ALL",
+    "AccountSupport",
+    "CTCPSupport",
+    "IRCv3Support",
+    "IRCv3_1Support",
+    "IRCv3_2Support",
+    "ISUPPORTSupport",
+    "LITE",
+    "RFC1459Support",
+    "RplWhoisHostSupport",
+    "TLSSupport",
+    "WHOXSupport",
+    "account",
+    "ctcp",
+    "ircv3",
+    "isupport",
+    "rfc1459",
+    "tls",
+    "whox",
+]
+
 from . import account, ctcp, ircv3, isupport, rfc1459, tls, whox
 from .account import AccountSupport
 from .ctcp import CTCPSupport
