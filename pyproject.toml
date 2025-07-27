@@ -1,6 +1,6 @@
 [project]
 name = "pydle"
-version = "1.0.1"
+version = "1.1.0"
 description = "A compact, flexible, and standards-abiding IRC library for python3."
 authors = [
     {name = "Shiz", email = "hi@shiz.me"}
