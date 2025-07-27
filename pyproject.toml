@@ -10,7 +10,7 @@ maintainers = [
 ]
 repository = "https://github.com/Shizmob/pydle"
 keywords = ["irc", "library","python3","compact","flexible"]
-license = "BSD"
+license = "BSD-3-Clause"
 readme = "README.md"
 requires-python = ">= 3.10"
 
