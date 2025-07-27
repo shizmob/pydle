@@ -3,7 +3,7 @@ import pydle
 
 try:
     from unittest.mock import Mock
-except:
+except Exception:
     from mock import Mock
 
 
@@ -136,7 +136,7 @@ class MockMessage(pydle.protocol.Message):
 
         try:
             val = json.loads(message)
-        except:
+        except Exception:
             raise pydle.protocol.ProtocolViolation("Invalid JSON")
 
         return MockMessage(
