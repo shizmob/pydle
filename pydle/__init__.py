@@ -1,5 +1,3 @@
-# noinspection PyUnresolvedReferences
-from asyncio import Future
 from functools import cmp_to_key
 from . import connection, protocol, client, features
 from .client import Error, NotInChannel, AlreadyInChannel, BasicClient, ClientPool
