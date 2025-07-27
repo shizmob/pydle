@@ -16,6 +16,7 @@ __all__ = [
     "protocol",
 ]
 
+import importlib.metadata
 from functools import cmp_to_key
 
 from . import client, connection, features, protocol
@@ -31,8 +32,8 @@ from .features.ircv3.cap import (
 )
 
 __name__ = "pydle"
-__version__ = "1.0.1"
-__version_info__ = (1, 0, 1)
+__version__ = importlib.metadata.version(__name__)
+__version_info__ = tuple(int(i) for i in __version__.split(".") if i.isdigit())
 __license__ = "BSD"
 
 
