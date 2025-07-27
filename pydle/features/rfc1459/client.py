@@ -1009,7 +1009,6 @@ class RFC1459Support(BasicClient):
         """ We have to register first before doing X. """
         self.logger.warning('Attempted to send non-registration command before being registered.')
 
-    on_raw_451 = BasicClient._ignored  # You have to register first.
     on_raw_462 = BasicClient._ignored  # You may not re-register.
 
 
