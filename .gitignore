@@ -9,6 +9,8 @@ __pycache__
 /.coverage
 /.tox
 /*.egg-info
+/uv.lock
+/.python-version
 
 .idea
 *venv*
