@@ -4,6 +4,7 @@ test_misc.py ~ Testing of Misc. Functions
 Designed for those simple functions that don't need their own dedicated test files
 But we want to hit them anyways
 """
+
 from pydle.protocol import identifierify
 
 

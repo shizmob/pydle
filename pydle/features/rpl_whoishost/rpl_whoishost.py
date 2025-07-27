@@ -2,10 +2,10 @@ from pydle.features.rfc1459 import RFC1459Support
 
 
 class RplWhoisHostSupport(RFC1459Support):
-    """ Adds support for RPL_WHOISHOST messages (378) """
+    """Adds support for RPL_WHOISHOST messages (378)"""
 
     async def on_raw_378(self, message):
-        """ handles a RPL_WHOISHOST message """
+        """handles a RPL_WHOISHOST message"""
         _, target, data = message.params
         data = data.split(" ")
         target = message.params[1]

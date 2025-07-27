@@ -8,9 +8,9 @@ from . import protocol
 class RFC1459Message(pydle.protocol.Message):
     def __init__(self, command, params, source=None, _raw=None, _valid=True, **kw):
         self._kw = kw
-        self._kw['command'] = command
-        self._kw['params'] = params
-        self._kw['source'] = source
+        self._kw["command"] = command
+        self._kw["params"] = params
+        self._kw["source"] = source
         self._valid = _valid
         self._raw = _raw
         self.__dict__.update(self._kw)
@@ -36,9 +36,9 @@ class RFC1459Message(pydle.protocol.Message):
 
         # Strip message separator.
         if message.endswith(protocol.LINE_SEPARATOR):
-            message = message[:-len(protocol.LINE_SEPARATOR)]
+            message = message[: -len(protocol.LINE_SEPARATOR)]
         elif message.endswith(protocol.MINIMAL_LINE_SEPARATOR):
-            message = message[:-len(protocol.MINIMAL_LINE_SEPARATOR)]
+            message = message[: -len(protocol.MINIMAL_LINE_SEPARATOR)]
 
         # Sanity check for forbidden characters.
         if any(ch in message for ch in protocol.FORBIDDEN_CHARACTERS):
@@ -46,7 +46,7 @@ class RFC1459Message(pydle.protocol.Message):
 
         # Extract message sections.
         # Format: (:source)? command parameter*
-        if message.startswith(':'):
+        if message.startswith(":"):
             parts = protocol.ARGUMENT_SEPARATOR.split(message[1:], 2)
         else:
             parts = [None] + protocol.ARGUMENT_SEPARATOR.split(message, 1)
@@ -55,9 +55,11 @@ class RFC1459Message(pydle.protocol.Message):
             source, command, raw_params = parts
         elif len(parts) == 2:
             source, command = parts
-            raw_params = ''
+            raw_params = ""
         else:
-            raise pydle.protocol.ProtocolViolation('Improper IRC message format: not enough elements.', message=message)
+            raise pydle.protocol.ProtocolViolation(
+                "Improper IRC message format: not enough elements.", message=message
+            )
 
         # Sanity check for command.
         if not protocol.COMMAND_PATTERN.match(command):
@@ -68,15 +70,15 @@ class RFC1459Message(pydle.protocol.Message):
 
         # Only parameter is a 'trailing' sentence.
         if raw_params.startswith(protocol.TRAILING_PREFIX):
-            params = [raw_params[len(protocol.TRAILING_PREFIX):]]
+            params = [raw_params[len(protocol.TRAILING_PREFIX) :]]
         # We have a sentence in our parameters.
-        elif ' ' + protocol.TRAILING_PREFIX in raw_params:
-            index = raw_params.find(' ' + protocol.TRAILING_PREFIX)
+        elif " " + protocol.TRAILING_PREFIX in raw_params:
+            index = raw_params.find(" " + protocol.TRAILING_PREFIX)
 
             # Get all single-word parameters.
-            params = protocol.ARGUMENT_SEPARATOR.split(raw_params[:index].rstrip(' '))
+            params = protocol.ARGUMENT_SEPARATOR.split(raw_params[:index].rstrip(" "))
             # Extract last parameter as sentence
-            params.append(raw_params[index + len(protocol.TRAILING_PREFIX) + 1:])
+            params.append(raw_params[index + len(protocol.TRAILING_PREFIX) + 1 :])
         # We have some parameters, but no sentences.
         elif raw_params:
             params = protocol.ARGUMENT_SEPARATOR.split(raw_params)
@@ -93,62 +95,85 @@ class RFC1459Message(pydle.protocol.Message):
             command = command.upper()
 
         # Return parsed message.
-        return RFC1459Message(command, params, source=source, _valid=valid, _raw=message)
+        return RFC1459Message(
+            command, params, source=source, _valid=valid, _raw=message
+        )
 
     def construct(self, force=False):
-        """ Construct a raw IRC message. """
+        """Construct a raw IRC message."""
         # Sanity check for command.
         command = str(self.command)
         if not protocol.COMMAND_PATTERN.match(command) and not force:
-            raise pydle.protocol.ProtocolViolation('The constructed command does not follow the command pattern ({pat})'.format(pat=protocol.COMMAND_PATTERN.pattern), message=command)
+            raise pydle.protocol.ProtocolViolation(
+                "The constructed command does not follow the command pattern ({pat})".format(
+                    pat=protocol.COMMAND_PATTERN.pattern
+                ),
+                message=command,
+            )
         message = command.upper()
 
         # Add parameters.
         if not self.params:
-            message += ' '
+            message += " "
         for idx, param in enumerate(self.params):
             # Trailing parameter?
-            if not param or ' ' in param or param[0] == ':':
+            if not param or " " in param or param[0] == ":":
                 if idx + 1 < len(self.params) and not force:
-                    raise pydle.protocol.ProtocolViolation('Only the final parameter of an IRC message can be trailing and thus contain spaces, or start with a colon.', message=param)
-                message += ' ' + protocol.TRAILING_PREFIX + param
+                    raise pydle.protocol.ProtocolViolation(
+                        "Only the final parameter of an IRC message can be trailing and thus contain spaces, or start with a colon.",
+                        message=param,
+                    )
+                message += " " + protocol.TRAILING_PREFIX + param
             # Regular parameter.
             else:
-                message += ' ' + param
+                message += " " + param
 
         # Prepend source.
         if self.source:
-            message = ':' + self.source + ' ' + message
+            message = ":" + self.source + " " + message
 
         # Sanity check for characters.
         if any(ch in message for ch in protocol.FORBIDDEN_CHARACTERS) and not force:
-            raise pydle.protocol.ProtocolViolation('The constructed message contains forbidden characters ({chs}).'.format(chs=', '.join(protocol.FORBIDDEN_CHARACTERS)), message=message)
+            raise pydle.protocol.ProtocolViolation(
+                "The constructed message contains forbidden characters ({chs}).".format(
+                    chs=", ".join(protocol.FORBIDDEN_CHARACTERS)
+                ),
+                message=message,
+            )
 
         # Sanity check for length.
         message += protocol.LINE_SEPARATOR
         if len(message) > protocol.MESSAGE_LENGTH_LIMIT and not force:
-            raise pydle.protocol.ProtocolViolation('The constructed message is too long. ({len} > {maxlen})'.format(len=len(message), maxlen=protocol.MESSAGE_LENGTH_LIMIT), message=message)
+            raise pydle.protocol.ProtocolViolation(
+                "The constructed message is too long. ({len} > {maxlen})".format(
+                    len=len(message), maxlen=protocol.MESSAGE_LENGTH_LIMIT
+                ),
+                message=message,
+            )
 
         return message
 
 
 def normalize(input, case_mapping=protocol.DEFAULT_CASE_MAPPING):
-    """ Normalize input according to case mapping. """
+    """Normalize input according to case mapping."""
     if case_mapping not in protocol.CASE_MAPPINGS:
-        raise pydle.protocol.ProtocolViolation('Unknown case mapping ({})'.format(case_mapping))
+        raise pydle.protocol.ProtocolViolation(
+            "Unknown case mapping ({})".format(case_mapping)
+        )
 
     input = input.lower()
 
-    if case_mapping in ('rfc1459', 'rfc1459-strict'):
-        input = input.replace('{', '[').replace('}', ']').replace('|', '\\')
-    if case_mapping == 'rfc1459':
-        input = input.replace('~', '^')
+    if case_mapping in ("rfc1459", "rfc1459-strict"):
+        input = input.replace("{", "[").replace("}", "]").replace("|", "\\")
+    if case_mapping == "rfc1459":
+        input = input.replace("~", "^")
 
     return input
 
 
 class NormalizingDict(collections.abc.MutableMapping):
-    """ A dict that normalizes entries according to the given case mapping. """
+    """A dict that normalizes entries according to the given case mapping."""
+
     def __init__(self, *args, case_mapping):
         self.storage = {}
         self.case_mapping = case_mapping
@@ -176,15 +201,19 @@ class NormalizingDict(collections.abc.MutableMapping):
         return len(self.storage)
 
     def __repr__(self):
-        return '{mod}.{cls}({dict}, case_mapping={cm})'.format(
-            mod=__name__, cls=self.__class__.__name__,
-            dict=self.storage, cm=self.case_mapping)
+        return "{mod}.{cls}({dict}, case_mapping={cm})".format(
+            mod=__name__,
+            cls=self.__class__.__name__,
+            dict=self.storage,
+            cm=self.case_mapping,
+        )
 
 
 # Parsing.
 
+
 def parse_user(raw):
-    """ Parse nick(!user(@host)?)? structure. """
+    """Parse nick(!user(@host)?)? structure."""
     nick = raw
     user = None
     host = None
@@ -200,7 +229,7 @@ def parse_user(raw):
 
 
 def parse_modes(modes, current, behaviour):
-    """ Parse mode change string(s) and return updated dictionary. """
+    """Parse mode change string(s) and return updated dictionary."""
     current = current.copy()
     modes = modes[:]
 
@@ -213,11 +242,11 @@ def parse_modes(modes, current, behaviour):
 
         for mode in piece:
             # Set mode to addition or deletion of modes.
-            if mode == '+':
+            if mode == "+":
                 add = True
                 sigiled = True
                 continue
-            if mode == '-':
+            if mode == "-":
                 add = False
                 sigiled = True
                 continue
@@ -235,11 +264,17 @@ def parse_modes(modes, current, behaviour):
                 continue
 
             # Do we require a parameter?
-            if type in (protocol.BEHAVIOUR_PARAMETER, protocol.BEHAVIOUR_LIST) or (type == protocol.BEHAVIOUR_PARAMETER_ON_SET and add):
+            if type in (protocol.BEHAVIOUR_PARAMETER, protocol.BEHAVIOUR_LIST) or (
+                type == protocol.BEHAVIOUR_PARAMETER_ON_SET and add
+            ):
                 # Do we _have_ a parameter?
                 if i + 1 == len(modes):
-                    raise pydle.protocol.ProtocolViolation('Attempted to parse mode with parameter ({s}{mode}) but no parameters left in mode list.'.format(
-                        mode=mode, s='+' if add else '-'), ' '.join(modes))
+                    raise pydle.protocol.ProtocolViolation(
+                        "Attempted to parse mode with parameter ({s}{mode}) but no parameters left in mode list.".format(
+                            mode=mode, s="+" if add else "-"
+                        ),
+                        " ".join(modes),
+                    )
                 param = modes.pop(i + 1)
 
             # Now update the actual mode dict with our new values.
