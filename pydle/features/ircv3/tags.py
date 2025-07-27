@@ -106,7 +106,7 @@ class TaggedMessage(rfc1459.RFC1459Message):
             message = TAG_INDICATOR + TAG_SEPARATOR.join(raw_tags) + ' ' + message
 
         if len(message) > TAGGED_MESSAGE_LENGTH_LIMIT and not force:
-            raise protocol.ProtocolViolation(
+            raise pydle.protocol.ProtocolViolation(
                 'The constructed message is too long. ({len} > {maxlen})'.format(len=len(message),
                                                                                  maxlen=TAGGED_MESSAGE_LENGTH_LIMIT),
                 message=message)
