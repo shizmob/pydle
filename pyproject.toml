@@ -38,3 +38,12 @@ pydle-irccat = 'pydle.utils.irccat:main'
 [build-system]
 requires = ["poetry-core>=2.1.3"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = [
+    "meta: mark a test as meta",
+    "slow: mark a test as sssslllooowwww",
+    "ircv3: mark a test as related to v3 of the IRC standard",
+    "unit: mark a test as relating to the unit",
+]
